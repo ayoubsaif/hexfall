@@ -2,12 +2,12 @@
 
 An online board game for 3–4 players in the browser, following the base rules of Catan (5th edition). The art and theme are Hexfall's own. AGENTS.md has the full rules the engine implements.
 
-| Part | Path | What it is |
-|---|---|---|
-| Engine | `packages/engine` | Pure, deterministic rules engine (seeded RNG). No I/O. |
-| Protocol | `packages/protocol` | Shared message types and schemas between client and server. |
-| Server | `apps/server` | Node WebSocket server: rooms, seats, validated actions, Redis persistence. |
-| Client | `apps/client` | React + three.js web app (static files). English and Spanish. |
+| Part     | Path                | What it is                                                                 |
+| -------- | ------------------- | -------------------------------------------------------------------------- |
+| Engine   | `packages/engine`   | Pure, deterministic rules engine (seeded RNG). No I/O.                     |
+| Protocol | `packages/protocol` | Shared message types and schemas between client and server.                |
+| Server   | `apps/server`       | Node WebSocket server: rooms, seats, validated actions, Redis persistence. |
+| Client   | `apps/client`       | React + three.js web app (static files). English and Spanish.              |
 
 ## Requirements
 
@@ -46,15 +46,15 @@ A deployment has three parts:
 
 ### Configuration
 
-| Variable | Used by | Example | Notes |
-|---|---|---|---|
-| `REDIS_URL` | server | `rediss://default:…@….upstash.io:6379` | `redis://` or `rediss://` (TLS). Keep it secret. |
-| `ALLOWED_ORIGIN` | server | `https://hexfall.example.com` | The client's origin. Use commas for several. Upgrades from any other origin are refused with 403. |
-| `PORT` | server | `8080` | Port the server listens on. |
-| `NODE_ENV` | server | `production` | |
-| `VITE_SERVER_URL` | client build | `wss://hexfall-server.example.com` | The server's base URL, **without** `/ws`. Baked into the bundle at build time. Use `wss://` when the client is served over HTTPS. |
-| `VITE_THEME` | client build | `diorama` | Optional. |
-| `VITE_APP_VERSION` | client build | `1.0.0` | Optional. Sent to the server in `hello`. |
+| Variable           | Used by      | Example                                | Notes                                                                                                                             |
+| ------------------ | ------------ | -------------------------------------- | --------------------------------------------------------------------------------------------------------------------------------- |
+| `REDIS_URL`        | server       | `rediss://default:…@….upstash.io:6379` | `redis://` or `rediss://` (TLS). Keep it secret.                                                                                  |
+| `ALLOWED_ORIGIN`   | server       | `https://hexfall.example.com`          | The client's origin. Use commas for several. Upgrades from any other origin are refused with 403.                                 |
+| `PORT`             | server       | `8080`                                 | Port the server listens on.                                                                                                       |
+| `NODE_ENV`         | server       | `production`                           |                                                                                                                                   |
+| `VITE_SERVER_URL`  | client build | `wss://hexfall-server.example.com`     | The server's base URL, **without** `/ws`. Baked into the bundle at build time. Use `wss://` when the client is served over HTTPS. |
+| `VITE_THEME`       | client build | `diorama`                              | Optional.                                                                                                                         |
+| `VITE_APP_VERSION` | client build | `1.0.0`                                | Optional. Sent to the server in `hello`.                                                                                          |
 
 Client variables are public. They end up in the JavaScript bundle, so never put secrets in them. The server reads its variables once at startup. If a value is invalid, the server prints the problem and exits.
 
