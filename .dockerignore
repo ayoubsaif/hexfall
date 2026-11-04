@@ -1,0 +1,10 @@
+# Ignored by the server image build (see Dockerfile and README "Deploy").
+**/node_modules
+**/dist
+assets
+.git
+.env
+.env.*
+docs
+openspec
+apps/client/public
