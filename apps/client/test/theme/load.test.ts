@@ -12,9 +12,9 @@ const manifests: Record<string, unknown> = {
     id: "winter",
     license: "CC0-1.0",
     source: "original",
-    assets: { "tile.forest": { model: "forest.glb" } },
+    assets: { "tile.forest": { image: "tiles/forest.webp" } },
   },
-  broken: { id: "broken", source: "original", assets: { "tile.forest": { model: "forest.glb" } } },
+  broken: { id: "broken", source: "original", assets: { "tile.forest": { image: "forest.webp" } } },
 };
 
 function fakeFetcher(available: Record<string, unknown> = manifests) {

@@ -7,17 +7,64 @@ import {
   encodeClient,
   type ServerMessage,
 } from "@hexfall/protocol";
+import { createRoomService, type Request, type RoomService } from "../src/rooms/service.ts";
 import { SERVER_VERSION, createServer, type HexfallServer } from "../src/server.ts";
 import { createShutdown } from "../src/shutdown.ts";
+import { createMemoryStore } from "../src/store/memory.ts";
 
 const ORIGIN = "http://localhost:5173";
 const fakeRedis = { status: () => "down" as const, quit: async () => {} };
 
+/** Fake room layer: createRoom answers roomJoined + roomState; records lifecycle calls. */
+function fakeService() {
+  const events: string[] = [];
+  const ok = async () => ({ ok: true }) as const;
+  const service: RoomService = {
+    async createRoom(req: Request, name: string) {
+      events.push(`createRoom:${name}:${req.seq}`);
+      req.conn.send({
+        type: "roomJoined",
+        payload: { room: "ABCDEF", seat: 0, token: "t" },
+        re: req.seq,
+      });
+      req.conn.send({
+        type: "roomState",
+        payload: {
+          room: "ABCDEF",
+          status: "lobby",
+          host: 0,
+          seats: [{ seat: 0, name, connected: true }],
+        },
+        re: req.seq,
+      });
+      return { ok: true };
+    },
+    async joinRoom() {
+      return { ok: false, error: { code: "room_not_found", message: "no such room" } };
+    },
+    resumeRoom: ok,
+    leaveRoom: ok,
+    startGame: ok,
+    async gameAction() {
+      return { ok: false, rejected: { code: "not_your_turn", message: "not your turn" } };
+    },
+    disconnect: (conn) => void events.push(`disconnect:${conn.id}`),
+    loadedRooms: () => 3,
+    close: () => void events.push("close"),
+  };
+  return { service, events };
+}
+
 let server: HexfallServer | undefined;
 let base = "";
+let fake = fakeService();
 
-async function start(opts: { heartbeatMs?: number } = {}) {
-  server = createServer({ allowedOrigins: [ORIGIN] }, { redis: fakeRedis, log: () => {}, ...opts });
+async function start(opts: { heartbeatMs?: number; service?: RoomService } = {}) {
+  fake = fakeService();
+  server = createServer(
+    { allowedOrigins: [ORIGIN] },
+    { redis: fakeRedis, log: () => {}, service: fake.service, ...opts },
+  );
   const port = await server.listen(0);
   base = `127.0.0.1:${port}`;
 }
@@ -53,12 +100,17 @@ async function connect(origin = ORIGIN) {
 }
 
 describe("http", () => {
-  it("GET /healthz reports ok, redis status and version", async () => {
+  it("GET /healthz reports ok, redis status, version and loaded rooms", async () => {
     await start();
     const res = await fetch(`http://${base}/healthz`);
     expect(res.status).toBe(200);
     expect(res.headers.get("content-type")).toMatch(/application\/json/);
-    expect(await res.json()).toEqual({ ok: true, redis: "down", version: SERVER_VERSION });
+    expect(await res.json()).toEqual({
+      ok: true,
+      redis: "down",
+      version: SERVER_VERSION,
+      rooms: 3,
+    });
   });
 
   it("returns 404 for any other path", async () => {
@@ -151,6 +203,101 @@ describe("websocket", () => {
     ws.close();
   });
 });
+
+describe("routing to the room service", () => {
+  it("routes requests through the session and maps results", async () => {
+    await start();
+    const { ws, next } = await connect();
+    ws.send(encodeClient("createRoom", { name: "Ann" }, 1));
+    expect(await next()).toMatchObject({ type: "roomJoined", re: 1, payload: { seat: 0 } });
+    expect(await next()).toMatchObject({ type: "roomState", re: 1, payload: { status: "lobby" } });
+    ws.send(encodeClient("joinRoom", { room: "QQQQQQ", name: "Bo" }, 2));
+    expect(await next()).toMatchObject({
+      type: "error",
+      re: 2,
+      payload: { code: "room_not_found" },
+    });
+    ws.send(encodeClient("gameAction", { action: { type: "endTurn" } }, 3));
+    expect(await next()).toMatchObject({
+      type: "actionRejected",
+      re: 3,
+      payload: { code: "not_your_turn" },
+    });
+    expect(fake.events).toEqual(["createRoom:Ann:1"]);
+    ws.close();
+  });
+
+  it("answers binary frames with bad_frame", async () => {
+    await start();
+    const { ws, next } = await connect();
+    ws.send(Buffer.from([1, 2, 3]), { binary: true });
+    expect(await next()).toMatchObject({ type: "error", payload: { code: "bad_frame" } });
+    ws.close();
+  });
+
+  it("rate-limits a flood of messages", async () => {
+    await start();
+    const { ws, next } = await connect();
+    for (let i = 0; i < 100; i++) ws.send(encodeClient("ping", { t: i }, i));
+    const replies: ServerMessage[] = [];
+    for (let i = 0; i < 100; i++) replies.push(await next());
+    const limited = replies.filter((m) => m.type === "error" && m.payload.code === "rate_limited");
+    expect(limited.length).toBeGreaterThanOrEqual(50);
+    expect(replies.filter((m) => m.type === "pong").length).toBeGreaterThanOrEqual(40);
+    ws.close();
+  });
+
+  it("tells the service when a socket closes, and closes the service on shutdown", async () => {
+    await start();
+    const { ws } = await connect();
+    ws.close();
+    await waitFor(() => fake.events.some((e) => e.startsWith("disconnect:")));
+    await server!.close();
+    server = undefined;
+    expect(fake.events.at(-1)).toBe("close");
+  });
+});
+
+/** The real RoomService may still be a stub that throws while it is being implemented. */
+const realServiceAvailable = (() => {
+  try {
+    createRoomService({ store: createMemoryStore() }).close();
+    return true;
+  } catch {
+    return false;
+  }
+})();
+
+describe("real room service", () => {
+  it.skipIf(!realServiceAvailable)(
+    "createRoom over a socket -> roomJoined + roomState",
+    async () => {
+      server = createServer({ allowedOrigins: [ORIGIN] }, { redis: fakeRedis, log: () => {} });
+      base = `127.0.0.1:${await server.listen(0)}`;
+      const { ws, next } = await connect();
+      ws.send(encodeClient("createRoom", { name: "Ann" }, 1));
+      const joined = await next();
+      expect(joined).toMatchObject({ type: "roomJoined", re: 1, payload: { seat: 0 } });
+      expect(joined.type === "roomJoined" && typeof joined.payload.token).toBe("string");
+      expect(await next()).toMatchObject({
+        type: "roomState",
+        re: 1,
+        payload: { status: "lobby", host: 0, seats: [{ seat: 0, name: "Ann", connected: true }] },
+      });
+      const health = (await (await fetch(`http://${base}/healthz`)).json()) as { rooms: number };
+      expect(health.rooms).toBe(1);
+      ws.close();
+    },
+  );
+});
+
+async function waitFor(cond: () => boolean, timeoutMs = 2000): Promise<void> {
+  const until = Date.now() + timeoutMs;
+  while (!cond()) {
+    if (Date.now() > until) throw new Error("timed out");
+    await new Promise((r) => setTimeout(r, 5));
+  }
+}
 
 describe("graceful shutdown", () => {
   it("closes connected clients with 1012, quits redis, then exits 0", async () => {

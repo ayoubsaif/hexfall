@@ -9,6 +9,8 @@ export interface RedisHandle {
   ping(): Promise<boolean>;
   /** Closes the connection (gracefully if connected). Never rejects. */
   quit(): Promise<void>;
+  /** The underlying client, for the Redis room store only (store/redis.ts). */
+  readonly client: Redis;
 }
 
 export interface RedisOptions {
@@ -74,6 +76,7 @@ export function createRedis(url: string, opts: RedisOptions = {}): RedisHandle {
   client.connect().catch(() => {});
 
   return {
+    client,
     status: () => (up && !closing && client.status === "ready" ? "up" : "down"),
     async ping() {
       try {

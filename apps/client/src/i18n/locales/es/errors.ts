@@ -1,0 +1,43 @@
+// Spanish text: "errors" namespace.
+import type { Catalog } from "../index.ts";
+
+export const errors: Catalog["errors"] = {
+  room: {
+    bad_frame: "El servidor no pudo leer esa petición.",
+    version_mismatch: "Esta página está desactualizada. Recárgala.",
+    internal: "Algo falló en el servidor. Inténtalo de nuevo.",
+    bad_name: "Ese nombre no es válido o ya está en uso en esta sala.",
+    room_not_found: "No hay ninguna sala con ese código.",
+    room_full: "Esa sala está llena.",
+    game_started: "Esa partida ya ha empezado.",
+    not_host: "Solo el anfitrión puede hacer eso.",
+    not_enough_players: "Se necesitan 3 o 4 jugadores para empezar.",
+    bad_token: "No se pudo recuperar tu asiento.",
+    no_seat: "No estás sentado en ninguna partida.",
+    already_in_room: "Ya estás en una sala.",
+    unavailable: "El servidor está ocupado ahora mismo. Inténtalo de nuevo en un momento.",
+    rate_limited: "Demasiadas peticiones. Ve un poco más despacio.",
+  },
+  rule: {
+    invalid_config: "Esa configuración de partida no es válida.",
+    invalid_action: "Ese movimiento no es válido.",
+    game_over: "La partida ha terminado.",
+    not_your_turn: "No es tu turno.",
+    wrong_phase: "Ese movimiento no es posible ahora.",
+    must_roll_first: "Primero tira los dados.",
+    already_rolled: "Ya has tirado en este turno.",
+    illegal_placement: "No puedes construir ahí.",
+    insufficient_resources: "No tienes suficientes recursos.",
+    no_pieces: "No te quedan piezas de ese tipo.",
+    invalid_discard: "Ese descarte no es válido.",
+    illegal_robber_hex: "El ladrón no puede ir ahí.",
+    illegal_victim: "No puedes robar a ese jugador.",
+    deck_empty: "El mazo de cartas de desarrollo está vacío.",
+    card_not_playable: "No puedes jugar esa carta ahora.",
+    dev_card_already_played: "Ya has jugado una carta de desarrollo en este turno.",
+    cannot_reveal: "Solo puedes revelar cartas de punto de victoria para ganar.",
+    invalid_trade: "Ese intercambio no es válido.",
+    unknown_offer: "Esa oferta de intercambio ya no existe.",
+    bank_empty: "La banca no tiene esas cartas.",
+  },
+};

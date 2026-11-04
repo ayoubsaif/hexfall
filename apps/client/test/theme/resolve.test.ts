@@ -4,6 +4,7 @@ import { FALLBACKS } from "../../src/theme/fallbacks/index.ts";
 import { ASSET_KEYS, type AssetKey } from "../../src/theme/keys.ts";
 import { parseManifest } from "../../src/theme/manifest.ts";
 import { type ResolvedTheme, loadFailureMessage, resolveAsset } from "../../src/theme/resolve.ts";
+import { BOARD_STYLES } from "../../src/theme/style.ts";
 import { instantiateModel } from "../../src/theme/tint.ts";
 
 function themeFrom(assets: Record<string, unknown>): ResolvedTheme {
@@ -15,23 +16,32 @@ function themeFrom(assets: Record<string, unknown>): ResolvedTheme {
 }
 
 describe("resolveAsset", () => {
-  it("every supported key has a procedural fallback component", () => {
-    expect(Object.keys(FALLBACKS).sort()).toEqual([...ASSET_KEYS].sort());
-    for (const key of ASSET_KEYS) expect(typeof FALLBACKS[key]).toBe("function");
-  });
+  it.each(BOARD_STYLES)(
+    "every supported key has a procedural fallback in the %s style",
+    (style) => {
+      expect(Object.keys(FALLBACKS[style]).sort()).toEqual([...ASSET_KEYS].sort());
+      for (const key of ASSET_KEYS) expect(typeof FALLBACKS[style][key]).toBe("function");
+    },
+  );
 
-  it("returns the model for mapped keys and the fallback for the rest", () => {
+  it("returns the image or model for mapped keys and the fallback for the rest", () => {
     const theme = themeFrom({
-      "tile.forest": { model: "forest.glb" },
-      "tile.hills": { model: "hills.glb" },
+      "tile.forest": { image: "tiles/forest.webp" },
+      "piece.city": { model: "city.glb" },
     });
     expect(resolveAsset(theme, "tile.forest")).toEqual({
-      kind: "model",
+      kind: "image",
       key: "tile.forest",
-      url: "/themes/diorama/forest.glb",
+      url: "/themes/diorama/tiles/forest.webp",
+      projection: "top",
+    });
+    expect(resolveAsset(theme, "piece.city")).toEqual({
+      kind: "model",
+      key: "piece.city",
+      url: "/themes/diorama/city.glb",
       transform: undefined,
     });
-    for (const key of ASSET_KEYS.filter((k) => k !== "tile.forest" && k !== "tile.hills")) {
+    for (const key of ASSET_KEYS.filter((k) => k !== "tile.forest" && k !== "piece.city")) {
       expect(resolveAsset(theme, key)).toEqual({ kind: "fallback", key, reason: "unmapped" });
     }
   });
@@ -43,10 +53,18 @@ describe("resolveAsset", () => {
 
   it("an invalid manifest resolves every key to the fallback", () => {
     const r = parseManifest(
-      { id: "diorama", assets: { "tile.forest": { model: "forest.glb" } } },
+      { id: "diorama", assets: { "tile.forest": { image: "forest.webp" } } },
       "diorama",
     );
     const theme: ResolvedTheme = { id: "diorama", baseUrl: "/themes/diorama/", entries: r.entries };
+    for (const key of ASSET_KEYS) expect(resolveAsset(theme, key).kind).toBe("fallback");
+  });
+
+  it("a kind mismatch resolves every key to the fallback", () => {
+    const theme = themeFrom({
+      "tile.forest": { model: "forest.glb" },
+      "piece.city": { model: "city.glb" },
+    });
     for (const key of ASSET_KEYS) expect(resolveAsset(theme, key).kind).toBe("fallback");
   });
 
@@ -63,8 +81,8 @@ describe("resolveAsset", () => {
 
   it("a failed key falls back without affecting other keys", () => {
     const theme = themeFrom({
-      "tile.hills": { model: "missing.glb" },
-      "tile.forest": { model: "forest.glb" },
+      "tile.hills": { image: "missing.webp" },
+      "tile.forest": { image: "forest.webp" },
     });
     const failed = new Set<AssetKey>(["tile.hills"]);
     expect(resolveAsset(theme, "tile.hills", failed)).toEqual({
@@ -72,23 +90,44 @@ describe("resolveAsset", () => {
       key: "tile.hills",
       reason: "failed",
     });
-    expect(resolveAsset(theme, "tile.forest", failed).kind).toBe("model");
+    expect(resolveAsset(theme, "tile.forest", failed).kind).toBe("image");
   });
 
-  it("load failure warning names the key and the theme", () => {
+  it("image load failure message names the key, theme, URL and that it was an image", () => {
     const msg = loadFailureMessage(
       "tile.hills",
       "diorama",
-      "/themes/diorama/missing.glb",
+      "image",
+      "/themes/diorama/missing.webp",
       new Error("404"),
     );
     expect(msg).toContain("tile.hills");
     expect(msg).toContain("diorama");
+    expect(msg).toContain("/themes/diorama/missing.webp");
+    expect(msg).toContain("image");
+    expect(msg).toContain("404");
   });
 
-  it("encodes model path segments", () => {
-    const r = resolveAsset(themeFrom({ sea: { model: "water tiles/sea.glb" } }), "sea");
-    expect(r.kind === "model" && r.url).toBe("/themes/diorama/water%20tiles/sea.glb");
+  it("model load failure message names the key, theme, URL and that it was a model", () => {
+    const msg = loadFailureMessage(
+      "piece.city",
+      "diorama",
+      "model",
+      "/themes/diorama/city.glb",
+      "bad magic",
+    );
+    expect(msg).toContain("piece.city");
+    expect(msg).toContain("diorama");
+    expect(msg).toContain("/themes/diorama/city.glb");
+    expect(msg).toContain("load model for");
+    expect(msg).toContain("bad magic");
+  });
+
+  it("encodes file path segments", () => {
+    const sea = resolveAsset(themeFrom({ sea: { image: "water tiles/sea.webp" } }), "sea");
+    expect(sea.kind === "image" && sea.url).toBe("/themes/diorama/water%20tiles/sea.webp");
+    const city = resolveAsset(themeFrom({ "piece.city": { model: "my city.glb" } }), "piece.city");
+    expect(city.kind === "model" && city.url).toBe("/themes/diorama/my%20city.glb");
   });
 });
 

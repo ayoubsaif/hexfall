@@ -5,6 +5,7 @@ import { Hud } from "../../src/hud/Hud.tsx";
 import { Connection } from "../../src/net/connection.ts";
 import { getConnection, setConnectionFactory, useConnection } from "../../src/net/useConnection.ts";
 import { initialConnectionState, useConnectionStore } from "../../src/store/connection.ts";
+import { useBoardStyleStore } from "../../src/theme/style.ts";
 import { FakeClock, FakeSocket } from "../net/fakes.ts";
 
 (globalThis as { IS_REACT_ACT_ENVIRONMENT?: boolean }).IS_REACT_ACT_ENVIRONMENT = true;
@@ -27,10 +28,14 @@ afterEach(() => {
 describe("Hud", () => {
   it("shows status and ping latency", () => {
     act(() => root.render(<Hud />));
-    expect(container.querySelector(".hud-status")?.textContent).toBe("Connecting");
+    expect(container.querySelector('[data-testid="connection-status"]')?.textContent).toBe(
+      "Connecting",
+    );
     act(() => useConnectionStore.setState({ status: "open", latencyMs: 37.4 }));
-    expect(container.querySelector(".hud-status")?.textContent).toBe("Connected");
-    expect(container.querySelector(".hud-ping")?.textContent).toBe("37 ms");
+    expect(container.querySelector('[data-testid="connection-status"]')?.textContent).toBe(
+      "Connected",
+    );
+    expect(container.querySelector('[data-testid="connection-ping"]')?.textContent).toBe("37 ms");
     expect(container.querySelector('[role="alert"]')).toBeNull();
   });
 
@@ -77,5 +82,33 @@ describe("useConnection", () => {
     await new Promise((r) => setTimeout(r, 5));
     expect(getConnection()).toBeNull();
     expect(FakeSocket.instances[0]?.closedWith).toBe(1000);
+  });
+
+  it("switches the board style from the settings control", () => {
+    const calls: string[] = [];
+    const real = useBoardStyleStore.getState().setStyle;
+    useBoardStyleStore.setState({
+      style: "flat",
+      setStyle: (s) => {
+        calls.push(s);
+        useBoardStyleStore.setState({ style: s });
+      },
+    });
+    try {
+      act(() => root.render(<Hud />));
+      const options = [
+        ...container.querySelectorAll<HTMLButtonElement>(
+          '[role="radiogroup"][aria-label="Board style"] [role="radio"]',
+        ),
+      ];
+      expect(options.map((o) => o.textContent)).toEqual(["Flat", "3D"]);
+      expect(options[0]?.getAttribute("aria-checked")).toBe("true");
+      act(() => options[1]?.click());
+      expect(calls).toEqual(["3d"]);
+      expect(options[1]?.getAttribute("aria-checked")).toBe("true");
+      expect(options[0]?.getAttribute("aria-checked")).toBe("false");
+    } finally {
+      useBoardStyleStore.setState({ setStyle: real });
+    }
   });
 });

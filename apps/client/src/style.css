@@ -1,11 +1,166 @@
+@import "tailwindcss";
+
+/*
+ * Design tokens (openspec hud-tailwind-cards, design decision 1). Tailwind reads them as
+ * utilities (bg-hud, text-hud-fg, bg-res-brick, animate-card-in, ...); `static` emits every
+ * token as a CSS variable so plain CSS can use them too.
+ */
+@theme static {
+  --font-sans: system-ui, -apple-system, "Segoe UI", Roboto, sans-serif;
+
+  --color-hud: rgb(10 22 32 / 72%);
+  --color-hud-solid: #0f2230;
+  --color-hud-fg: #e9efe6;
+  --color-hud-muted: #9fb3b8;
+  --color-ok: #6fd08c;
+  --color-wait: #f0c35a;
+  --color-bad: #e8695c;
+  --color-accent: #f2a65a;
+  --color-accent-fg: #1d1408;
+
+  /* shadcn/ui names, mapped onto the Hexfall palette. */
+  --color-background: var(--color-hud-solid);
+  --color-foreground: var(--color-hud-fg);
+  --color-primary: var(--color-accent);
+  --color-primary-foreground: var(--color-accent-fg);
+  --color-muted-foreground: var(--color-hud-muted);
+  --color-border: rgb(255 255 255 / 14%);
+  --color-ring: var(--color-hud-fg);
+
+  /* Resource card frames (tuned for 4.5:1 against the card label). */
+  --color-res-brick: #a8472a;
+  --color-res-grain: #c9962a;
+  --color-res-lumber: #3d6e36;
+  --color-res-ore: #5f6b78;
+  --color-res-wool: #7fa046;
+
+  /* Parchís-style dice (openspec dice-tray-3d), after jico's "3D Dice with CSS" pen. */
+  --color-die: #f6f3f0;
+  --color-die-rim: #fffdfb;
+  --color-pip: #131210;
+  --color-pip-red: #f63330;
+
+  /* Breakpoints from specs/hud-presentation "Responsive HUD layout". */
+  --breakpoint-sm: 40rem;
+  --breakpoint-lg: 64rem;
+
+  /* Minimal motion: every HUD transition is at most 200 ms. */
+  --animate-card-in: card-in 180ms ease-out;
+  --animate-card-out: card-out 150ms ease-in;
+  --animate-fade-in: fade-in 150ms ease-out;
+  --animate-dialog-in: dialog-in 150ms ease-out;
+  --animate-sheet-in-right: sheet-in-right 180ms ease-out;
+  --animate-sheet-in-bottom: sheet-in-bottom 180ms ease-out;
+  /* The one exception to the 200 ms rule: the dice throw (at most 1.2 s, once per roll). */
+  --animate-dice-tumble: dice-tumble 800ms cubic-bezier(0.2, 0.7, 0.3, 1) both;
+  --animate-dice-bounce: dice-bounce 900ms linear both;
+  --animate-dice-shadow: dice-shadow 900ms linear both;
+
+  @keyframes card-in {
+    from {
+      opacity: 0;
+      transform: translateY(8px);
+    }
+  }
+  @keyframes card-out {
+    50% {
+      opacity: 0.35;
+    }
+  }
+  @keyframes fade-in {
+    from {
+      opacity: 0;
+    }
+  }
+  /* Scale only: Tailwind's centering uses the separate "translate" property. */
+  @keyframes dialog-in {
+    from {
+      opacity: 0;
+      scale: 0.96;
+    }
+  }
+  @keyframes sheet-in-right {
+    from {
+      transform: translateX(100%);
+    }
+  }
+  @keyframes sheet-in-bottom {
+    from {
+      transform: translateY(100%);
+    }
+  }
+  /* Two full turns ending on the rest pose (--rest), so the die always lands on its face. */
+  @keyframes dice-tumble {
+    from {
+      transform: var(--rest) rotateX(720deg) rotateY(360deg);
+    }
+    to {
+      transform: var(--rest);
+    }
+  }
+  /* Decaying hops, in the "translate" property (Tailwind v4 owns "transform" utilities). */
+  @keyframes dice-bounce {
+    0% {
+      translate: 0 calc(var(--die) * -1.1);
+      animation-timing-function: ease-in;
+    }
+    30% {
+      translate: 0 0;
+      animation-timing-function: ease-out;
+    }
+    50% {
+      translate: 0 calc(var(--die) * -0.35);
+      animation-timing-function: ease-in;
+    }
+    70% {
+      translate: 0 0;
+      animation-timing-function: ease-out;
+    }
+    82% {
+      translate: 0 calc(var(--die) * -0.1);
+      animation-timing-function: ease-in;
+    }
+    92%,
+    100% {
+      translate: 0 0;
+    }
+  }
+  @keyframes dice-shadow {
+    0% {
+      scale: 0.55;
+      opacity: 0.35;
+    }
+    30%,
+    70%,
+    92%,
+    100% {
+      scale: 1;
+      opacity: 1;
+    }
+    50% {
+      scale: 0.8;
+      opacity: 0.7;
+    }
+  }
+}
+
+/* Short screens use the mobile arrangement (spec: "Short landscape screen"). */
+@custom-variant short (@media (max-height: 599px));
+/* Short and wide (landscape phones, small laptop windows): board left, tray right. */
+@custom-variant landscape (@media (max-height: 599px) and (min-width: 640px));
+@custom-variant desktop (@media (min-width: 1024px) and (min-height: 600px));
+
+/* Reduced motion: the HUD shows state changes immediately. */
+@media (prefers-reduced-motion: reduce) {
+  .hud *,
+  .hud *::before,
+  .hud *::after {
+    transition: none !important;
+    animation: none !important;
+  }
+}
+
 :root {
-  --hud-bg: rgb(10 22 32 / 72%);
-  --hud-fg: #e9efe6;
-  --hud-muted: #9fb3b8;
-  --hud-ok: #6fd08c;
-  --hud-wait: #f0c35a;
-  --hud-bad: #e8695c;
-  --hud-accent: #f2a65a;
   font-family: system-ui, -apple-system, "Segoe UI", Roboto, sans-serif;
 }
 html,
@@ -13,27 +168,89 @@ body,
 #root {
   margin: 0;
   height: 100%;
-  background: #0e2a3d;
+  background: #060e14;
 }
 .app {
   position: relative;
   width: 100%;
   height: 100%;
-  overflow: hidden;
+  /* clip, not hidden: a hidden box can still be scrolled by focus changes. */
+  overflow: clip;
 }
 .canvas {
   position: absolute;
   inset: 0;
 }
 
-/* HUD: DOM overlay over the canvas. */
-.hud {
+/* Aurora ambient blobs — two pseudo-elements on .app.                    */
+/* Softness from gradient falloff, not filter:blur() — zero repaint cost. */
+/* Transform-only keyframes run on the compositor thread.                  */
+.app::before,
+.app::after {
+  content: "";
   position: absolute;
-  inset: 0;
-  z-index: 10;
+  border-radius: 50%;
   pointer-events: none;
-  color: var(--hud-fg);
-  font-size: 13px;
+}
+/* Top-left: ocean teal + forest green */
+.app::before {
+  width: 75vmin;
+  height: 75vmin;
+  top: -15%;
+  left: -10%;
+  background:
+    radial-gradient(
+      ellipse at 38% 42%,
+      color-mix(in srgb, var(--color-hud-muted) 13%, transparent) 0%,
+      transparent 68%
+    ),
+    radial-gradient(
+      ellipse at 62% 28%,
+      color-mix(in srgb, var(--color-ok) 9%, transparent) 0%,
+      transparent 62%
+    );
+  animation: aurora-a 24s ease-in-out infinite alternate;
+}
+/* Bottom-right: grain amber + brick red */
+.app::after {
+  width: 65vmin;
+  height: 65vmin;
+  bottom: -15%;
+  right: -10%;
+  background:
+    radial-gradient(
+      ellipse at 48% 52%,
+      color-mix(in srgb, var(--color-wait) 10%, transparent) 0%,
+      transparent 62%
+    ),
+    radial-gradient(
+      ellipse at 28% 32%,
+      color-mix(in srgb, var(--color-bad) 8%, transparent) 0%,
+      transparent 55%
+    );
+  animation: aurora-b 19s ease-in-out infinite alternate;
+}
+@keyframes aurora-a {
+  from {
+    transform: translate(0, 0);
+  }
+  to {
+    transform: translate(10%, 14%);
+  }
+}
+@keyframes aurora-b {
+  from {
+    transform: translate(0, 0);
+  }
+  to {
+    transform: translate(-12%, -10%);
+  }
+}
+
+/* HUD: DOM overlay over the canvas. The container ignores the pointer so the board
+   stays clickable; interactive children opt back in. */
+.hud {
+  pointer-events: none;
 }
 .hud button,
 .hud a,
@@ -41,80 +258,50 @@ body,
 .hud [data-interactive] {
   pointer-events: auto;
 }
-.hud-badge {
-  position: absolute;
-  top: 12px;
-  right: 12px;
-  display: flex;
-  align-items: center;
-  gap: 8px;
-  padding: 6px 12px;
-  border-radius: 999px;
-  background: var(--hud-bg);
-  backdrop-filter: blur(6px);
-  box-shadow: 0 2px 10px rgb(0 0 0 / 25%);
-}
-.hud-dot {
-  width: 8px;
-  height: 8px;
-  border-radius: 50%;
-  background: var(--hud-wait);
-}
-.hud-badge[data-status="open"] .hud-dot {
-  background: var(--hud-ok);
-}
-.hud-badge[data-status="closed"] .hud-dot,
-.hud-badge[data-status="version_mismatch"] .hud-dot {
-  background: var(--hud-bad);
-}
-.hud-badge[data-status="connecting"] .hud-dot,
-.hud-badge[data-status="reconnecting"] .hud-dot {
-  animation: hud-pulse 1.2s ease-in-out infinite;
-}
-.hud-ping {
-  color: var(--hud-muted);
-  font-variant-numeric: tabular-nums;
-}
-.hud-banner {
-  position: absolute;
-  top: 56px;
-  left: 50%;
-  transform: translateX(-50%);
-  display: flex;
-  align-items: center;
-  gap: 14px;
-  max-width: calc(100% - 32px);
-  padding: 10px 16px;
-  border-radius: 10px;
-  border: 1px solid var(--hud-accent);
-  background: var(--hud-bg);
-  backdrop-filter: blur(6px);
-  font-size: 14px;
-}
-.hud-button {
-  font: inherit;
-  padding: 5px 14px;
-  border: 0;
-  border-radius: 6px;
-  background: var(--hud-accent);
-  color: #1d1408;
-  font-weight: 600;
-  cursor: pointer;
-}
-.hud-button:hover {
-  filter: brightness(1.08);
-}
-.hud-button:focus-visible {
-  outline: 2px solid var(--hud-fg);
-  outline-offset: 2px;
-}
-@keyframes hud-pulse {
-  50% {
-    opacity: 0.35;
-  }
+
+/* Thin, dark scrollbars for HUD scroll areas (the mobile tray, the log). */
+.hud * {
+  scrollbar-width: thin;
+  scrollbar-color: color-mix(in srgb, var(--color-hud-fg) 30%, transparent) transparent;
 }
 @media (prefers-reduced-motion: reduce) {
-  .hud-badge .hud-dot {
+  .app::before,
+  .app::after {
     animation: none !important;
   }
+}
+
+/* Edge hand (openspec floating-hud-turn-timer, design decision 7). Slots overlap instead of
+   wrapping when the row is wider than the viewport: the gap between slots is
+   (available width - n x slot width) / (n - 1), clamped between the normal gap and an overlap
+   that still shows 40 % of each card. --n (slot count) is set inline by Hand.tsx. */
+.edge-hand {
+  --slot-w: 72px;
+  --hand-gap: 10px;
+  --overlap: clamp(
+    calc(var(--slot-w) * -0.6),
+    calc((100vw - 24px - var(--n, 5) * var(--slot-w)) / max(1, var(--n, 5) - 1)),
+    var(--hand-gap)
+  );
+}
+@media (max-width: 639px), (max-height: 599px) {
+  .edge-hand {
+    --slot-w: 52px;
+    --hand-gap: 6px;
+  }
+}
+.edge-hand > li + li {
+  margin-left: var(--overlap);
+}
+/* Small extra gap between the resource cards and the development cards. */
+.edge-hand > li[data-dev-start] {
+  margin-left: calc(var(--overlap) + 8px);
+}
+/* One soft shadow behind the row instead of a panel: a radial gradient, no `filter`
+   (a filter on an ancestor of the dice tray would flatten its 3D dice). */
+.hand-shadow {
+  position: absolute;
+  inset: -12px -40px 0;
+  pointer-events: none;
+  background: radial-gradient(ellipse 50% 100% at 50% 100%, rgb(0 0 0 / 45%), transparent);
 }

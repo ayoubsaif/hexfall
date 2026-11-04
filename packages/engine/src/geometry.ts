@@ -1,2 +1,32 @@
-// Pure hex/board geometry helpers that the client may import (allow-listed subpath).
-export {};
+// Pure board geometry and static board data the client may import (allow-listed subpath).
+// No randomness and no rules logic here (design.md decision 4).
+export {
+  AXIAL_DIRECTIONS,
+  TOPOLOGY,
+  edgeMidpoint,
+  edgeOutward,
+  hexAt,
+  hexCenter,
+  hexRing,
+  hexToWorld,
+  vertexPosition,
+  type EdgeId,
+  type EdgeInfo,
+  type HexId,
+  type HexInfo,
+  type Topology,
+  type VertexId,
+  type VertexInfo,
+  type XZ,
+} from "./topology.ts";
+export {
+  TERRAIN_RESOURCE,
+  beginnerBoard,
+  type Board,
+  type BoardHex,
+  type HarborType,
+  type Resource,
+  type Terrain,
+} from "./board.ts";
+// Static cost data (client HUD labels and checks). Plain frozen data, no rules logic.
+export { COSTS, RESOURCES } from "./costs.ts";

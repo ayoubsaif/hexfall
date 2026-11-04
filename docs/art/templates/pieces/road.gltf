@@ -1,0 +1,78 @@
+{
+  "asset": {
+    "version": "2.0",
+    "generator": "hexfall docs/art/templates/build.mjs"
+  },
+  "scene": 0,
+  "scenes": [
+    {
+      "nodes": [0]
+    }
+  ],
+  "nodes": [
+    {
+      "name": "road",
+      "mesh": 0
+    }
+  ],
+  "meshes": [
+    {
+      "name": "road",
+      "primitives": [
+        {
+          "attributes": {
+            "POSITION": 0,
+            "NORMAL": 1
+          },
+          "material": 0
+        }
+      ]
+    }
+  ],
+  "materials": [
+    {
+      "name": "PlayerColor",
+      "pbrMetallicRoughness": {
+        "baseColorFactor": [0.85, 0.85, 0.85, 1],
+        "metallicFactor": 0,
+        "roughnessFactor": 0.8
+      }
+    }
+  ],
+  "buffers": [
+    {
+      "byteLength": 864,
+      "uri": "data:application/octet-stream;base64,7FG4vs3MzD2uR2G97FG4vs3MzD2uR2E97FG4Ps3MzD2uR2E97FG4vs3MzD2uR2G97FG4Ps3MzD2uR2E97FG4Ps3MzD2uR2G97FG4vgAAAACuR2G97FG4PgAAAACuR2G97FG4PgAAAACuR2E97FG4vgAAAACuR2G97FG4PgAAAACuR2E97FG4vgAAAACuR2E97FG4vgAAAACuR2E97FG4PgAAAACuR2E97FG4Ps3MzD2uR2E97FG4vgAAAACuR2E97FG4Ps3MzD2uR2E97FG4vs3MzD2uR2E97FG4PgAAAACuR2G97FG4vgAAAACuR2G97FG4vs3MzD2uR2G97FG4PgAAAACuR2G97FG4vs3MzD2uR2G97FG4Ps3MzD2uR2G97FG4PgAAAACuR2E97FG4PgAAAACuR2G97FG4Ps3MzD2uR2G97FG4PgAAAACuR2E97FG4Ps3MzD2uR2G97FG4Ps3MzD2uR2E97FG4vgAAAACuR2G97FG4vgAAAACuR2E97FG4vs3MzD2uR2E97FG4vgAAAACuR2G97FG4vs3MzD2uR2E97FG4vs3MzD2uR2G9AAAAAAAAgD8AAAAAAAAAAAAAgD8AAAAAAAAAAAAAgD8AAAAAAAAAAAAAgD8AAAAAAAAAAAAAgD8AAAAAAAAAAAAAgD8AAAAAAAAAAAAAgL8AAAAAAAAAAAAAgL8AAAAAAAAAAAAAgL8AAAAAAAAAAAAAgL8AAAAAAAAAAAAAgL8AAAAAAAAAAAAAgL8AAAAAAAAAAAAAAAAAAIA/AAAAAAAAAAAAAIA/AAAAAAAAAAAAAIA/AAAAAAAAAAAAAIA/AAAAAAAAAAAAAIA/AAAAAAAAAAAAAIA/AAAAAAAAAAAAAIC/AAAAAAAAAAAAAIC/AAAAAAAAAAAAAIC/AAAAAAAAAAAAAIC/AAAAAAAAAAAAAIC/AAAAAAAAAAAAAIC/AACAPwAAAAAAAAAAAACAPwAAAAAAAAAAAACAPwAAAAAAAAAAAACAPwAAAIAAAAAAAACAPwAAAIAAAAAAAACAPwAAAIAAAAAAAACAvwAAAAAAAAAAAACAvwAAAAAAAAAAAACAvwAAAAAAAAAAAACAvwAAAAAAAAAAAACAvwAAAAAAAAAAAACAvwAAAAAAAAAA"
+    }
+  ],
+  "bufferViews": [
+    {
+      "buffer": 0,
+      "byteOffset": 0,
+      "byteLength": 432,
+      "target": 34962
+    },
+    {
+      "buffer": 0,
+      "byteOffset": 432,
+      "byteLength": 432,
+      "target": 34962
+    }
+  ],
+  "accessors": [
+    {
+      "bufferView": 0,
+      "componentType": 5126,
+      "count": 36,
+      "type": "VEC3",
+      "min": [-0.36, 0, -0.055],
+      "max": [0.36, 0.1, 0.055]
+    },
+    {
+      "bufferView": 1,
+      "componentType": 5126,
+      "count": 36,
+      "type": "VEC3"
+    }
+  ]
+}

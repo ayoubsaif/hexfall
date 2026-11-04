@@ -1,15 +1,13 @@
 import http from "node:http";
 import type { Duplex } from "node:stream";
+import { randomUUID } from "node:crypto";
 import { WebSocketServer, type WebSocket } from "ws";
-import {
-  CloseCode,
-  PROTOCOL_VERSION,
-  decodeClientMessage,
-  encodeServer,
-  type ErrorCode,
-} from "@hexfall/protocol";
+import { CloseCode } from "@hexfall/protocol";
 import type { Config } from "./config.ts";
 import type { RedisHandle } from "./redis.ts";
+import { createRoomService, type RoomService } from "./rooms/service.ts";
+import { createSession } from "./session.ts";
+import { createMemoryStore } from "./store/memory.ts";
 import pkg from "../package.json" with { type: "json" };
 
 export const SERVER_VERSION: string = pkg.version;
@@ -21,6 +19,10 @@ export interface ServerDeps {
   /** How long close() waits for clients to finish the close handshake. Default 3 s. */
   closeGraceMs?: number;
   log?: (msg: string) => void;
+  /** Room layer. Default: a RoomService over an in-memory store. */
+  service?: RoomService;
+  /** Clock for per-connection rate limiting. Default Date.now. */
+  now?: () => number;
 }
 
 export interface HexfallServer {
@@ -38,12 +40,18 @@ export function createServer(
   const closeGraceMs = deps.closeGraceMs ?? 3_000;
   const log = deps.log ?? ((msg: string) => console.log(`[server] ${msg}`));
   const allowed = new Set(config.allowedOrigins);
+  const service = deps.service ?? createRoomService({ store: createMemoryStore(), log });
   let closing = false;
 
   const httpServer = http.createServer((req, res) => {
     const path = new URL(req.url ?? "/", "http://localhost").pathname;
     if (req.method === "GET" && path === "/healthz") {
-      sendJson(res, 200, { ok: true, redis: deps.redis.status(), version: SERVER_VERSION });
+      sendJson(res, 200, {
+        ok: true,
+        redis: deps.redis.status(),
+        version: SERVER_VERSION,
+        rooms: service.loadedRooms(),
+      });
       return;
     }
     sendJson(res, 404, { ok: false, error: "not_found" });
@@ -65,43 +73,26 @@ export function createServer(
   });
 
   function onConnection(ws: WebSocket): void {
-    let seq = 0;
-    const sendError = (code: ErrorCode, message: string) =>
-      ws.send(encodeServer("error", { code, message }, seq++));
+    const session = createSession({
+      service,
+      id: randomUUID(),
+      serverVersion: SERVER_VERSION,
+      log,
+      ...(deps.now ? { now: deps.now } : {}),
+      send: (raw) => {
+        if (ws.readyState === ws.OPEN) ws.send(raw);
+      },
+      close: (code, reason) => ws.close(code, reason),
+    });
 
     alive.set(ws, true);
     ws.on("pong", () => alive.set(ws, true));
     ws.on("error", (err) => log(`socket error: ${err.message}`));
+    ws.on("close", () => session.closed());
 
     ws.on("message", (data, isBinary) => {
-      if (isBinary) {
-        sendError("bad_frame", "binary frames are not supported");
-        return;
-      }
-      const decoded = decodeClientMessage(rawToString(data));
-      if (!decoded.ok) {
-        sendError(decoded.error, decoded.detail);
-        if (decoded.error === "version_mismatch") {
-          ws.close(CloseCode.VersionMismatch, "protocol version mismatch");
-        }
-        return;
-      }
-      const msg = decoded.message;
-      switch (msg.type) {
-        case "hello":
-          ws.send(
-            encodeServer(
-              "welcome",
-              { serverVersion: SERVER_VERSION, protocolVersion: PROTOCOL_VERSION },
-              seq++,
-              msg.seq,
-            ),
-          );
-          break;
-        case "ping":
-          ws.send(encodeServer("pong", { t: msg.payload.t }, seq++, msg.seq));
-          break;
-      }
+      if (isBinary) session.handleBinary();
+      else void session.handle(rawToString(data));
     });
   }
 
@@ -152,6 +143,7 @@ export function createServer(
         ),
       );
       wss.close();
+      service.close();
       httpServer.closeAllConnections();
       await httpClosed;
     },

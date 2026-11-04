@@ -4,18 +4,42 @@
 // Fails (exit 1) when:
 //   - a text file under apps/ or packages/ references the repo-root reference folder
 //     assets/ (a path that resolves to it, an absolute path into it, or one of its file names)
-//   - a theme folder in apps/client/public/themes/ holds a model file its manifest does not reference
+//   - a theme folder in apps/client/public/themes/ holds a model or image file its manifest
+//     does not reference
 //   - a manifest is unreadable, lacks a license/source, or references a missing file,
 //     a path outside its theme folder, or a file under assets/
-// Warns (exit 0) on a referenced GLB that is not Draco/meshopt compressed or exceeds 300 KB.
-// No dependencies: plain Node ESM.
+//   - an entry's file field does not match its key's kind (flat keys take "image",
+//     model keys take "model"; specs/asset-theming "Asset kinds")
+//   - an image entry's "projection" is not "top"/"isometric", or is set on a non-hex key
+//   - an isometric image is not 16:17 (1024 x 1088 reference; specs/asset-theming
+//     "Isometric tile images")
+//   - a manifest or credit declares a license outside the allowlist (NC/ND are rejected),
+//     a credit is incomplete or names an unmapped key, or an attribution-licensed mapped
+//     key has no credit (specs/asset-theming "Asset credits", "Licensing guard")
+// Warns (exit 0) on a referenced GLB that is not Draco/meshopt compressed or exceeds 300 KB,
+// on a referenced image over 400 KB, and on a top-down image that is not square.
+// No dependencies: plain Node ESM. `--themes <dir>` checks another themes folder (tests).
 import { existsSync, readFileSync, readdirSync, statSync } from "node:fs";
 import { basename, dirname, extname, isAbsolute, join, relative, resolve, sep } from "node:path";
 import { fileURLToPath } from "node:url";
 
 const ROOT = resolve(dirname(fileURLToPath(import.meta.url)), "..");
 const REF_DIR = join(ROOT, "assets");
-const THEMES_DIR = join(ROOT, "apps", "client", "public", "themes");
+const themesArg = process.argv.indexOf("--themes");
+const THEMES_DIR =
+  themesArg !== -1 && process.argv[themesArg + 1]
+    ? resolve(process.argv[themesArg + 1])
+    : join(ROOT, "apps", "client", "public", "themes");
+// Allowed asset licenses (SPDX). Everything but CC0 requires attribution via a credit.
+const ALLOWED_LICENSES = new Set([
+  "CC0-1.0",
+  "CC-BY-3.0",
+  "CC-BY-4.0",
+  "CC-BY-SA-3.0",
+  "CC-BY-SA-4.0",
+  "MIT",
+]);
+const NO_ATTRIBUTION = new Set(["CC0-1.0"]);
 const SCAN_DIRS = ["apps", "packages"].map((d) => join(ROOT, d));
 const SKIP_DIRS = new Set(["node_modules", "dist", ".vite", "coverage", ".turbo"]);
 const TEXT_EXT = new Set([
@@ -55,7 +79,9 @@ const MODEL_EXT = new Set([
   ".blend",
   ".usdz",
 ]);
+const IMAGE_EXT = new Set([".png", ".webp", ".jpg", ".jpeg"]);
 const BUDGET_BYTES = 300 * 1024;
+const IMAGE_BUDGET_BYTES = 400 * 1024;
 const COMPRESSION_EXT = ["KHR_draco_mesh_compression", "EXT_meshopt_compression"];
 
 const failures = [];
@@ -84,12 +110,14 @@ function isInside(child, parent) {
 // 1. Reference-art guard over apps/ and packages/.
 
 // File names inside assets/ (names only; the files themselves are never opened). The
-// extension-less stem is matched too when it is long enough to be unambiguous.
+// extension-less stem is matched too when it is distinctive: 8+ characters with a digit,
+// "-" or "_" (e.g. "matt-mocarski-catan-05"). Plain words such as "settlement" would
+// match ordinary game code, so those are matched only with their extension.
 const refFiles = existsSync(REF_DIR)
   ? [...walk(REF_DIR)].map((f) => {
       const name = basename(f).toLowerCase();
       const stem = name.slice(0, name.length - extname(name).length);
-      return { name, stem: stem.length >= 8 ? stem : name };
+      return { name, stem: stem.length >= 8 && /[\d_-]/.test(stem) ? stem : name };
     })
   : [];
 const refNames = refFiles.map((f) => f.name);
@@ -132,14 +160,20 @@ function scanForReferenceArt(file) {
 for (const dir of SCAN_DIRS) for (const file of walk(dir)) scanForReferenceArt(file);
 
 // ---------------------------------------------------------------------------
-// 2. Theme manifests, orphan model files and asset budget.
+// 2. Theme manifests, orphan model/image files and asset budget.
 
 let knownKeys;
+let keyKinds;
 try {
   // Node 24 strips types natively; keys.ts uses erasable syntax only.
-  ({ ASSET_KEYS: knownKeys } = await import("../apps/client/src/theme/keys.ts"));
-} catch {
+  ({ ASSET_KEYS: knownKeys, ASSET_KIND: keyKinds } =
+    await import("../apps/client/src/theme/keys.ts"));
+} catch (error) {
+  failures.push(
+    `cannot read asset keys/kinds from apps/client/src/theme/keys.ts (${error.message}).`,
+  );
   knownKeys = undefined;
+  keyKinds = undefined;
 }
 
 function inspectGlb(file) {
@@ -160,8 +194,188 @@ function inspectGlb(file) {
 }
 
 const nonEmpty = (v) => typeof v === "string" && v.trim() !== "";
+// Pixel size of a PNG, WebP or JPEG file from its header; undefined if unreadable.
+function imageSize(buf) {
+  if (buf.length >= 24 && buf.readUInt32BE(0) === 0x89504e47) {
+    return { width: buf.readUInt32BE(16), height: buf.readUInt32BE(20) };
+  }
+  if (
+    buf.length >= 30 &&
+    buf.toString("ascii", 0, 4) === "RIFF" &&
+    buf.toString("ascii", 8, 12) === "WEBP"
+  ) {
+    const chunk = buf.toString("ascii", 12, 16);
+    if (chunk === "VP8X") {
+      return { width: 1 + buf.readUIntLE(24, 3), height: 1 + buf.readUIntLE(27, 3) };
+    }
+    if (chunk === "VP8 ") {
+      return { width: buf.readUInt16LE(26) & 0x3fff, height: buf.readUInt16LE(28) & 0x3fff };
+    }
+    if (chunk === "VP8L") {
+      const b = buf.readUInt32LE(21);
+      return { width: 1 + (b & 0x3fff), height: 1 + ((b >> 14) & 0x3fff) };
+    }
+    return undefined;
+  }
+  if (buf.length >= 4 && buf[0] === 0xff && buf[1] === 0xd8) {
+    let i = 2;
+    while (i + 9 < buf.length) {
+      if (buf[i] !== 0xff) return undefined;
+      const marker = buf[i + 1];
+      const len = buf.readUInt16BE(i + 2);
+      const sof = marker >= 0xc0 && marker <= 0xcf && ![0xc4, 0xc8, 0xcc].includes(marker);
+      if (sof) return { width: buf.readUInt16BE(i + 7), height: buf.readUInt16BE(i + 5) };
+      i += 2 + len;
+    }
+  }
+  return undefined;
+}
+
+const HEX_KEYS = new Set([
+  "tile.forest",
+  "tile.pasture",
+  "tile.fields",
+  "tile.hills",
+  "tile.mountains",
+  "tile.desert",
+  "sea",
+]);
+const ISO_RATIO = 1088 / 1024;
+
 let themeCount = 0;
 let modelCount = 0;
+let imageCount = 0;
+
+function checkFile(theme, themeDir, key, fileKind, file, referenced, projection = "top") {
+  const where = `theme "${theme}", key "${key}"`;
+  const target =
+    isAbsolute(file) || /^[a-z]:/i.test(file)
+      ? resolve(file)
+      : resolve(themeDir, file.replace(/^\/+/, ""));
+  const lowerName = basename(file).toLowerCase();
+  // Into assets/: resolves there, names one of its files, or is an absolute or
+  // parent-relative path through an "assets" segment (e.g. "/assets/x.glb").
+  const escapesViaAssets = /(^|[\\/])assets[\\/]/i.test(file) && /\.\.|^[\\/]|^[a-z]:/i.test(file);
+  if (isInside(target, REF_DIR) || escapesViaAssets || refNames.includes(lowerName)) {
+    failures.push(`${where}: "${file}" points into the reference folder assets/.`);
+    return;
+  }
+  if (/^[a-z][a-z0-9+.-]*:\/\//i.test(file) || !isInside(target, themeDir)) {
+    failures.push(`${where}: "${file}" is outside the theme folder.`);
+    return;
+  }
+  referenced.add(target);
+  if (!existsSync(target) || !statSync(target).isFile()) {
+    failures.push(`${where}: file "${file}" does not exist (${rel(target)}).`);
+    return;
+  }
+  const size = statSync(target).size;
+  const ext = extname(target).toLowerCase();
+
+  if (fileKind === "image") {
+    imageCount++;
+    if (!IMAGE_EXT.has(ext)) {
+      failures.push(`${where}: image "${file}" must be a .png, .webp, .jpg or .jpeg file.`);
+    }
+    if (size > IMAGE_BUDGET_BYTES) {
+      warnings.push(`${where}: image ${file} is ${kb(size)} (budget ~${kb(IMAGE_BUDGET_BYTES)}).`);
+    }
+    const dim = imageSize(readFileSync(target));
+    if (!dim) {
+      warnings.push(`${where}: could not read the pixel size of ${file}.`);
+    } else if (projection === "isometric") {
+      if (Math.abs(dim.height / dim.width - ISO_RATIO) > 0.01) {
+        failures.push(
+          `${where}: isometric image ${file} is ${dim.width}x${dim.height}; it must be 16:17 (e.g. 1024x1088).`,
+        );
+      }
+    } else if (HEX_KEYS.has(key) && dim.width !== dim.height) {
+      warnings.push(`${where}: top-down image ${file} is ${dim.width}x${dim.height}, not square.`);
+    }
+    return;
+  }
+
+  modelCount++;
+  if (size > BUDGET_BYTES) {
+    warnings.push(`${where}: ${file} is ${kb(size)} (budget ~${kb(BUDGET_BYTES)}).`);
+  }
+  if (ext !== ".glb") {
+    warnings.push(`${where}: ${file} (${kb(size)}) is not a GLB.`);
+    return;
+  }
+  const glb = inspectGlb(target);
+  if (glb.error) {
+    warnings.push(`${where}: ${file} (${kb(size)}) ${glb.error}; it will fall back at runtime.`);
+  } else if (!glb.compressed) {
+    warnings.push(`${where}: ${file} (${kb(size)}) is not Draco/meshopt compressed.`);
+  }
+}
+
+// SPDX id → failure reason, or undefined when allowed.
+function licenseProblem(license) {
+  if (!nonEmpty(license)) return "no license";
+  const id = license.trim();
+  if (/-(NC|ND)(-|$)/i.test(id)) return `license "${id}" is non-commercial or no-derivatives`;
+  if (!ALLOWED_LICENSES.has(id)) {
+    return `license "${id}" is not allowed (allowed: ${[...ALLOWED_LICENSES].join(", ")})`;
+  }
+  return undefined;
+}
+
+// Manifest-level license, credits and attribution coverage.
+function checkLicenses(theme, manifest) {
+  const assets =
+    manifest.assets && typeof manifest.assets === "object" && !Array.isArray(manifest.assets)
+      ? manifest.assets
+      : {};
+  const mapped = new Set(Object.keys(assets));
+  if (nonEmpty(manifest.license)) {
+    const problem = licenseProblem(manifest.license);
+    if (problem) failures.push(`theme "${theme}": manifest ${problem}.`);
+  }
+  const credits = manifest.credits ?? [];
+  if (!Array.isArray(credits)) {
+    failures.push(`theme "${theme}": "credits" must be an array.`);
+    return;
+  }
+  const creditedBy = new Map();
+  credits.forEach((credit, i) => {
+    const c = credit && typeof credit === "object" && !Array.isArray(credit) ? credit : {};
+    const keys = Array.isArray(c.keys) ? c.keys : [];
+    const label = `theme "${theme}", credit ${i + 1} (${keys.join(", ") || "no keys"})`;
+    if (keys.length === 0) failures.push(`${label}: credit names no asset keys.`);
+    for (const field of ["title", "author", "url", "license"]) {
+      if (!nonEmpty(c[field])) failures.push(`${label}: credit is missing "${field}".`);
+    }
+    if (nonEmpty(c.url) && !/^https?:\/\/\S+$/i.test(c.url)) {
+      failures.push(`${label}: url must be an http(s) URL.`);
+    }
+    if (nonEmpty(c.license)) {
+      const problem = licenseProblem(c.license);
+      if (problem) failures.push(`${label}: ${problem}.`);
+    }
+    for (const key of keys) {
+      if (!mapped.has(key)) {
+        failures.push(`${label}: credit names "${key}", which the manifest does not map.`);
+      }
+      if (creditedBy.has(key)) {
+        failures.push(`${label}: "${key}" is already credited by credit ${creditedBy.get(key)}.`);
+      } else {
+        creditedBy.set(key, i + 1);
+      }
+    }
+  });
+  // Under an attribution manifest license, every mapped key needs its own credit.
+  if (nonEmpty(manifest.license) && !NO_ATTRIBUTION.has(manifest.license.trim())) {
+    for (const key of mapped) {
+      if (!creditedBy.has(key)) {
+        failures.push(
+          `theme "${theme}", key "${key}": license "${manifest.license.trim()}" requires attribution but the key has no credit.`,
+        );
+      }
+    }
+  }
+}
 
 const themeDirs = existsSync(THEMES_DIR)
   ? readdirSync(THEMES_DIR, { withFileTypes: true }).filter((d) => d.isDirectory())
@@ -198,73 +412,67 @@ for (const dirent of themeDirs) {
         `theme "${theme}": manifest id is ${JSON.stringify(manifest.id)}, expected "${theme}".`,
       );
     }
+    checkLicenses(theme, manifest);
     const assets = manifest.assets ?? {};
     if (assets === null || typeof assets !== "object" || Array.isArray(assets)) {
       failures.push(`theme "${theme}": "assets" must be an object.`);
     } else {
       for (const [key, entry] of Object.entries(assets)) {
-        if (knownKeys && !knownKeys.includes(key)) {
+        const known = !knownKeys || knownKeys.includes(key);
+        if (!known) {
           warnings.push(`theme "${theme}": unknown asset key "${key}" is ignored at runtime.`);
         }
-        const model = entry && typeof entry === "object" ? entry.model : undefined;
-        if (!nonEmpty(model)) {
-          failures.push(`theme "${theme}", key "${key}": entry has no "model" file.`);
-          continue;
-        }
-        const target =
-          isAbsolute(model) || /^[a-z]:/i.test(model)
-            ? resolve(model)
-            : resolve(themeDir, model.replace(/^\/+/, ""));
-        const lowerName = basename(model).toLowerCase();
-        // Into assets/: resolves there, names one of its files, or is an absolute or
-        // parent-relative path through an "assets" segment (e.g. "/assets/x.glb").
-        const escapesViaAssets =
-          /(^|[\\/])assets[\\/]/i.test(model) && /\.\.|^[\\/]|^[a-z]:/i.test(model);
-        if (isInside(target, REF_DIR) || escapesViaAssets || refNames.includes(lowerName)) {
+        const fields = entry && typeof entry === "object" && !Array.isArray(entry) ? entry : {};
+        // Unknown keys have no kind: check whichever file field they name.
+        const kind = known && keyKinds ? keyKinds[key] : "image" in fields ? "flat" : "model";
+        const field = kind === "flat" ? "image" : "model";
+        const other = kind === "flat" ? "model" : "image";
+        if (known && other in fields) {
           failures.push(
-            `theme "${theme}", key "${key}": "${model}" points into the reference folder assets/.`,
-          );
-          continue;
-        }
-        if (/^[a-z][a-z0-9+.-]*:\/\//i.test(model) || !isInside(target, themeDir)) {
-          failures.push(`theme "${theme}", key "${key}": "${model}" is outside the theme folder.`);
-          continue;
-        }
-        referenced.add(target);
-        if (!existsSync(target) || !statSync(target).isFile()) {
-          failures.push(
-            `theme "${theme}", key "${key}": file "${model}" does not exist (${rel(target)}).`,
-          );
-          continue;
-        }
-        modelCount++;
-        const size = statSync(target).size;
-        if (size > BUDGET_BYTES) {
-          warnings.push(
-            `theme "${theme}", key "${key}": ${model} is ${kb(size)} (budget ~${kb(BUDGET_BYTES)}).`,
+            `theme "${theme}", key "${key}": ${kind} key takes "${field}", not "${other}" (kind mismatch).`,
           );
         }
-        if (extname(target).toLowerCase() !== ".glb") {
-          warnings.push(`theme "${theme}", key "${key}": ${model} (${kb(size)}) is not a GLB.`);
-          continue;
+        if (known && kind === "flat") {
+          const overrides = ["scale", "rotation", "offset"].filter((o) => o in fields);
+          if (overrides.length > 0) {
+            failures.push(
+              `theme "${theme}", key "${key}": flat keys do not accept overrides (${overrides.join(", ")}).`,
+            );
+          }
         }
-        const glb = inspectGlb(target);
-        if (glb.error) {
-          warnings.push(
-            `theme "${theme}", key "${key}": ${model} (${kb(size)}) ${glb.error}; it will fall back at runtime.`,
-          );
-        } else if (!glb.compressed) {
-          warnings.push(
-            `theme "${theme}", key "${key}": ${model} (${kb(size)}) is not Draco/meshopt compressed.`,
-          );
+        if ("projection" in fields) {
+          if (!["top", "isometric"].includes(fields.projection)) {
+            failures.push(
+              `theme "${theme}", key "${key}": projection must be "top" or "isometric".`,
+            );
+          } else if (known && !HEX_KEYS.has(key)) {
+            failures.push(
+              `theme "${theme}", key "${key}": only tile and sea images accept a "projection".`,
+            );
+          }
+        }
+        // Guard every file field present (also a mismatched one) against assets/ and
+        // out-of-folder paths; only the field matching the kind must exist.
+        if (!nonEmpty(fields[field]) && !(known && other in fields)) {
+          failures.push(`theme "${theme}", key "${key}": entry has no "${field}" file.`);
+        }
+        for (const fileKind of [field, other]) {
+          const file = fields[fileKind];
+          if (nonEmpty(file)) {
+            checkFile(theme, themeDir, key, fileKind, file, referenced, fields.projection);
+          }
         }
       }
     }
   }
 
   for (const file of walk(themeDir)) {
-    if (MODEL_EXT.has(extname(file).toLowerCase()) && !referenced.has(file)) {
-      failures.push(`theme "${theme}": model file ${rel(file)} is not referenced by its manifest.`);
+    const ext = extname(file).toLowerCase();
+    const type = MODEL_EXT.has(ext) ? "model" : IMAGE_EXT.has(ext) ? "image" : undefined;
+    if (type && !referenced.has(file)) {
+      failures.push(
+        `theme "${theme}": ${type} file ${rel(file)} is not referenced by its manifest.`,
+      );
     }
   }
 }
@@ -278,5 +486,5 @@ if (failures.length > 0) {
   process.exit(1);
 }
 console.log(
-  `check-assets: OK (${themeCount} theme(s), ${modelCount} model file(s), ${warnings.length} warning(s)).`,
+  `check-assets: OK (${themeCount} theme(s), ${modelCount} model file(s), ${imageCount} image file(s), ${warnings.length} warning(s)).`,
 );

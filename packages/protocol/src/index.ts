@@ -1,5 +1,6 @@
 export { CloseCode, PROTOCOL_VERSION } from "./envelope.ts";
 export * from "./messages.ts";
+export * from "./game.ts";
 export {
   decodeClientMessage,
   decodeServerMessage,

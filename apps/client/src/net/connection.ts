@@ -14,7 +14,9 @@ export type ConnectionStatus =
   | "open"
   | "reconnecting"
   | "closed"
-  | "version_mismatch";
+  | "version_mismatch"
+  /** Another connection resumed this seat (close code 4001): no reconnect until "Play here". */
+  | "replaced";
 
 /** The subset of the DOM `WebSocket` this module uses. */
 export interface SocketLike {
@@ -136,6 +138,19 @@ export class Connection {
     this.open();
   }
 
+  /**
+   * Drops the current socket (if any) and opens a new one at once, without backoff.
+   * Also works after a Replaced close or `close()`. Not after a version mismatch.
+   */
+  restart(): void {
+    if (this._status === "version_mismatch") return;
+    this.stopped = false;
+    this.teardown();
+    this.attempts = 0;
+    this.setStatus("connecting");
+    this.open();
+  }
+
   /** Closes for good: no reconnect afterwards. */
   close(): void {
     if (this._status === "version_mismatch") return;
@@ -184,6 +199,13 @@ export class Connection {
       this.detach();
       if (ev.code === CloseCode.VersionMismatch) {
         this.versionMismatch();
+        return;
+      }
+      if (ev.code === CloseCode.Replaced) {
+        // Another connection resumed this seat: reconnecting would steal it back.
+        this.stopped = true;
+        this.teardown();
+        this.setStatus("replaced");
         return;
       }
       if (this.stopped) return;

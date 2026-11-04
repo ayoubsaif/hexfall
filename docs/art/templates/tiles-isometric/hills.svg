@@ -1,0 +1,33 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!-- Hexfall isometric tile template: 1024 x 1088 px (16:17). Paint the terrain on the
+     "art" layer, then hide or delete the "guides" layer before exporting.
+     Export: PNG/WebP, sRGB, transparent outside the shapes, <= 400 KB.
+     Theme entry: { "image": "tiles/<name>.webp", "projection": "isometric" } -->
+<!-- Asset key: tile.hills - hills (brick) -->
+<svg xmlns="http://www.w3.org/2000/svg" width="1024" height="1088" viewBox="0 0 1024 1088">
+  <g id="art">
+    <!-- Top face: the board's pointy-top hex seen from 60 deg above (squashed to 86.6 %). -->
+    <polygon id="top-face" points="512,0 1024,256 1024,768 512,1024 0,768 0,256" fill="#b8653a"/>
+    <!-- Earth band: the two side faces turned toward the player, 64 px tall. -->
+    <polygon id="side-left" points="0,768 512,1024 512,1088 0,832" fill="#6b4f33"/>
+    <polygon id="side-right" points="512,1024 1024,768 1024,832 512,1088" fill="#5a4129"/>
+  </g>
+  <g id="guides" fill="none" stroke-width="3" font-family="sans-serif" font-size="22">
+    <polygon points="512,0 1024,256 1024,768 512,1024 0,768 0,256" stroke="#ff2d55"/>
+    <polyline points="0,768 0,832 512,1088 1024,832 1024,768" stroke="#ff2d55" stroke-dasharray="10 6"/>
+    <!-- Number token sits here (radius 0.3 hex): keep it calm, no key detail. -->
+    <ellipse cx="512" cy="512" rx="177" ry="154" stroke="#007aff" stroke-dasharray="12 8"/>
+    <text x="512" y="380" fill="#007aff" text-anchor="middle">token area</text>
+    <!-- Robber stands here on a tile that has a token. -->
+    <ellipse cx="246" cy="666" rx="60" ry="52" stroke="#af52de" stroke-dasharray="8 6"/>
+    <text x="246" y="600" fill="#af52de" text-anchor="middle">robber</text>
+    <!-- Corners = intersections where settlements and cities stand. -->
+    <g fill="#ff9500" stroke="none">
+      <circle cx="512" cy="0" r="10"/><circle cx="1024" cy="256" r="10"/>
+      <circle cx="1024" cy="768" r="10"/><circle cx="512" cy="1024" r="10"/>
+      <circle cx="0" cy="768" r="10"/><circle cx="0" cy="256" r="10"/>
+    </g>
+    <text x="512" y="1060" fill="#ffffff" text-anchor="middle">earth band 64 px (shows on the coast)</text>
+    <text x="512" y="150" fill="#ff2d55" text-anchor="middle">top face 1024 x 1024 · row 1 is up</text>
+  </g>
+</svg>

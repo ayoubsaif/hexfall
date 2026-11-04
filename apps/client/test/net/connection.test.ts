@@ -188,4 +188,47 @@ describe("Connection", () => {
     clock.advance(60_000);
     expect(FakeSocket.instances).toHaveLength(1);
   });
+
+  it("does not reconnect after close 4001 (replaced) and reports replaced", () => {
+    make();
+    const s = FakeSocket.last();
+    s.serverOpen();
+    s.serverSend(welcome());
+    s.serverClose(CloseCode.Replaced);
+    expect(useConnectionStore.getState().status).toBe("replaced");
+    clock.advance(60_000);
+    expect(FakeSocket.instances).toHaveLength(1);
+    expect(clock.pending()).toBe(0);
+  });
+
+  it("restart() reopens at once without backoff, also after a replaced close", () => {
+    const conn = make();
+    const first = FakeSocket.last();
+    first.serverOpen();
+    first.serverSend(welcome());
+    first.serverClose(CloseCode.Replaced);
+    conn.restart();
+    expect(FakeSocket.instances).toHaveLength(2);
+    expect(useConnectionStore.getState().status).toBe("connecting");
+    const second = FakeSocket.last();
+    second.serverOpen();
+    second.serverSend(welcome());
+    expect(useConnectionStore.getState().status).toBe("open");
+
+    // From an open socket: the old one is closed and ignored afterwards.
+    conn.restart();
+    expect(second.closedWith).toBe(1000);
+    expect(FakeSocket.instances).toHaveLength(3);
+    second.serverClose(1006);
+    expect(useConnectionStore.getState().status).toBe("connecting");
+    expect(clock.delays).toEqual([]);
+  });
+
+  it("restart() does nothing after a version mismatch", () => {
+    const conn = make();
+    FakeSocket.last().serverClose(CloseCode.VersionMismatch);
+    conn.restart();
+    expect(FakeSocket.instances).toHaveLength(1);
+    expect(useConnectionStore.getState().status).toBe("version_mismatch");
+  });
 });

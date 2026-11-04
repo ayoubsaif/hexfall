@@ -19,8 +19,9 @@ describe("parseManifest", () => {
       {
         ...base,
         assets: {
-          "tile.forest": { model: "forest.glb" },
-          "tile.hills": { model: "models/hills.glb" },
+          "tile.forest": { image: "tiles/forest.webp" },
+          "tile.hills": { image: "hills.png" },
+          "piece.city": { model: "models/city.glb" },
         },
       },
       "diorama",
@@ -28,8 +29,13 @@ describe("parseManifest", () => {
     expect(r.valid).toBe(true);
     expect(r.errors).toEqual([]);
     expect(r.warnings).toEqual([]);
-    expect(Object.keys(r.entries).sort()).toEqual(["tile.forest", "tile.hills"]);
-    expect(r.entries["tile.forest"]).toEqual({ model: "forest.glb" });
+    expect(Object.keys(r.entries).sort()).toEqual(["piece.city", "tile.forest", "tile.hills"]);
+    expect(r.entries["tile.forest"]).toEqual({
+      kind: "image",
+      image: "tiles/forest.webp",
+      projection: "top",
+    });
+    expect(r.entries["piece.city"]).toEqual({ kind: "model", model: "models/city.glb" });
   });
 
   it("accepts a manifest that maps zero keys", () => {
@@ -49,7 +55,7 @@ describe("parseManifest", () => {
     expect(r.valid).toBe(true);
     expect(r.warnings).toHaveLength(1);
     expect(r.warnings[0]).toContain("piece.knight");
-    expect(r.entries["piece.city"]).toEqual({ model: "city.glb" });
+    expect(r.entries["piece.city"]).toEqual({ kind: "model", model: "city.glb" });
     expect("piece.knight" in r.entries).toBe(false);
   });
 
@@ -69,15 +75,26 @@ describe("parseManifest", () => {
     ["missing source", { id: "diorama", license: "CC0", assets: city }],
     ["blank license", { ...base, license: "  ", assets: city }],
     ["assets not an object", { ...base, assets: [] }],
-    ["non-glb file", bad({ "tile.forest": { model: "forest.png" } })],
-    ["path escaping the theme", bad({ "tile.forest": { model: "../../../assets/x.glb" } })],
-    ["absolute path", bad({ "tile.forest": { model: "/assets/x.glb" } })],
-    ["URL", bad({ "tile.forest": { model: "https://example.com/x.glb" } })],
-    ["missing model", bad({ "tile.forest": { scale: 2 } })],
-    ["zero scale", bad({ "tile.forest": { model: "f.glb", scale: 0 } })],
-    ["bad rotation", bad({ "tile.forest": { model: "f.glb", rotation: [0, 90] } })],
-    ["non-numeric offset", bad({ "tile.forest": { model: "f.glb", offset: ["a", 0, 0] } })],
-    ["unknown entry field", bad({ "tile.forest": { model: "f.glb", scael: 2 } })],
+    ["non-glb model file", bad({ "piece.road": { model: "road.png" } })],
+    ["model path escaping the theme", bad({ "piece.road": { model: "../../../assets/x.glb" } })],
+    ["absolute model path", bad({ "piece.road": { model: "/assets/x.glb" } })],
+    ["model URL", bad({ "piece.road": { model: "https://example.com/x.glb" } })],
+    ["missing model", bad({ "piece.road": { scale: 2 } })],
+    ["zero scale", bad({ "piece.road": { model: "r.glb", scale: 0 } })],
+    ["bad rotation", bad({ "piece.road": { model: "r.glb", rotation: [0, 90] } })],
+    ["non-numeric offset", bad({ "piece.road": { model: "r.glb", offset: ["a", 0, 0] } })],
+    ["unknown model entry field", bad({ "piece.road": { model: "r.glb", scael: 2 } })],
+    ["non-image file on a flat key", bad({ "tile.forest": { image: "forest.gif" } })],
+    ["image path escaping the theme", bad({ "tile.forest": { image: "../../../assets/x.png" } })],
+    ["absolute image path", bad({ "tile.forest": { image: "/assets/x.webp" } })],
+    ["image URL", bad({ "tile.forest": { image: "https://example.com/x.jpg" } })],
+    ["backslash image path", bad({ "tile.forest": { image: "tiles\\forest.webp" } })],
+    ["missing image", bad({ sea: {} })],
+    ["unknown flat entry field", bad({ sea: { image: "sea.webp", tint: "#fff" } })],
+    ["GLB on a flat key", bad({ "tile.forest": { model: "forest.glb" } })],
+    ["image on a model key", bad({ "piece.city": { image: "city.png" } })],
+    ["scale override on a flat key", bad({ "tile.forest": { image: "f.webp", scale: 2 } })],
+    ["offset override on a flat key", bad({ token: { image: "t.png", offset: [0, 0.1, 0] } })],
   ])("rejects the whole manifest on %s: all procedural with an error", (_name, json) => {
     const r = parseManifest(json, "diorama");
     expect(r.valid).toBe(false);
@@ -86,6 +103,30 @@ describe("parseManifest", () => {
     expect(r.errors[0]).toContain('"diorama"');
     expect(r.errors[0]).toMatch(/invalid manifest \(.+\)/);
   });
+
+  it("names the kind mismatch in the error", () => {
+    const glbOnTile = parseManifest(bad({ "tile.forest": { model: "forest.glb" } }), "diorama");
+    expect(glbOnTile.errors[0]).toContain("tile.forest");
+    expect(glbOnTile.errors[0]).toContain("image");
+    const imageOnPiece = parseManifest(bad({ "piece.city": { image: "city.png" } }), "diorama");
+    expect(imageOnPiece.errors[0]).toContain("piece.city");
+    expect(imageOnPiece.errors[0]).toContain("model");
+  });
+
+  it("names the rejected override on a flat key", () => {
+    const r = parseManifest(bad({ "tile.forest": { image: "f.webp", scale: 2 } }), "diorama");
+    expect(r.errors[0]).toContain("tile.forest");
+    expect(r.errors[0]).toContain("scale");
+  });
+
+  it.each(["a.png", "a.PNG", "a.webp", "a.jpg", "a.jpeg", "dir/sub/a.JPEG"])(
+    "accepts the image file %s on a flat key",
+    (image) => {
+      const r = parseManifest({ ...base, assets: { "harbor.ore": { image } } }, "diorama");
+      expect(r.valid).toBe(true);
+      expect(r.entries["harbor.ore"]).toEqual({ kind: "image", image, projection: "top" });
+    },
+  );
 
   it("names the failing field when the license is missing", () => {
     const r = parseManifest({ id: "diorama", source: "x" }, "diorama");
@@ -108,7 +149,8 @@ describe("parseManifest", () => {
       },
       "diorama",
     );
-    const t = r.entries["piece.robber"]?.transform;
+    const entry = r.entries["piece.robber"];
+    const t = entry?.kind === "model" ? entry.transform : undefined;
     expect(t?.scale).toEqual([0.5, 0.5, 0.5]);
     expect(t?.rotation[1]).toBeCloseTo(Math.PI);
     expect(t?.offset).toEqual([0, 0.1, 0]);
@@ -118,5 +160,41 @@ describe("parseManifest", () => {
     const r = parseManifest({ ...base, id: "other" }, "diorama");
     expect(r.valid).toBe(true);
     expect(r.warnings[0]).toContain("other");
+  });
+});
+
+describe("parseManifest credits", () => {
+  const credit = {
+    keys: ["piece.city"],
+    title: "Pieces",
+    author: "Someone",
+    url: "https://example.com/model/1",
+    license: "CC-BY-4.0",
+  };
+  const assets = { "piece.city": { model: "models/city.glb" } };
+
+  it("accepts and exposes a valid credit list", () => {
+    const r = parseManifest({ ...base, assets, credits: [credit] }, "diorama");
+    expect(r.valid).toBe(true);
+    expect(r.credits).toEqual([credit]);
+  });
+
+  it("defaults to no credits", () => {
+    expect(parseManifest({ ...base, assets }, "diorama").credits).toEqual([]);
+  });
+
+  it.each([
+    ["author", { ...credit, author: undefined }],
+    ["url", { ...credit, url: undefined }],
+    ["url", { ...credit, url: "javascript:alert(1)" }],
+    ["title", { ...credit, title: " " }],
+    ["license", { ...credit, license: "" }],
+    ["keys", { ...credit, keys: [] }],
+    ["keys", { ...credit, keys: ["piece.knight"] }],
+  ])("a credit with a bad %s invalidates the manifest", (field, bad) => {
+    const r = parseManifest({ ...base, assets, credits: [bad] }, "diorama");
+    expect(r.valid).toBe(false);
+    expect(r.credits).toEqual([]);
+    expect(r.errors[0]).toContain(field);
   });
 });

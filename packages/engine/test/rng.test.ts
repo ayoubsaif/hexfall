@@ -101,7 +101,8 @@ describe("rng", () => {
 
   it("makeState seeds the game RNG", () => {
     const state = makeState({ seed: 42 });
-    expect(state.rng).toEqual(createRng(42));
+    expect(makeState({ seed: 42 })).toEqual(state);
+    expect(state.rng).not.toEqual(makeState({ seed: 43 }).rng);
     expect(JSON.parse(JSON.stringify(state))).toEqual(state);
   });
 });

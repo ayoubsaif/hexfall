@@ -1,0 +1,78 @@
+{
+  "asset": {
+    "version": "2.0",
+    "generator": "hexfall docs/art/templates/build.mjs"
+  },
+  "scene": 0,
+  "scenes": [
+    {
+      "nodes": [0]
+    }
+  ],
+  "nodes": [
+    {
+      "name": "settlement",
+      "mesh": 0
+    }
+  ],
+  "meshes": [
+    {
+      "name": "settlement",
+      "primitives": [
+        {
+          "attributes": {
+            "POSITION": 0,
+            "NORMAL": 1
+          },
+          "material": 0
+        }
+      ]
+    }
+  ],
+  "materials": [
+    {
+      "name": "PlayerColor",
+      "pbrMetallicRoughness": {
+        "baseColorFactor": [0.85, 0.85, 0.85, 1],
+        "metallicFactor": 0,
+        "roughnessFactor": 0.8
+      }
+    }
+  ],
+  "buffers": [
+    {
+      "byteLength": 1296,
+      "uri": "data:application/octet-stream;base64,zczMvSlcDz7sUbi9zczMvSlcDz7sUbg9zczMPSlcDz7sUbg9zczMvSlcDz7sUbi9zczMPSlcDz7sUbg9zczMPSlcDz7sUbi9zczMvQAAAADsUbi9zczMPQAAAADsUbi9zczMPQAAAADsUbg9zczMvQAAAADsUbi9zczMPQAAAADsUbg9zczMvQAAAADsUbg9zczMvQAAAADsUbg9zczMPQAAAADsUbg9zczMPSlcDz7sUbg9zczMvQAAAADsUbg9zczMPSlcDz7sUbg9zczMvSlcDz7sUbg9zczMPQAAAADsUbi9zczMvQAAAADsUbi9zczMvSlcDz7sUbi9zczMPQAAAADsUbi9zczMvSlcDz7sUbi9zczMPSlcDz7sUbi9zczMPQAAAADsUbg9zczMPQAAAADsUbi9zczMPSlcDz7sUbi9zczMPQAAAADsUbg9zczMPSlcDz7sUbi9zczMPSlcDz7sUbg9zczMvQAAAADsUbi9zczMvQAAAADsUbg9zczMvSlcDz7sUbg9zczMvQAAAADsUbi9zczMvSlcDz7sUbg9zczMvSlcDz7sUbi9genhvSlcDz4oUsu9genhvSlcDz4oUss9AAAAAEa2cz4AAAAAgenhvSlcDz4oUss9genhPSlcDz4oUss9AAAAAEa2cz4AAAAAgenhPSlcDz4oUss9genhPSlcDz4oUsu9AAAAAEa2cz4AAAAAgenhPSlcDz4oUsu9genhvSlcDz4oUsu9AAAAAEa2cz4AAAAAgenhPSlcDz4oUsu9genhPSlcDz4oUss9genhvSlcDz4oUss9genhPSlcDz4oUsu9genhvSlcDz4oUss9genhvSlcDz4oUsu9AAAAAAAAgD8AAAAAAAAAAAAAgD8AAAAAAAAAAAAAgD8AAAAAAAAAAAAAgD8AAAAAAAAAAAAAgD8AAAAAAAAAAAAAgD8AAAAAAAAAAAAAgL8AAAAAAAAAAAAAgL8AAAAAAAAAAAAAgL8AAAAAAAAAAAAAgL8AAAAAAAAAAAAAgL8AAAAAAAAAAAAAgL8AAAAAAAAAAAAAAAAAAIA/AAAAAAAAAAAAAIA/AAAAAAAAAAAAAIA/AAAAAAAAAAAAAIA/AAAAAAAAAAAAAIA/AAAAAAAAAAAAAIA/AAAAAAAAAAAAAIC/AAAAAAAAAAAAAIC/AAAAAAAAAAAAAIC/AAAAAAAAAAAAAIC/AAAAAAAAAAAAAIC/AAAAAAAAAAAAAIC/AACAPwAAAAAAAAAAAACAPwAAAAAAAAAAAACAPwAAAAAAAAAAAACAPwAAAIAAAAAAAACAPwAAAIAAAAAAAACAPwAAAIAAAAAAAACAvwAAAAAAAAAAAACAvwAAAAAAAAAAAACAvwAAAAAAAAAAAACAvwAAAAAAAAAAAACAvwAAAAAAAAAAAACAvwAAAAAAAAAAzwYqv7dhPz8AAAAAzwYqv7dhPz8AAAAAzwYqv7dhPz8AAAAAAAAAgCEwNj/U1zM/AAAAgCEwNj/U1zM/AAAAgCEwNj/U1zM/zwYqP7dhPz8AAAAAzwYqP7dhPz8AAAAAzwYqP7dhPz8AAAAAAAAAACEwNj/U1zO/AAAAACEwNj/U1zO/AAAAACEwNj/U1zO/AAAAAAAAgL8AAAAAAAAAAAAAgL8AAAAAAAAAAAAAgL8AAAAAAAAAAAAAgL8AAAAAAAAAAAAAgL8AAAAAAAAAAAAAgL8AAAAA"
+    }
+  ],
+  "bufferViews": [
+    {
+      "buffer": 0,
+      "byteOffset": 0,
+      "byteLength": 648,
+      "target": 34962
+    },
+    {
+      "buffer": 0,
+      "byteOffset": 648,
+      "byteLength": 648,
+      "target": 34962
+    }
+  ],
+  "accessors": [
+    {
+      "bufferView": 0,
+      "componentType": 5126,
+      "count": 54,
+      "type": "VEC3",
+      "min": [-0.11030865786510144, 0, -0.09927779207859128],
+      "max": [0.11030865786510144, 0.23800000000000002, 0.09927779207859128]
+    },
+    {
+      "bufferView": 1,
+      "componentType": 5126,
+      "count": 54,
+      "type": "VEC3"
+    }
+  ]
+}

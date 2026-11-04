@@ -1,0 +1,17 @@
+{
+  "name": "@hexfall/tools",
+  "version": "0.0.0",
+  "private": true,
+  "type": "module",
+  "scripts": {
+    "test": "vp test run"
+  },
+  "devDependencies": {
+    "@gltf-transform/core": "catalog:",
+    "@gltf-transform/extensions": "catalog:",
+    "@gltf-transform/functions": "catalog:",
+    "meshoptimizer": "catalog:",
+    "sharp": "catalog:",
+    "vite-plus": "catalog:"
+  }
+}

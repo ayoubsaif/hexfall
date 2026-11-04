@@ -5,9 +5,12 @@
   "type": "module",
   "scripts": {
     "dev": "vp run --filter @hexfall/server --filter @hexfall/client --parallel dev",
+    "dev:all": "node tools/dev-all.mjs",
     "check": "vp check && node tools/check-engine.mjs && node tools/check-assets.mjs",
     "test": "vp run -r test",
-    "build": "vp run -r build"
+    "build": "vp run -r build",
+    "models:pieces": "node tools/stl-to-glb.mjs",
+    "cards:build": "node tools/cards-from-tiles.mjs"
   },
   "devDependencies": {
     "@types/node": "catalog:",

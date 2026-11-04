@@ -1,6 +1,8 @@
-// Pure asset resolution: key -> themed model URL (+ overrides) or procedural fallback.
+// Pure asset resolution: key -> themed image URL, themed model URL (+ overrides), or
+// procedural fallback.
 import type { AssetKey } from "./keys.ts";
-import type { ResolvedEntries, Transform } from "./manifest.ts";
+import type { Credit, ResolvedEntries, Transform } from "./manifest.ts";
+import type { Projection } from "./relief.ts";
 
 export interface ResolvedTheme {
   /** Active theme id (the one whose manifest was loaded, or attempted). */
@@ -9,15 +11,24 @@ export interface ResolvedTheme {
   baseUrl: string;
   /** Validated key map; empty means every key is procedural. */
   entries: ResolvedEntries;
+  /** Manifest-level license/source; absent until a valid manifest is loaded. */
+  license?: string;
+  source?: string;
+  /** Per-asset credits (specs/asset-theming, "Asset credits"); absent means none. */
+  credits?: Credit[];
 }
 
 export type AssetResolution =
   | { kind: "fallback"; key: AssetKey; reason: "unmapped" | "failed" }
+  | { kind: "image"; key: AssetKey; url: string; projection: Projection }
   | { kind: "model"; key: AssetKey; url: string; transform: Transform | undefined };
 
-/** Builds a model URL inside the theme folder, encoding each path segment. */
-export function modelUrl(baseUrl: string, model: string): string {
-  return baseUrl + model.split("/").map(encodeURIComponent).join("/");
+/** What kind of file a themed resolution loads. */
+export type ThemedFileKind = "image" | "model";
+
+/** Builds a file URL inside the theme folder, encoding each path segment. */
+export function themeFileUrl(baseUrl: string, path: string): string {
+  return baseUrl + path.split("/").map(encodeURIComponent).join("/");
 }
 
 export function resolveAsset(
@@ -28,10 +39,18 @@ export function resolveAsset(
   const entry = theme.entries[key];
   if (!entry) return { kind: "fallback", key, reason: "unmapped" };
   if (failedKeys.has(key)) return { kind: "fallback", key, reason: "failed" };
+  if (entry.kind === "image") {
+    return {
+      kind: "image",
+      key,
+      url: themeFileUrl(theme.baseUrl, entry.image),
+      projection: entry.projection,
+    };
+  }
   return {
     kind: "model",
     key,
-    url: modelUrl(theme.baseUrl, entry.model),
+    url: themeFileUrl(theme.baseUrl, entry.model),
     transform: entry.transform,
   };
 }
@@ -39,9 +58,10 @@ export function resolveAsset(
 export function loadFailureMessage(
   key: AssetKey,
   themeId: string,
+  fileKind: ThemedFileKind,
   url: string,
   error: unknown,
 ): string {
   const reason = error instanceof Error ? error.message : String(error);
-  return `Theme "${themeId}": failed to load model for "${key}" (${url}): ${reason}. Using procedural fallback.`;
+  return `Theme "${themeId}": failed to load ${fileKind} for "${key}" (${url}): ${reason}. Using procedural fallback.`;
 }

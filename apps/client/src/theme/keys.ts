@@ -30,6 +30,37 @@ export function isAssetKey(value: string): value is AssetKey {
   return KEY_SET.has(value);
 }
 
+/**
+ * Asset kinds (specs/asset-theming, "Asset kinds"): flat keys are drawn flat on the board
+ * plane, optionally textured with an image; model keys are 3D, optionally a GLB.
+ */
+export type AssetKind = "flat" | "model";
+
+export const ASSET_KIND: Readonly<Record<AssetKey, AssetKind>> = {
+  "tile.forest": "flat",
+  "tile.pasture": "flat",
+  "tile.fields": "flat",
+  "tile.hills": "flat",
+  "tile.mountains": "flat",
+  "tile.desert": "flat",
+  sea: "flat",
+  token: "flat",
+  "harbor.generic": "flat",
+  "harbor.brick": "flat",
+  "harbor.grain": "flat",
+  "harbor.lumber": "flat",
+  "harbor.ore": "flat",
+  "harbor.wool": "flat",
+  "piece.road": "model",
+  "piece.settlement": "model",
+  "piece.city": "model",
+  "piece.robber": "model",
+};
+
+export function assetKind(key: AssetKey): AssetKind {
+  return ASSET_KIND[key];
+}
+
 /** Keys tinted with the owning player's color. `piece.robber` is never tinted. */
 export const PLAYER_TINTED_KEYS = ["piece.road", "piece.settlement", "piece.city"] as const;
 

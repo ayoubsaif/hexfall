@@ -2,6 +2,61 @@
   "id": "diorama",
   "version": 1,
   "license": "CC0-1.0",
-  "source": "Original work for Hexfall. No model files yet: every key renders its built-in procedural fallback.",
-  "assets": {}
+  "source": "Original work for Hexfall, except the piece models (see credits). Terrain tiles (tiles/forest|pasture|fields|hills|mountains|desert.webp): AI-generated with Creative Claw (Nano Banana 2) from text prompts only, with no image inputs or reference art, then approved by the project owner on 2026-11-04. Sea tile (tiles/sea.webp): hand-written SVG rasterized locally. Harbor badges (harbors/brick|grain|lumber|ore|wool.webp): square crops of the resource card art, which is cropped from the terrain tiles by tools/cards-from-tiles.mjs. Piece models (models/road|settlement|city.glb): converted from STL models by Burgers (CC-BY-4.0) with tools/stl-to-glb.mjs, reoriented, rescaled and with a thinned road. The robber uses its built-in procedural fallback.",
+  "credits": [
+    {
+      "keys": ["piece.road", "piece.settlement", "piece.city"],
+      "title": "Road, settlement and city models (modified)",
+      "author": "Burgers",
+      "url": "https://www.printables.com/@Burgers",
+      "license": "CC-BY-4.0"
+    }
+  ],
+  "assets": {
+    "tile.forest": {
+      "image": "tiles/forest.webp"
+    },
+    "tile.pasture": {
+      "image": "tiles/pasture.webp"
+    },
+    "tile.fields": {
+      "image": "tiles/fields.webp"
+    },
+    "tile.hills": {
+      "image": "tiles/hills.webp"
+    },
+    "tile.mountains": {
+      "image": "tiles/mountains.webp"
+    },
+    "tile.desert": {
+      "image": "tiles/desert.webp"
+    },
+    "sea": {
+      "image": "tiles/sea.webp"
+    },
+    "harbor.brick": {
+      "image": "harbors/brick.webp"
+    },
+    "harbor.grain": {
+      "image": "harbors/grain.webp"
+    },
+    "harbor.lumber": {
+      "image": "harbors/lumber.webp"
+    },
+    "harbor.ore": {
+      "image": "harbors/ore.webp"
+    },
+    "harbor.wool": {
+      "image": "harbors/wool.webp"
+    },
+    "piece.road": {
+      "model": "models/road.glb"
+    },
+    "piece.settlement": {
+      "model": "models/settlement.glb"
+    },
+    "piece.city": {
+      "model": "models/city.glb"
+    }
+  }
 }

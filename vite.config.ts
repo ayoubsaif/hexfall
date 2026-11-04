@@ -19,6 +19,7 @@ const REFERENCE_ART = [
 export default defineConfig({
   fmt: {
     ignorePatterns: [
+      "AGENTS.md",
       "assets/**",
       "openspec/**",
       "**/dist/**",
