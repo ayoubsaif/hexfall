@@ -1,0 +1,33 @@
+{
+  "name": "@hexfall/client",
+  "version": "0.0.0",
+  "private": true,
+  "type": "module",
+  "scripts": {
+    "dev": "vp dev",
+    "build": "vp build",
+    "preview": "vp preview",
+    "test": "vp test run"
+  },
+  "dependencies": {
+    "@hexfall/engine": "workspace:*",
+    "@hexfall/protocol": "workspace:*",
+    "@react-three/drei": "^10",
+    "@react-three/fiber": "^9",
+    "react": "^19",
+    "react-dom": "^19",
+    "three": "^0.180",
+    "zod": "^4",
+    "zustand": "^5"
+  },
+  "devDependencies": {
+    "@types/react": "^19",
+    "@types/react-dom": "^19",
+    "@types/three": "^0.180",
+    "@vitejs/plugin-react": "^5",
+    "happy-dom": "^20",
+    "typescript": "catalog:",
+    "vite": "catalog:",
+    "vite-plus": "catalog:"
+  }
+}

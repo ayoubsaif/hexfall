@@ -1,0 +1,25 @@
+{
+  "name": "@hexfall/server",
+  "version": "0.0.0",
+  "private": true,
+  "type": "module",
+  "scripts": {
+    "dev": "node --watch --env-file-if-exists=../../.env src/main.ts",
+    "build": "vp pack",
+    "start": "node dist/main.mjs",
+    "test": "vp test run"
+  },
+  "dependencies": {
+    "@hexfall/engine": "workspace:*",
+    "@hexfall/protocol": "workspace:*",
+    "ioredis": "^5",
+    "ws": "^8",
+    "zod": "^4"
+  },
+  "devDependencies": {
+    "@types/node": "catalog:",
+    "@types/ws": "^8",
+    "typescript": "catalog:",
+    "vite-plus": "catalog:"
+  }
+}

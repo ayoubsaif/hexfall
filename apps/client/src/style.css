@@ -1,0 +1,120 @@
+:root {
+  --hud-bg: rgb(10 22 32 / 72%);
+  --hud-fg: #e9efe6;
+  --hud-muted: #9fb3b8;
+  --hud-ok: #6fd08c;
+  --hud-wait: #f0c35a;
+  --hud-bad: #e8695c;
+  --hud-accent: #f2a65a;
+  font-family: system-ui, -apple-system, "Segoe UI", Roboto, sans-serif;
+}
+html,
+body,
+#root {
+  margin: 0;
+  height: 100%;
+  background: #0e2a3d;
+}
+.app {
+  position: relative;
+  width: 100%;
+  height: 100%;
+  overflow: hidden;
+}
+.canvas {
+  position: absolute;
+  inset: 0;
+}
+
+/* HUD: DOM overlay over the canvas. */
+.hud {
+  position: absolute;
+  inset: 0;
+  z-index: 10;
+  pointer-events: none;
+  color: var(--hud-fg);
+  font-size: 13px;
+}
+.hud button,
+.hud a,
+.hud input,
+.hud [data-interactive] {
+  pointer-events: auto;
+}
+.hud-badge {
+  position: absolute;
+  top: 12px;
+  right: 12px;
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  padding: 6px 12px;
+  border-radius: 999px;
+  background: var(--hud-bg);
+  backdrop-filter: blur(6px);
+  box-shadow: 0 2px 10px rgb(0 0 0 / 25%);
+}
+.hud-dot {
+  width: 8px;
+  height: 8px;
+  border-radius: 50%;
+  background: var(--hud-wait);
+}
+.hud-badge[data-status="open"] .hud-dot {
+  background: var(--hud-ok);
+}
+.hud-badge[data-status="closed"] .hud-dot,
+.hud-badge[data-status="version_mismatch"] .hud-dot {
+  background: var(--hud-bad);
+}
+.hud-badge[data-status="connecting"] .hud-dot,
+.hud-badge[data-status="reconnecting"] .hud-dot {
+  animation: hud-pulse 1.2s ease-in-out infinite;
+}
+.hud-ping {
+  color: var(--hud-muted);
+  font-variant-numeric: tabular-nums;
+}
+.hud-banner {
+  position: absolute;
+  top: 56px;
+  left: 50%;
+  transform: translateX(-50%);
+  display: flex;
+  align-items: center;
+  gap: 14px;
+  max-width: calc(100% - 32px);
+  padding: 10px 16px;
+  border-radius: 10px;
+  border: 1px solid var(--hud-accent);
+  background: var(--hud-bg);
+  backdrop-filter: blur(6px);
+  font-size: 14px;
+}
+.hud-button {
+  font: inherit;
+  padding: 5px 14px;
+  border: 0;
+  border-radius: 6px;
+  background: var(--hud-accent);
+  color: #1d1408;
+  font-weight: 600;
+  cursor: pointer;
+}
+.hud-button:hover {
+  filter: brightness(1.08);
+}
+.hud-button:focus-visible {
+  outline: 2px solid var(--hud-fg);
+  outline-offset: 2px;
+}
+@keyframes hud-pulse {
+  50% {
+    opacity: 0.35;
+  }
+}
+@media (prefers-reduced-motion: reduce) {
+  .hud-badge .hud-dot {
+    animation: none !important;
+  }
+}

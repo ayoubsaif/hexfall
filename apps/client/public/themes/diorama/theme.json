@@ -1,0 +1,7 @@
+{
+  "id": "diorama",
+  "version": 1,
+  "license": "CC0-1.0",
+  "source": "Original work for Hexfall. No model files yet: every key renders its built-in procedural fallback.",
+  "assets": {}
+}
