@@ -42,8 +42,8 @@ export function createMemoryStore(opts: { now?: () => number } = {}): MemoryStor
     }
     return e;
   };
-  const touch = (e: Entry) => {
-    e.expiresAt = now() + ROOM_TTL_MS;
+  const touch = (e: Entry, ttl = ROOM_TTL_MS) => {
+    e.expiresAt = now() + ttl;
   };
   const down: WriteResult = { ok: false, reason: "unavailable" };
 
@@ -69,7 +69,7 @@ export function createMemoryStore(opts: { now?: () => number } = {}): MemoryStor
       rooms.set(meta.code, e);
       return { ok: true };
     },
-    async saveMeta(meta: RoomMeta, expectedRev: number) {
+    async saveMeta(meta: RoomMeta, expectedRev: number, ttlMs?: number) {
       if (!up) return down;
       if (meta.rev !== expectedRev + 1) throw new Error("saveMeta needs rev = expectedRev + 1");
       const e = live(meta.code);
@@ -78,7 +78,7 @@ export function createMemoryStore(opts: { now?: () => number } = {}): MemoryStor
         return { ok: false, reason: "conflict" };
       }
       e.meta = JSON.stringify(meta);
-      touch(e);
+      touch(e, ttlMs);
       return { ok: true };
     },
     async appendAction(
@@ -98,6 +98,17 @@ export function createMemoryStore(opts: { now?: () => number } = {}): MemoryStor
       if (snapshot) e.snapshot = JSON.stringify(snapshot);
       touch(e);
       return { ok: true };
+    },
+    async loadMeta(code: string) {
+      if (!up) throw new StoreUnavailableError();
+      const e = live(code);
+      if (!e) return null;
+      const last = e.actions.at(-1);
+      return {
+        meta: JSON.parse(e.meta) as RoomMeta,
+        ttlMs: e.expiresAt - now(),
+        lastActionAt: last === undefined ? null : (decodeRecord(last).at ?? null),
+      };
     },
     async loadRoom(code: string): Promise<LoadedRoom | null> {
       if (!up) throw new StoreUnavailableError();

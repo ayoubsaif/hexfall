@@ -100,6 +100,51 @@ export function isValidMaritime(
   );
 }
 
+// ---- Player trade
+
+/** Highest count the composer lets a player ask for of one resource (the bank's full stack). */
+export const MAX_ASK = 19;
+
+/** The two sides of a player-to-player trade, from one party's point of view. */
+export interface TradeSides {
+  give: ResourceBundle;
+  get: ResourceBundle;
+}
+
+/**
+ * An offer the composer may send: cards on both sides, no resource on both sides, and every
+ * given card in the hand. The asked cards are not checked (opponents' hands are hidden).
+ */
+export function isValidOffer(
+  hand: ResourceCounts,
+  give: ResourceBundle,
+  get: ResourceBundle,
+): boolean {
+  if (total(give) === 0 || total(get) === 0) return false;
+  if (RESOURCES.some((r) => (give[r] ?? 0) > 0 && (get[r] ?? 0) > 0)) return false;
+  return covers(hand, give);
+}
+
+/**
+ * Prefill for a counter-offer: give what the offer asked of the viewer (capped by the hand) and
+ * ask for what it offered.
+ */
+export function swapForCounter(offer: TradeSides, hand: ResourceCounts): TradeSides {
+  const give: ResourceBundle = {};
+  for (const r of RESOURCES) {
+    const n = Math.min(offer.get[r] ?? 0, hand[r]);
+    if (n > 0) give[r] = n;
+  }
+  return { give, get: compact(offer.give) };
+}
+
+/** An offer's sides as the viewer sees them: what the viewer gives and gets if it goes through. */
+export function offerSidesFor(viewer: number, offer: TradeSides & { from: number }): TradeSides {
+  return offer.from === viewer
+    ? { give: compact(offer.give), get: compact(offer.get) }
+    : { give: compact(offer.get), get: compact(offer.give) };
+}
+
 /** Joins items as a conjunction list in the catalog's language ("a, b and c"). */
 export function joinList(items: readonly string[], t: T): string {
   return new Intl.ListFormat(t("game.listLocale"), { type: "conjunction" }).format(items);

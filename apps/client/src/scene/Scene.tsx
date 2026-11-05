@@ -1,18 +1,19 @@
 // The board scene: lighting, sea background, the board (preview or live game), pieces,
-// pick targets and camera controls.
+// pick targets, the board dice and camera controls.
 import { beginnerBoard } from "@hexfall/engine/geometry";
 import { OrbitControls } from "@react-three/drei";
 import { useMemo } from "react";
 import { useGameStore } from "../store/game.ts";
 import { ISO_ELEVATION_DEG, useLandRelief } from "../theme/index.ts";
 import { BoardView } from "./BoardView.tsx";
+import { BoardDice } from "./dice/BoardDice.tsx";
 import { producingHexes } from "./motion.ts";
 import { Pieces } from "./Pieces.tsx";
 import { Targets } from "./Targets.tsx";
 import { useFitCamera } from "./useFitCamera.ts";
 
 /** The live game when the server delivered one, else the beginner preview (board-view "Preview board"). */
-function GameBoard() {
+function GameBoard({ tableY }: { tableY: number }) {
   // Preview until the server delivers a game. Built inside the component so that merely
   // importing Scene never runs board code.
   const previewBoard = useMemo(() => beginnerBoard(), []);
@@ -36,6 +37,7 @@ function GameBoard() {
       />
       <Pieces view={view} />
       <Targets />
+      <BoardDice floorY={tableY} />
     </>
   );
 }
@@ -49,6 +51,8 @@ export function Scene() {
   const relief = useLandRelief();
   const fit = useFitCamera(relief.raised ? (ISO_ELEVATION_DEG * Math.PI) / 180 : undefined);
   const turn = relief.raised ? ISO_AZIMUTH_LIMIT : Infinity;
+  // The sea plane doubles as the table the dice land on.
+  const tableY = relief.seaLevel - 0.02;
   return (
     <>
       <hemisphereLight args={["#fff6e5", "#4a6a7a", 0.8]} />
@@ -57,17 +61,17 @@ export function Scene() {
         intensity={1.6}
         castShadow
         shadow-mapSize={[2048, 2048]}
-        shadow-camera-left={-8}
-        shadow-camera-right={8}
-        shadow-camera-top={8}
-        shadow-camera-bottom={-8}
+        shadow-camera-left={-10}
+        shadow-camera-right={10}
+        shadow-camera-top={10}
+        shadow-camera-bottom={-10}
       />
-      <mesh rotation={[-Math.PI / 2, 0, 0]} position={[0, relief.seaLevel - 0.02, 0]} receiveShadow>
+      <mesh rotation={[-Math.PI / 2, 0, 0]} position={[0, tableY, 0]} receiveShadow>
         <planeGeometry args={[200, 200]} />
         <meshStandardMaterial color={SEA_COLOR} roughness={1} />
       </mesh>
 
-      <GameBoard />
+      <GameBoard tableY={tableY} />
 
       <OrbitControls
         makeDefault

@@ -2,9 +2,18 @@
 // The only writer of the room and game stores: it turns server messages into store
 // state and UI intents into client messages. Framework-free and driven by injected
 // fakes in tests.
-import type { ClientAction, ErrorCode, ServerMessage, TurnTimerPreset } from "@hexfall/protocol";
+import {
+  MAX_LOOKUP_SEATS,
+  type ClientAction,
+  type ErrorCode,
+  type RoomStatus,
+  type SeatInfoEntry,
+  type ServerMessage,
+  type TurnTimerPreset,
+} from "@hexfall/protocol";
 import { resetGame, useGameStore } from "../store/game.ts";
-import { resetRoom, useRoomStore, type RoomRequest } from "../store/room.ts";
+import { isFrozen, resetRoom, useRoomStore, type RoomRequest } from "../store/room.ts";
+import { sortSaved, useSavedGamesStore, type SavedGame } from "../store/savedGames.ts";
 import { resetUi } from "../store/ui.ts";
 import type { BoardModeChoice, SessionApi } from "./actions.ts";
 import { createAddress, type Address } from "./address.ts";
@@ -25,6 +34,8 @@ export interface SessionOptions {
   log?: (msg: string, detail?: unknown) => void;
   /** Safety timeout that clears a stuck in-flight action (ms). */
   inFlightTimeoutMs?: number;
+  /** Called after every `roomJoined` (create, join, resume), once the room store is updated. */
+  onSeated?: () => void;
 }
 
 export const NAME_MAX = 20;
@@ -39,6 +50,13 @@ export function cleanName(name: string): string | null {
 
 type TimerId = ReturnType<Timers["setTimeout"]>;
 
+/** The room status that completes each host request. */
+const REQUEST_DONE: Partial<Record<RoomRequest, RoomStatus>> = {
+  pause: "paused",
+  resume: "playing",
+  end: "ended",
+};
+
 export class SessionController implements SessionApi {
   private readonly conn: SessionConnection;
   private readonly seats: SeatStorage;
@@ -46,14 +64,22 @@ export class SessionController implements SessionApi {
   private readonly timers: Pick<Timers, "setTimeout" | "clearTimeout">;
   private readonly log: (msg: string, detail?: unknown) => void;
   private readonly inFlightMs: number;
+  private readonly onSeated: (() => void) | undefined;
 
   /** Room code of the resume request waiting for an answer. */
   private resuming: string | null = null;
+  /** Host request (pause, resume, end) waiting for the room state it leads to. */
+  private roomRequest: RoomRequest | null = null;
+  /** A `lookupSeats` was sent and not answered. */
+  private lookingUp = false;
+  /** Room of an `endSavedGame` sent and not answered. */
+  private ending: string | null = null;
   private inFlightTimer: TimerId | null = null;
   private rejectionId = 0;
 
   constructor(opts: SessionOptions) {
     this.conn = opts.connection;
+    this.onSeated = opts.onSeated;
     this.seats = opts.seats ?? createSeatStorage();
     this.address = opts.address ?? createAddress();
     this.timers = opts.timers ?? {
@@ -105,6 +131,15 @@ export class SessionController implements SessionApi {
     if (status === "open") return;
     this.endInFlight();
     this.resuming = null;
+    this.roomRequest = null;
+    if (this.ending !== null) {
+      this.ending = null;
+      useSavedGamesStore.setState({ ending: null });
+    }
+    if (this.lookingUp) {
+      this.lookingUp = false;
+      useSavedGamesStore.setState({ loading: false });
+    }
     if (useRoomStore.getState().pending !== null) useRoomStore.setState({ pending: null });
   }
 
@@ -124,13 +159,21 @@ export class SessionController implements SessionApi {
           notice: null,
           prefillRoom: null,
         });
+        this.onSeated?.();
         break;
       }
       case "roomState": {
-        const { room, status, host, seats } = msg.payload;
-        useRoomStore.setState({ room, status, host, seats });
+        const { room, status, host, seats, pausedAt, result } = msg.payload;
+        useRoomStore.setState({ room, status, host, seats, pausedAt, result });
         // Back in a lobby (e.g. resumed before the start): no game to show.
         if (status === "lobby" && useGameStore.getState().view !== null) resetGame();
+        // Paused or ended by the host: no move can be sent until a playing snapshot arrives.
+        if (isFrozen({ status, result })) this.freeze();
+        if (this.roomRequest && REQUEST_DONE[this.roomRequest] === status) this.endRoomRequest();
+        break;
+      }
+      case "seatsInfo": {
+        this.onSeatsInfo(msg.payload.rooms);
         break;
       }
       case "roomLeft": {
@@ -142,11 +185,12 @@ export class SessionController implements SessionApi {
       case "gameSnapshot": {
         const { version, view, legal, timer } = msg.payload;
         this.endInFlight();
+        const frozen = isFrozen(useRoomStore.getState());
         useGameStore.setState({
           version,
           view,
-          legal,
-          timer,
+          legal: frozen ? null : legal,
+          timer: frozen ? null : timer,
           timerAt: now(),
           log: view.log,
           lastEvents: [],
@@ -167,13 +211,14 @@ export class SessionController implements SessionApi {
           break;
         }
         this.endInFlight();
+        const frozen = isFrozen(useRoomStore.getState());
         useGameStore.setState({
           version,
           view,
-          legal,
+          legal: frozen ? null : legal,
           log: [...g.log, ...events],
           lastEvents: events,
-          timer,
+          timer: frozen ? null : timer,
           timerAt: now(),
           source: "update",
           inFlight: false,
@@ -195,6 +240,23 @@ export class SessionController implements SessionApi {
   }
 
   private onError(code: ErrorCode, message: string): void {
+    if (this.ending !== null) {
+      const room = this.ending;
+      this.ending = null;
+      useSavedGamesStore.setState({ ending: null, error: { room, code, message } });
+      return;
+    }
+    if (
+      this.lookingUp &&
+      !this.resuming &&
+      useRoomStore.getState().pending === null &&
+      !useGameStore.getState().inFlight
+    ) {
+      // The lookup failed (unavailable): keep the last list, stop loading.
+      this.lookingUp = false;
+      useSavedGamesStore.setState({ loading: false });
+      return;
+    }
     if (this.resuming) {
       const room = this.resuming;
       this.resuming = null;
@@ -211,6 +273,7 @@ export class SessionController implements SessionApi {
     }
     const pending = useRoomStore.getState().pending;
     if (pending) {
+      this.roomRequest = null;
       useRoomStore.setState({ pending: null, error: { request: pending, code, message } });
       return;
     }
@@ -224,6 +287,47 @@ export class SessionController implements SessionApi {
       return;
     }
     this.log(`server error ${code}: ${message}`);
+  }
+
+  /** Keeps the listed rooms and forgets those the server reports gone or ended. */
+  private onSeatsInfo(rooms: readonly SeatInfoEntry[]): void {
+    const used = new Map(this.seats.list().map((s) => [s.room, s.usedAt]));
+    const ended = this.ending;
+    if (ended !== null && rooms.length === 1 && rooms[0]?.room === ended) {
+      // Answer to "End" in the list: update that one entry (an ended room drops out).
+      this.ending = null;
+      const entry = rooms[0];
+      const rest = useSavedGamesStore.getState().entries.filter((e) => e.room !== ended);
+      if (entry.status === "gone" || entry.status === "ended") this.seats.forget(ended);
+      else if (used.has(ended)) rest.push({ ...entry, usedAt: used.get(ended) ?? 0 });
+      useSavedGamesStore.setState({ entries: sortSaved(rest), ending: null, error: null });
+      return;
+    }
+    this.lookingUp = false;
+    const entries: SavedGame[] = [];
+    for (const r of rooms) {
+      if (r.status === "gone" || r.status === "ended") {
+        this.seats.forget(r.room);
+        continue;
+      }
+      // Removed locally while the lookup was in flight.
+      if (!used.has(r.room)) continue;
+      entries.push({ ...r, usedAt: used.get(r.room) ?? 0 });
+    }
+    useSavedGamesStore.setState({ entries: sortSaved(entries), loading: false });
+  }
+
+  /** Disables every game control while the room is frozen. */
+  private freeze(): void {
+    this.endInFlight();
+    const g = useGameStore.getState();
+    if (g.legal !== null || g.timer !== null) useGameStore.setState({ legal: null, timer: null });
+  }
+
+  private endRoomRequest(): void {
+    const pending = useRoomStore.getState().pending;
+    if (pending === this.roomRequest) useRoomStore.setState({ pending: null });
+    this.roomRequest = null;
   }
 
   // ---- intents (SessionApi)
@@ -270,6 +374,68 @@ export class SessionController implements SessionApi {
     );
   }
 
+  pauseGame(): boolean {
+    return this.hostRequest("pause", "pauseGame");
+  }
+
+  resumeGame(): boolean {
+    return this.hostRequest("resume", "resumeGame");
+  }
+
+  endGame(): boolean {
+    return this.hostRequest("end", "endGame");
+  }
+
+  /** Asks the server about every saved seat (start screen). False when nothing was sent. */
+  lookupSeats(): boolean {
+    const saved = this.seats
+      .list()
+      .sort((a, b) => b.usedAt - a.usedAt)
+      .slice(0, MAX_LOOKUP_SEATS);
+    if (saved.length === 0) {
+      useSavedGamesStore.setState({ entries: [], loading: false });
+      return false;
+    }
+    if (this.conn.status !== "open") return false;
+    const seats = saved.map(({ room, token }) => ({ room, token }));
+    if (!this.conn.send("lookupSeats", { seats })) return false;
+    this.lookingUp = true;
+    useSavedGamesStore.setState({ loading: true });
+    return true;
+  }
+
+  /** "Continue" in the saved games list: resume that seat with its stored token. */
+  continueGame(room: string): boolean {
+    const token = this.seats.token(room);
+    if (!token || this.conn.status !== "open" || useRoomStore.getState().room !== null) {
+      return false;
+    }
+    const code = normalizeRoom(room);
+    if (!this.conn.send("resumeRoom", { room: code, token })) return false;
+    this.resuming = code;
+    useRoomStore.setState({ error: null, notice: null });
+    return true;
+  }
+
+  /** "End" in the saved games list (host only): end that game without taking the seat. */
+  endSavedGame(room: string): boolean {
+    const code = normalizeRoom(room);
+    const token = this.seats.token(code);
+    if (!token || this.conn.status !== "open" || this.ending !== null) return false;
+    if (!this.conn.send("endSavedGame", { room: code, token })) return false;
+    this.ending = code;
+    useSavedGamesStore.setState({ ending: code, error: null });
+    return true;
+  }
+
+  /** "Remove" in the saved games list: forget the seat locally (the room is unchanged). */
+  forgetGame(room: string): void {
+    const code = normalizeRoom(room);
+    this.seats.forget(code);
+    const { entries } = useSavedGamesStore.getState();
+    useSavedGamesStore.setState({ entries: entries.filter((e) => e.room !== code) });
+  }
+
   playHere(): void {
     this.conn.restart();
   }
@@ -285,6 +451,14 @@ export class SessionController implements SessionApi {
   }
 
   // ---- helpers
+
+  /** pause/resume/end: done when the next roomState arrives (or an error). */
+  private hostRequest(kind: RoomRequest, type: "pauseGame" | "resumeGame" | "endGame"): boolean {
+    if (useRoomStore.getState().room === null) return false;
+    const sent = this.request(kind, () => this.conn.send(type, {}));
+    if (sent) this.roomRequest = kind;
+    return sent;
+  }
 
   private request(kind: RoomRequest, send: () => boolean): boolean {
     const room = useRoomStore.getState();

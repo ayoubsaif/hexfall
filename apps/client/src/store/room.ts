@@ -1,8 +1,8 @@
-import type { ErrorCode, RoomStatus, SeatInfo } from "@hexfall/protocol";
+import type { EarlyResult, ErrorCode, RoomStatus, SeatInfo } from "@hexfall/protocol";
 import { create } from "zustand";
 
 /** A room request the start screen or lobby is waiting on. */
-export type RoomRequest = "create" | "join" | "leave" | "start";
+export type RoomRequest = "create" | "join" | "leave" | "start" | "pause" | "resume" | "end";
 
 export interface FormError {
   /** The request that failed. */
@@ -19,6 +19,10 @@ export interface RoomStoreState {
   host: number | null;
   status: RoomStatus | null;
   seats: SeatInfo[];
+  /** Server ms when the host paused; null unless paused. */
+  pausedAt: number | null;
+  /** Set when the host ended the game early. */
+  result: EarlyResult | null;
   /** Room code from an invite link, used to prefill the join form. */
   prefillRoom: string | null;
   /** Request in flight (create/join/leave/start), or null. */
@@ -35,6 +39,8 @@ export const initialRoomState: RoomStoreState = {
   host: null,
   status: null,
   seats: [],
+  pausedAt: null,
+  result: null,
   prefillRoom: null,
   pending: null,
   error: null,
@@ -52,3 +58,7 @@ export function resetRoom(keep: Partial<RoomStoreState> = {}): void {
   const { prefillRoom, notice } = useRoomStore.getState();
   useRoomStore.setState({ ...initialRoomState, prefillRoom, notice, ...keep }, true);
 }
+
+/** No game actions possible: paused, or ended early by the host. */
+export const isFrozen = (s: Pick<RoomStoreState, "status" | "result">): boolean =>
+  s.status === "paused" || s.result !== null;

@@ -9,7 +9,7 @@ const welcome = (seq = 0) => ({
   v: PROTOCOL_VERSION,
   type: "welcome",
   seq,
-  payload: { serverVersion: "9.9.9", protocolVersion: PROTOCOL_VERSION },
+  payload: { serverVersion: "9.9.9", protocolVersion: PROTOCOL_VERSION, pushKey: null },
 });
 
 let clock: FakeClock;

@@ -1,0 +1,20 @@
+{
+  "name": "Hexfall",
+  "short_name": "Hexfall",
+  "description": "Build, trade and settle on a hex island. Online board game for 3–4 players.",
+  "start_url": "/",
+  "scope": "/",
+  "display": "standalone",
+  "background_color": "#0f2230",
+  "theme_color": "#0f2230",
+  "icons": [
+    { "src": "/icons/icon-192.png", "sizes": "192x192", "type": "image/png", "purpose": "any" },
+    { "src": "/icons/icon-512.png", "sizes": "512x512", "type": "image/png", "purpose": "any" },
+    {
+      "src": "/icons/icon-maskable-512.png",
+      "sizes": "512x512",
+      "type": "image/png",
+      "purpose": "maskable"
+    }
+  ]
+}

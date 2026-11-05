@@ -3,6 +3,7 @@
 // "in" (slide) when the count rises, "out" (fade dip) when it falls. Under reduced
 // motion no animation is returned at all.
 import { useState } from "react";
+import { prefersReducedMotion } from "../../store/motion.ts";
 
 export type CardAnimation = "in" | "out" | null;
 
@@ -12,13 +13,7 @@ export interface CountChange {
   animation: CardAnimation;
 }
 
-export function prefersReducedMotion(): boolean {
-  return (
-    typeof window !== "undefined" &&
-    typeof window.matchMedia === "function" &&
-    window.matchMedia("(prefers-reduced-motion: reduce)").matches
-  );
-}
+export { prefersReducedMotion };
 
 export function useCountChange(count: number): CountChange {
   const [prev, setPrev] = useState(count);

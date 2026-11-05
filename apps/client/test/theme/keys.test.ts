@@ -7,10 +7,10 @@ describe("asset kinds", () => {
     for (const key of ASSET_KEYS) expect(["flat", "model"]).toContain(assetKind(key));
   });
 
-  it("has 14 flat keys and 4 model keys", () => {
+  it("has 14 flat keys and 5 model keys", () => {
     const flat = ASSET_KEYS.filter((k) => assetKind(k) === "flat");
     const model = ASSET_KEYS.filter((k) => assetKind(k) === "model");
     expect(flat).toHaveLength(14);
-    expect(model.sort()).toEqual(["piece.city", "piece.road", "piece.robber", "piece.settlement"]);
+    expect(model.sort()).toEqual(["dice.die", "piece.city", "piece.road", "piece.robber", "piece.settlement"]);
   });
 });

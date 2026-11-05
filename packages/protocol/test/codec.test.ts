@@ -27,7 +27,7 @@ describe("codec round-trip", () => {
   });
 
   it("round-trips welcome", () => {
-    const payload = { serverVersion: "0.0.0", protocolVersion: PROTOCOL_VERSION };
+    const payload = { serverVersion: "0.0.0", protocolVersion: PROTOCOL_VERSION, pushKey: null };
     const r = decodeServerMessage(encodeServer("welcome", payload, 0, 0));
     expect(r).toEqual({
       ok: true,

@@ -124,10 +124,38 @@ export function createRedisStore(client: Redis, opts: RedisStoreOptions = {}): R
       return write(() => cmd.hexfallCreateMeta(...keys(meta.code), json, ttl));
     },
 
-    async saveMeta(meta: RoomMeta, expectedRev: number) {
+    async saveMeta(meta: RoomMeta, expectedRev: number, ttlMs?: number) {
       if (meta.rev !== expectedRev + 1) throw new Error("saveMeta needs rev = expectedRev + 1");
       const json = JSON.stringify(meta);
-      return write(() => cmd.hexfallSaveMeta(...keys(meta.code), json, expectedRev, ttl));
+      return write(() => cmd.hexfallSaveMeta(...keys(meta.code), json, expectedRev, ttlMs ?? ttl));
+    },
+
+    async loadMeta(code: string) {
+      let reply: [Error | null, unknown][] | null;
+      try {
+        const [metaKey, actionsKey] = keys(code);
+        reply = (await client
+          .multi()
+          .get(metaKey)
+          .pttl(metaKey)
+          .lindex(actionsKey, -1)
+          .exec()) as typeof reply;
+      } catch (err) {
+        throw new StoreUnavailableError(
+          `room store unavailable: ${err instanceof Error ? err.message : String(err)}`,
+        );
+      }
+      if (!reply) throw new StoreUnavailableError("room store unavailable: transaction aborted");
+      const failed = reply.find(([err]) => err);
+      if (failed) throw new StoreUnavailableError(`room store unavailable: ${String(failed[0])}`);
+      const [raw, pttl, last] = reply.map(([, v]) => v);
+      if (typeof raw !== "string") return null;
+      const ms = Number(pttl);
+      return {
+        meta: JSON.parse(raw) as RoomMeta,
+        ttlMs: ms > 0 ? ms : 0,
+        lastActionAt: typeof last === "string" ? (decodeRecord(last).at ?? null) : null,
+      };
     },
 
     async appendAction(

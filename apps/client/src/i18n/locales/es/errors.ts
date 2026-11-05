@@ -17,6 +17,9 @@ export const errors: Catalog["errors"] = {
     already_in_room: "Ya estás en una sala.",
     unavailable: "El servidor está ocupado ahora mismo. Inténtalo de nuevo en un momento.",
     rate_limited: "Demasiadas peticiones. Ve un poco más despacio.",
+    game_paused: "El anfitrión ha pausado la partida.",
+    not_paused: "La partida no está pausada.",
+    not_playing: "La partida no está en curso.",
   },
   rule: {
     invalid_config: "Esa configuración de partida no es válida.",

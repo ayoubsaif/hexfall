@@ -1,6 +1,7 @@
-// Number token: the themed `token` disc plus a client-drawn value and pips label.
+// Number token: the themed `token` chip plus a client-drawn value and pips label on its top
+// face. The board view turns the whole chip to face the camera (scene/chipYaw.ts).
 import type { CanvasTexture } from "three";
-import { Asset, TOKEN_LABEL_Y, useBoardStyle } from "../theme/index.ts";
+import { Asset, CHIP } from "../theme/index.ts";
 import { makeLabelTexture } from "./canvasLabel.ts";
 import { tokenLabel } from "./labels.ts";
 import { LabelQuad } from "./LabelQuad.tsx";
@@ -37,11 +38,10 @@ function tokenTexture(value: number): CanvasTexture | null {
 
 export function NumberToken({ value }: { value: number }) {
   const texture = tokenTexture(value);
-  const { style } = useBoardStyle();
   return (
     <>
       <Asset assetKey="token" />
-      {texture && <LabelQuad texture={texture} size={0.5} y={TOKEN_LABEL_Y[style]} />}
+      {texture && <LabelQuad texture={texture} size={0.5} y={CHIP.label} />}
     </>
   );
 }

@@ -7,6 +7,7 @@ import { SEAT_LOST_NOTICE } from "../net/session.ts";
 import { useConnectionStore } from "../store/connection.ts";
 import { useRoomStore } from "../store/room.ts";
 import { roomErrorText } from "./errors.ts";
+import { SavedGames } from "./SavedGames.tsx";
 
 export const NAME_MAX = 20;
 
@@ -57,6 +58,7 @@ export function StartScreen() {
           {notice === SEAT_LOST_NOTICE ? t("session.start.seatLost") : notice}
         </p>
       )}
+      <SavedGames busy={busy} />
       <label className={fieldClass}>
         <span>{t("session.start.yourName")}</span>
         <input

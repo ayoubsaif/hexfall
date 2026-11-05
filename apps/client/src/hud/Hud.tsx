@@ -4,6 +4,7 @@ import { ScrollText } from "lucide-react";
 import { Button } from "@/components/ui/button.tsx";
 import { HudRootContext } from "@/components/ui/hud-root.ts";
 import { Sheet, SheetContent, SheetTrigger } from "@/components/ui/sheet.tsx";
+import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs.tsx";
 import { TooltipProvider } from "@/components/ui/tooltip.tsx";
 import { cn } from "@/lib/utils.ts";
 import type { ConnectionStatus } from "../net/connection.ts";
@@ -11,26 +12,31 @@ import { useConnectionStore } from "../store/connection.ts";
 import { useGameStore } from "../store/game.ts";
 import { DEFAULT_DOCK, hudLayout, setDiceDock } from "../store/dock.ts";
 import { useRoomStore } from "../store/room.ts";
-import { BOARD_STYLES, useBoardStyle } from "../theme/index.ts";
+import { type LogTab, setLogTab, useUiStore } from "../store/ui.ts";
+import { SettingsButton, SettingsHost } from "../settings/SettingsButton.tsx";
+import { GameAlerts } from "./GameAlerts.tsx";
 import {
   ActionButtons,
   CountdownAnnouncer,
-  CreditsButton,
+  DiceStats,
   DiceTray,
   DiscardDialog,
   EventLog,
   GameOver,
   Hand,
-  LanguageSwitch,
+  HostGameMenu,
   Lobby,
   MaritimePanel,
   MonopolyDialog,
+  OffersTray,
+  PausedNotice,
   PlayerPanels,
   Rejection,
   ReplacedNotice,
   StartScreen,
   StatusPill,
   Toasts,
+  TradePanel,
   TurnFocus,
   VictimDialog,
   YearOfPlentyDialog,
@@ -90,50 +96,22 @@ export function ReloadBanner() {
   );
 }
 
-/** Board style switch (specs/board-view, "Board style preference"). Applies immediately. */
-export function BoardStyleSwitch() {
-  const { t } = useTranslation();
-  const { style, setStyle } = useBoardStyle();
-  return (
-    <div
-      className="pointer-events-auto flex rounded-full bg-hud p-[3px] shadow-lg shadow-black/25 backdrop-blur-md"
-      role="radiogroup"
-      aria-label={t("session.hud.boardStyle")}
-      data-interactive
-    >
-      {BOARD_STYLES.map((s) => (
-        <button
-          key={s}
-          type="button"
-          role="radio"
-          aria-checked={style === s}
-          className="min-h-9 min-w-13 cursor-pointer rounded-full px-3.5 font-semibold text-muted-foreground transition-colors duration-150 outline-none focus-visible:ring-2 focus-visible:ring-ring aria-checked:bg-primary aria-checked:text-primary-foreground max-sm:min-h-10 short:min-h-10"
-          onClick={() => setStyle(s)}
-        >
-          {t(`session.hud.style.${s}`)}
-        </button>
-      ))}
-    </div>
-  );
-}
-
 /** Layout CSS variables published on the root element by `useHudLayout`. */
-const LAYOUT_VARS = ["--hand-h", "--hud-bottom", "--pill-bottom", "--pill-side"] as const;
+const LAYOUT_VARS = ["--hand-h", "--pill-bottom", "--pill-side", "--corner-h"] as const;
 
 /**
  * Measures the HUD and publishes (store/dock.ts `hudLayout`):
  * - `--hand-h`: the edge hand's full card height (the floating buttons and corner controls sit
  *   above it, so a raised card never covers them);
- * - `--hud-bottom`: viewport bottom to the top of the buttons, which places the side log;
  * - `--pill-bottom` / `--pill-side`: the status pill's place above the hand;
- * - the dice dock: left of the side log above the buttons (desktop), or left of the buttons
- *   above the hand.
+ * - `--corner-h`: height of the corner controls when they stand above the hand (else 0), so the
+ *   offers tray sits above them;
+ * - the dice dock: left of the buttons, above the hand.
  * The board is a full-screen background and is not resized around any of this.
  */
 function useHudLayout(corner: HTMLElement | null) {
   const [hand, setHand] = useState<HTMLDivElement | null>(null);
   const [cluster, setCluster] = useState<HTMLDivElement | null>(null);
-  const [aside, setAside] = useState<HTMLElement | null>(null);
   useLayoutEffect(() => {
     if (!cluster) return;
     const root = document.documentElement;
@@ -144,26 +122,24 @@ function useHudLayout(corner: HTMLElement | null) {
       // The buttons are positioned from --hand-h: set it before measuring them.
       root.style.setProperty("--hand-h", `${Math.ceil(handHeight)}px`);
       const c = cluster.getBoundingClientRect();
-      const a = aside?.getBoundingClientRect() ?? null;
       const k = corner?.getBoundingClientRect() ?? null;
       // The corner controls only stand above the hand when they sit in the lower half.
       const cornerHeight = k && k.top > height / 2 ? k.height : 0;
+      root.style.setProperty("--corner-h", `${Math.ceil(cornerHeight)}px`);
       const layout = hudLayout({
         width,
         height,
         handHeight,
         cluster: { left: c.left, top: c.top },
-        aside: a ? { left: a.left, width: a.width } : null,
         cornerHeight,
       });
-      root.style.setProperty("--hud-bottom", `${layout.hudBottom}px`);
       root.style.setProperty("--pill-bottom", `${layout.pillBottom}px`);
       root.style.setProperty("--pill-side", `${layout.pillSide}px`);
       setDiceDock(layout.dock);
     };
     update();
     const observer = typeof ResizeObserver === "undefined" ? null : new ResizeObserver(update);
-    for (const el of [hand, cluster, aside, corner]) if (el) observer?.observe(el);
+    for (const el of [hand, cluster, corner]) if (el) observer?.observe(el);
     window.addEventListener("resize", update);
     return () => {
       observer?.disconnect();
@@ -171,8 +147,8 @@ function useHudLayout(corner: HTMLElement | null) {
       for (const v of LAYOUT_VARS) root.style.removeProperty(v);
       setDiceDock(DEFAULT_DOCK);
     };
-  }, [hand, cluster, aside, corner]);
-  return { setHand, setCluster, setAside };
+  }, [hand, cluster, corner]);
+  return { setHand, setCluster };
 }
 
 /**
@@ -180,42 +156,41 @@ function useHudLayout(corner: HTMLElement | null) {
  * - the hand peeks from the bottom edge at the center, with no panel;
  * - the floating action buttons sit at the bottom-right, above the raised hand;
  * - the status pill floats above the hand;
- * - desktop (>= 1024 px wide and >= 600 px high): side log always visible; tablet, mobile and
- *   short screens open the log as a drawer and get compact panels.
+ * - the event log opens as a drawer from the "Log" toggle in every layout, with Log and Dice
+ *   tabs (game-hud "Log drawer tabs");
+ * - tablet, mobile and short screens get compact panels.
  */
 function GameHud({ corner }: { corner: HTMLElement | null }) {
   const { t } = useTranslation();
-  const [logOpen, setLogOpen] = useState(false);
-  const { setHand, setCluster, setAside } = useHudLayout(corner);
+  const { setHand, setCluster } = useHudLayout(corner);
   return (
     <>
-      <div className="absolute top-3 right-[170px] left-3 desktop:right-[400px] max-lg:right-[150px] max-lg:pt-11 max-sm:top-2 max-sm:right-2 max-sm:left-2 max-sm:pt-11 short:top-2 short:right-2 short:left-2 short:pt-11 landscape:right-[150px]! landscape:left-[88px]! landscape:pt-0!">
+      <div className="absolute top-3 right-[170px] left-3 pt-11 desktop:right-[400px] max-lg:right-[150px] max-sm:top-2 max-sm:right-2 max-sm:left-2 short:top-2 short:right-2 short:left-2 landscape:right-[150px]! landscape:left-[88px]! landscape:pt-0!">
         <PlayerPanels />
       </div>
-      <Sheet open={logOpen} onOpenChange={setLogOpen}>
+      <Sheet>
         <SheetTrigger asChild>
           <Button
             size="sm"
             variant="secondary"
-            className="absolute top-3 left-3 z-20 hidden bg-hud backdrop-blur-md max-lg:inline-flex max-sm:top-2 max-sm:left-2 short:top-2 short:left-2 short:inline-flex"
+            className="absolute top-3 left-3 z-20 bg-hud backdrop-blur-md max-sm:top-2 max-sm:left-2 short:top-2 short:left-2"
           >
             <ScrollText aria-hidden="true" />
             {t("session.hud.log")}
           </Button>
         </SheetTrigger>
         <SheetContent title={t("session.hud.eventLog")} side="right">
-          <EventLog />
+          <LogTabs />
         </SheetContent>
       </Sheet>
-      <aside
-        ref={setAside}
-        aria-label={t("session.hud.gameLog")}
-        className="pointer-events-auto absolute top-14 right-3 bottom-[calc(var(--hud-bottom,180px)_+_8px)] flex w-[min(300px,28vw)] flex-col max-lg:hidden short:hidden"
-      >
-        {!logOpen && <EventLog />}
-      </aside>
       <Hand ref={setHand} />
       <StatusPill />
+      <div
+        data-testid="offers-anchor"
+        className="absolute bottom-[calc(var(--hand-h,104px)_+_var(--corner-h,0px)_+_20px)] left-3 flex w-[min(300px,calc(100%-96px))] flex-col max-sm:left-2 short:left-2"
+      >
+        <OffersTray />
+      </div>
       <div
         ref={setCluster}
         data-testid="fab-cluster"
@@ -225,8 +200,29 @@ function GameHud({ corner }: { corner: HTMLElement | null }) {
       </div>
       <DiceTray />
       <TurnFocus />
+      <GameAlerts />
       <CountdownAnnouncer />
     </>
+  );
+}
+
+/** The log drawer's body: Log and Dice tabs; it reopens on the tab last selected. */
+function LogTabs() {
+  const { t } = useTranslation();
+  const tab = useUiStore((s) => s.logTab);
+  return (
+    <Tabs value={tab} onValueChange={(v) => setLogTab(v as LogTab)} className="flex-1">
+      <TabsList>
+        <TabsTrigger value="log">{t("dialogs.feed.tabLog")}</TabsTrigger>
+        <TabsTrigger value="dice">{t("dialogs.feed.tabDice")}</TabsTrigger>
+      </TabsList>
+      <TabsContent value="log">
+        <EventLog />
+      </TabsContent>
+      <TabsContent value="dice">
+        <DiceStats />
+      </TabsContent>
+    </Tabs>
   );
 }
 
@@ -259,9 +255,8 @@ export function Hud() {
                 : "bottom-[max(12px,env(safe-area-inset-bottom))] items-center max-sm:bottom-2 short:bottom-2",
             )}
           >
-            <LanguageSwitch />
-            <BoardStyleSwitch />
-            <CreditsButton />
+            <SettingsButton />
+            {inGame && <HostGameMenu />}
           </div>
           {room === null && <StartScreen />}
           {room !== null && status === "lobby" && <Lobby />}
@@ -274,9 +269,12 @@ export function Hud() {
           <YearOfPlentyDialog />
           <MonopolyDialog />
           <MaritimePanel />
+          <TradePanel />
           <VictimDialog />
+          {inGame && <PausedNotice />}
           <GameOver />
           <ReplacedNotice />
+          <SettingsHost />
         </div>
       </TooltipProvider>
     </HudRootContext>

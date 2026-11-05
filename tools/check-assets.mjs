@@ -22,6 +22,7 @@
 import { existsSync, readFileSync, readdirSync, statSync } from "node:fs";
 import { basename, dirname, extname, isAbsolute, join, relative, resolve, sep } from "node:path";
 import { fileURLToPath } from "node:url";
+import { ICON_OUTPUTS, ICO_SIZES, OG_MAX_BYTES } from "./icon-list.mjs";
 
 const ROOT = resolve(dirname(fileURLToPath(import.meta.url)), "..");
 const REF_DIR = join(ROOT, "assets");
@@ -472,6 +473,51 @@ for (const dirent of themeDirs) {
     if (type && !referenced.has(file)) {
       failures.push(
         `theme "${theme}": ${type} file ${rel(file)} is not referenced by its manifest.`,
+      );
+    }
+  }
+}
+
+// App icons (specs/web-metadata "App icon set"): only for the real client, not --themes fixtures.
+if (themesArg === -1) {
+  const PUBLIC_DIR = join(ROOT, "apps", "client", "public");
+  const pngSize = (buf) =>
+    buf.length >= 24 && buf.toString("ascii", 1, 4) === "PNG"
+      ? [buf.readUInt32BE(16), buf.readUInt32BE(20)]
+      : null;
+  for (const [file, [w, h]] of Object.entries(ICON_OUTPUTS)) {
+    const path = join(PUBLIC_DIR, file);
+    if (!existsSync(path)) {
+      failures.push(`icon ${file} is missing (run pnpm run icons:build).`);
+      continue;
+    }
+    const buf = readFileSync(path);
+    const size = pngSize(buf);
+    if (!size || size[0] !== w || size[1] !== h) {
+      failures.push(
+        `icon ${file} must be a ${w}x${h} PNG (got ${size ? size.join("x") : "not a PNG"}).`,
+      );
+    }
+    if (file === "og-image.png" && buf.length > OG_MAX_BYTES) {
+      failures.push(`og-image.png is ${buf.length} bytes; the budget is ${OG_MAX_BYTES}.`);
+    }
+  }
+  const ico = join(PUBLIC_DIR, "favicon.ico");
+  if (!existsSync(ico)) failures.push("favicon.ico is missing (run pnpm run icons:build).");
+  else {
+    const buf = readFileSync(ico);
+    const count = buf.length >= 6 && buf.readUInt16LE(2) === 1 ? buf.readUInt16LE(4) : 0;
+    const sizes = Array.from({ length: count }, (_, i) => buf.readUInt8(6 + 16 * i) || 256);
+    if (ICO_SIZES.some((s) => !sizes.includes(s))) {
+      failures.push(
+        `favicon.ico must hold ${ICO_SIZES.join("/")} px images (has ${sizes.join("/") || "none"}).`,
+      );
+    }
+  }
+  for (const file of readdirSync(PUBLIC_DIR)) {
+    if (/^(faivon|icon)\.png$/i.test(file)) {
+      failures.push(
+        `apps/client/public/${file}: the icon source lives in apps/client/brand/, not public/.`,
       );
     }
   }

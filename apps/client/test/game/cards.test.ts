@@ -7,8 +7,11 @@ import {
   formatBundle,
   isValidDiscard,
   isValidMaritime,
+  isValidOffer,
   isValidYearOfPlenty,
   maritimeMax,
+  offerSidesFor,
+  swapForCounter,
   total,
   yearOfPlentyCount,
 } from "../../src/game/cards.ts";
@@ -67,5 +70,41 @@ describe("cards", () => {
     expect(isValidMaritime(hand, bank, rates, "ore", "grain", 2)).toBe(true);
     expect(isValidMaritime(hand, bank, rates, "ore", "grain", 3)).toBe(false);
     expect(isValidMaritime(hand, bank, rates, "ore", "grain", 0)).toBe(false);
+  });
+});
+
+describe("player trade helpers", () => {
+  const hand = counts({ ore: 2, wool: 1 });
+
+  it("accepts an offer with cards on both sides that the hand covers", () => {
+    expect(isValidOffer(hand, { ore: 2 }, { wool: 1 })).toBe(true);
+    expect(isValidOffer(hand, { ore: 1 }, { brick: 5, grain: 2 })).toBe(true);
+  });
+
+  it("rejects gifts, like-for-like and cards the hand lacks", () => {
+    expect(isValidOffer(hand, { ore: 1 }, {})).toBe(false);
+    expect(isValidOffer(hand, {}, { wool: 1 })).toBe(false);
+    expect(isValidOffer(hand, { ore: 1 }, { ore: 1 })).toBe(false);
+    expect(isValidOffer(hand, { ore: 1, wool: 1 }, { wool: 1 })).toBe(false);
+    expect(isValidOffer(hand, { ore: 3 }, { wool: 1 })).toBe(false);
+    expect(isValidOffer(hand, { ore: 0 }, { wool: 1 })).toBe(false);
+  });
+
+  it("counter-offers swap the sides and cap the give side by the hand", () => {
+    const offer = { give: { ore: 1 }, get: { wool: 2, brick: 1 } };
+    expect(swapForCounter(offer, counts({ wool: 3 }))).toEqual({
+      give: { wool: 2 },
+      get: { ore: 1 },
+    });
+    expect(swapForCounter(offer, counts({ wool: 1, brick: 1 }))).toEqual({
+      give: { brick: 1, wool: 1 },
+      get: { ore: 1 },
+    });
+  });
+
+  it("shows an offer from the viewer's side", () => {
+    const offer = { from: 1, give: { ore: 1, wool: 0 }, get: { wool: 2 } };
+    expect(offerSidesFor(1, offer)).toEqual({ give: { ore: 1 }, get: { wool: 2 } });
+    expect(offerSidesFor(0, offer)).toEqual({ give: { wool: 2 }, get: { ore: 1 } });
   });
 });

@@ -49,20 +49,16 @@ describe("land relief", () => {
   const top = manifest({ "tile.forest": { image: "f.webp" } }).entries;
   const isoSeaOnly = manifest({ sea: { image: "s.webp", projection: "isometric" } }).entries;
 
-  it("raises the island and lowers the sea when a terrain image is isometric (flat style)", () => {
-    expect(landRelief(iso, "flat")).toEqual({
+  it("raises the island and lowers the sea when a terrain image is isometric", () => {
+    expect(landRelief(iso)).toEqual({
       raised: true,
       thickness: ISO_THICKNESS,
       seaLevel: -ISO_THICKNESS,
     });
   });
 
-  it("stays flat for top-down images, an isometric sea alone, or the 3D style", () => {
-    for (const r of [
-      landRelief(top, "flat"),
-      landRelief(isoSeaOnly, "flat"),
-      landRelief(iso, "3d"),
-    ]) {
+  it("stays flat for top-down images or an isometric sea alone", () => {
+    for (const r of [landRelief(top), landRelief(isoSeaOnly)]) {
       expect(r).toEqual({ raised: false, thickness: 0, seaLevel: 0 });
     }
   });

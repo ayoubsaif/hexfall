@@ -1,6 +1,6 @@
 import { describe, expect, it } from "vite-plus/test";
 import { createMemoryStore } from "../src/store/memory.ts";
-import { ROOM_TTL_MS, StoreUnavailableError } from "../src/store/types.ts";
+import { PAUSED_TTL_MS, ROOM_TTL_MS, StoreUnavailableError } from "../src/store/types.ts";
 import { makeMeta, makeSnapshot, roll, storeContract } from "./store.contract.ts";
 
 storeContract("memory", async () => ({ store: createMemoryStore() }));
@@ -16,6 +16,7 @@ describe("memory store", () => {
     expect(await store.appendAction("UP", 0, roll())).toEqual(down);
     expect(await store.deleteRoom("UP")).toEqual(down);
     await expect(store.loadRoom("UP")).rejects.toBeInstanceOf(StoreUnavailableError);
+    await expect(store.loadMeta("UP")).rejects.toBeInstanceOf(StoreUnavailableError);
 
     store.setAvailable(true);
     const loaded = await store.loadRoom("UP");
@@ -63,5 +64,24 @@ describe("memory store", () => {
     // The code can be reused with a clean history.
     expect(await store.createMeta(makeMeta("EXP"))).toEqual({ ok: true });
     expect((await store.loadRoom("EXP"))?.version).toBe(0);
+  });
+
+  it("a per-write ttl applies to all of the room's data, and expires it", async () => {
+    let t = 0;
+    const store = createMemoryStore({ now: () => t });
+    await store.createMeta(makeMeta("PAU"));
+    await store.appendAction("PAU", 0, roll());
+    await store.saveMeta(
+      makeMeta("PAU", { rev: 1, status: "paused", pausedAt: 0 }),
+      0,
+      PAUSED_TTL_MS,
+    );
+    expect((await store.loadMeta("PAU"))?.ttlMs).toBe(PAUSED_TTL_MS);
+    t = PAUSED_TTL_MS - 1;
+    expect((await store.loadMeta("PAU"))?.ttlMs).toBe(1);
+    expect((await store.loadRoom("PAU"))?.version).toBe(1);
+    t = PAUSED_TTL_MS;
+    expect(await store.loadMeta("PAU")).toBeNull();
+    expect(await store.loadRoom("PAU")).toBeNull();
   });
 });

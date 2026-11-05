@@ -28,6 +28,9 @@ afterEach(() => {
   resetAll();
 });
 
+/** Calls other than the saved games lookup the start screen sends on mount. */
+const roomCalls = () => calls.filter((c) => c.fn !== "lookupSeats");
+
 describe("StartScreen", () => {
   it("creates a room with the trimmed name", () => {
     m = mount(<StartScreen />);
@@ -36,7 +39,7 @@ describe("StartScreen", () => {
     type(m.container.querySelector("input"), "  Ana ");
     expect(create.disabled).toBe(false);
     click(create);
-    expect(calls).toEqual([{ fn: "createRoom", args: ["Ana"] }]);
+    expect(roomCalls()).toEqual([{ fn: "createRoom", args: ["Ana"] }]);
   });
 
   it("a name over 20 characters keeps Create and Join disabled with a hint", () => {
@@ -59,7 +62,7 @@ describe("StartScreen", () => {
     type(name, "Ben");
     type(code, "k7qx2m");
     click(byText(m.container, "button", "Join room"));
-    expect(calls).toEqual([{ fn: "joinRoom", args: ["k7qx2m", "Ben"] }]);
+    expect(roomCalls()).toEqual([{ fn: "joinRoom", args: ["k7qx2m", "Ben"] }]);
   });
 
   it("is disabled while offline", () => {
@@ -77,7 +80,7 @@ describe("StartScreen", () => {
     expect(byText(m.container, "button", "Create room")).toBeUndefined();
     type(inputs[0], "Cy");
     click(byText(m.container, "button", "Join room"));
-    expect(calls).toEqual([{ fn: "joinRoom", args: ["K7QX2M", "Cy"] }]);
+    expect(roomCalls()).toEqual([{ fn: "joinRoom", args: ["K7QX2M", "Cy"] }]);
   });
 
   it("shows server errors inline and keeps the inputs", () => {

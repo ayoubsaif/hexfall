@@ -18,20 +18,11 @@ describe("tokenLabel", () => {
 });
 
 describe("harborLabel", () => {
-  it("reads 3:1 with an anchor for generic and 2:1 with a resource icon for specials", () => {
-    expect(harborLabel("generic")).toEqual({ rate: "3:1", icon: "anchor" });
-    expect(harborLabel("grain")).toEqual({ rate: "2:1", icon: "wheat" });
-    expect(harborLabel("lumber")).toEqual({ rate: "2:1", icon: "trees" });
-    expect(harborLabel("brick")).toEqual({ rate: "2:1", icon: "brickWall" });
-    expect(harborLabel("ore")).toEqual({ rate: "2:1", icon: "mountain" });
-    expect(harborLabel("wool")).toEqual({ rate: "2:1", icon: "sheep" });
-  });
-
-  it("gives all six harbor types distinct icons and no text to translate", () => {
-    const types = ["generic", "brick", "grain", "lumber", "ore", "wool"] as const;
-    const labels = types.map((h) => harborLabel(h));
-    expect(new Set(labels.map((l) => l.icon)).size).toBe(6);
-    for (const l of labels) expect(Object.keys(l).sort()).toEqual(["icon", "rate"]);
+  it("is only the trade rate: 3:1 for generic, 2:1 for specials, no icon", () => {
+    expect(harborLabel("generic")).toEqual({ rate: "3:1" });
+    for (const h of ["brick", "grain", "lumber", "ore", "wool"] as const) {
+      expect(harborLabel(h)).toEqual({ rate: "2:1" });
+    }
   });
 });
 

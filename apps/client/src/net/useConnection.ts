@@ -3,6 +3,7 @@ import { setSessionApi } from "./actions.ts";
 import { storeListener, withSession } from "./bindStore.ts";
 import { CLIENT_VERSION, SERVER_URL } from "./config.ts";
 import { Connection, type ConnectionOptions } from "./connection.ts";
+import { onSeated } from "../notify/sync.ts";
 import { SessionController, type SessionOptions } from "./session.ts";
 
 // One connection per page. Mounts are ref-counted and the final close is
@@ -17,10 +18,10 @@ let currentSession: SessionController | null = null;
 
 /** The app connection with its session: the session is the only writer of room and game state. */
 const defaultFactory: Factory = () => {
-  const { connection, session } = createSessionConnection({
-    serverUrl: SERVER_URL,
-    clientVersion: CLIENT_VERSION,
-  });
+  const { connection, session } = createSessionConnection(
+    { serverUrl: SERVER_URL, clientVersion: CLIENT_VERSION },
+    { onSeated: () => void onSeated() },
+  );
   currentSession = session;
   setSessionApi(session);
   return connection;

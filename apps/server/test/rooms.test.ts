@@ -45,6 +45,8 @@ describe("lobby", () => {
       status: "lobby",
       host: 0,
       seats: [{ seat: 0, name: "Ana", connected: true }],
+      pausedAt: null,
+      result: null,
     });
     expect(svc.loadedRooms()).toBe(1);
     // the stored meta holds a hash, never the token
@@ -107,6 +109,8 @@ describe("lobby", () => {
         { seat: 0, name: "Ben", connected: true },
         { seat: 1, name: "Cy", connected: true },
       ],
+      pausedAt: null,
+      result: null,
     };
     expect(lastRoomState(ben)).toEqual(expected);
     expect(lastRoomState(cy)).toEqual(expected);

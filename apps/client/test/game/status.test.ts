@@ -84,6 +84,7 @@ describe("controlsOf", () => {
     expect(c.rollDice).toBe(true);
     expect(c.endTurn).toBe(false);
     expect(c.buildRoad || c.buildSettlement || c.buildCity || c.buyDevCard).toBe(false);
+    expect(c.proposeTrade).toBe(false);
   });
 
   it("follows legal after the roll, and all off while in flight or for other seats", () => {
@@ -99,10 +100,14 @@ describe("controlsOf", () => {
       buildRoad: true,
       buildCity: true,
       maritime: true,
+      proposeTrade: true,
     });
     expect(controlsOf(view, legal, true).endTurn).toBe(false);
+    expect(controlsOf(view, legal, true).proposeTrade).toBe(false);
     const other = seen(s, 1);
     expect(controlsOf(other.view, other.legal).endTurn).toBe(false);
+    // Others may still offer to the active player after the roll.
+    expect(controlsOf(other.view, other.legal).proposeTrade).toBe(true);
   });
 });
 

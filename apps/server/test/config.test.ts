@@ -10,6 +10,7 @@ describe("parseConfig", () => {
         redisUrl: "redis://localhost:6379",
         allowedOrigins: ["http://localhost:5173"],
         nodeEnv: "development",
+        push: null,
       },
     });
   });
@@ -33,6 +34,7 @@ describe("parseConfig", () => {
         redisUrl: "rediss://default:secret@example.upstash.io:6379",
         allowedOrigins: ["https://hexfall.example", "http://localhost:5173"],
         nodeEnv: "production",
+        push: null,
       },
     });
   });
@@ -54,5 +56,35 @@ describe("parseConfig", () => {
     const r = parseConfig(env);
     expect(r.ok).toBe(false);
     if (!r.ok) expect(r.errors.some((e) => e.startsWith(key))).toBe(true);
+  });
+
+  describe("VAPID (game-server 'Push configuration')", () => {
+    const keys = {
+      VAPID_PUBLIC_KEY: "B".repeat(87),
+      VAPID_PRIVATE_KEY: "p".repeat(43),
+      VAPID_SUBJECT: "mailto:ops@hexfall.example",
+    };
+
+    it("enables push when all three are set", () => {
+      const r = parseConfig(keys);
+      expect(r.ok && r.config.push).toEqual({
+        publicKey: keys.VAPID_PUBLIC_KEY,
+        privateKey: keys.VAPID_PRIVATE_KEY,
+        subject: keys.VAPID_SUBJECT,
+      });
+    });
+
+    it("names the missing variables when only some are set", () => {
+      const r = parseConfig({ VAPID_PUBLIC_KEY: keys.VAPID_PUBLIC_KEY });
+      expect(r.ok).toBe(false);
+      if (!r.ok) {
+        expect(r.errors.join("\n")).toContain("VAPID_PRIVATE_KEY");
+        expect(r.errors.join("\n")).toContain("VAPID_SUBJECT");
+      }
+    });
+
+    it("rejects a bad subject", () => {
+      expect(parseConfig({ ...keys, VAPID_SUBJECT: "ops@hexfall" }).ok).toBe(false);
+    });
   });
 });

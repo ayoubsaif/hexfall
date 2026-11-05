@@ -20,6 +20,7 @@ export const ASSET_KEYS = [
   "piece.settlement",
   "piece.city",
   "piece.robber",
+  "dice.die",
 ] as const;
 
 export type AssetKey = (typeof ASSET_KEYS)[number];
@@ -55,13 +56,14 @@ export const ASSET_KIND: Readonly<Record<AssetKey, AssetKind>> = {
   "piece.settlement": "model",
   "piece.city": "model",
   "piece.robber": "model",
+  "dice.die": "model",
 };
 
 export function assetKind(key: AssetKey): AssetKind {
   return ASSET_KIND[key];
 }
 
-/** Keys tinted with the owning player's color. `piece.robber` is never tinted. */
+/** Keys tinted with the owning player's color. `piece.robber` and `dice.die` are never tinted. */
 export const PLAYER_TINTED_KEYS = ["piece.road", "piece.settlement", "piece.city"] as const;
 
 export function isPlayerTinted(key: AssetKey): boolean {

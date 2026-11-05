@@ -13,6 +13,7 @@ import {
   type Seat,
 } from "@hexfall/engine";
 import { PROTOCOL_VERSION } from "@hexfall/protocol";
+import { act, createElement, Fragment } from "react";
 import { afterEach, beforeEach, describe, expect, it } from "vite-plus/test";
 import { currentPick } from "../../src/game/pick.ts";
 import { controlsOf, statusOf } from "../../src/game/status.ts";
@@ -26,7 +27,11 @@ import { initialConnectionState, useConnectionStore } from "../../src/store/conn
 import { resetGame, useGameStore } from "../../src/store/game.ts";
 import { resetRoom, useRoomStore } from "../../src/store/room.ts";
 import { chooseBuild, resetUi, useUiStore } from "../../src/store/ui.ts";
-import { give, setupState } from "../game/fixtures.ts";
+import { OffersTray } from "../../src/hud/OffersTray.tsx";
+import { TradePanel } from "../../src/hud/TradePanel.tsx";
+import { ActionButtons } from "../../src/hud/actions/ActionButtons.tsx";
+import { give, playState, setupState } from "../game/fixtures.ts";
+import { byText, click, mount, type Mounted } from "../hud/helpers.tsx";
 import { FakeClock, FakeSocket } from "../net/fakes.ts";
 import { fixedT } from "../../src/i18n/index.ts";
 
@@ -79,7 +84,11 @@ class FakeServer {
   welcome() {
     const s = FakeSocket.last();
     s.serverOpen();
-    this.frame("welcome", { serverVersion: "test", protocolVersion: PROTOCOL_VERSION });
+    this.frame("welcome", {
+      serverVersion: "test",
+      protocolVersion: PROTOCOL_VERSION,
+      pushKey: null,
+    });
   }
 
   joined() {
@@ -89,6 +98,8 @@ class FakeServer {
       status: "playing",
       host: 0,
       seats: ["Ana", "Ben", "Cy"].map((name, seat) => ({ seat, name, connected: true })),
+      pausedAt: null,
+      result: null,
     });
   }
 
@@ -412,5 +423,72 @@ describe("client session over a real engine game", () => {
     expect(pickNow()).toBeNull();
     expectStatus(/^Ben is about to roll$/, false);
     expect(hud().controls).toMatchObject({ rollDice: false, endTurn: false, maritime: false });
+  });
+});
+
+describe("player trade over a real engine game", () => {
+  let m: Mounted | null = null;
+  afterEach(() => {
+    m?.unmount();
+    m = null;
+  });
+
+  const btn = (label: string) =>
+    document.querySelector<HTMLButtonElement>(`button[aria-label="${label}"]`)!;
+  const entries = () => [...document.querySelectorAll<HTMLElement>('[data-testid="offer"]')];
+  const pump = () => act(() => void server.pump());
+  const serverApply = (a: Action) => act(() => void server.apply(a));
+
+  it("offer, a decline, a counter accepted, and offers gone at turn end", () => {
+    const s = playState({ seat: ME, playerCount: 3 });
+    give(s, 0, { ore: 2, brick: 1 });
+    give(s, 1, { wool: 3 });
+    give(s, 2, { grain: 1 });
+    act(() => boot(s));
+    m = mount(
+      createElement(Fragment, null, [
+        createElement(ActionButtons, { key: "a" }),
+        createElement(OffersTray, { key: "o" }),
+        createElement(TradePanel, { key: "t" }),
+      ]),
+    );
+
+    // ---- Offer 1 ore for 1 wool to both opponents through the composer.
+    click(btn("Trade with players"));
+    click(btn("Give one more Ore"));
+    click(btn("Ask for one more Wool"));
+    click(byText(document.body, "button", "Send offer"));
+    pump();
+    expectInSync();
+    expect(server.state.offers).toHaveLength(1);
+    const mine = entries()[0]!;
+    expect(mine.textContent).toContain("Your offer");
+    expect(mine.querySelector('[data-recipient="1"]')?.textContent).toBe("Ben: deciding");
+
+    // ---- Cy declines; Ben counters with 2 wool for 1 ore.
+    serverApply({ type: "rejectTrade", seat: 2, offerId: server.state.offers[0]!.id });
+    expect(entries()[0]!.querySelector('[data-recipient="2"]')?.textContent).toBe("Cy: declined");
+    serverApply({ type: "proposeTrade", seat: 1, give: { wool: 2 }, get: { ore: 1 }, to: [ME] });
+    expectInSync();
+    const counter = entries().find((e) => e.textContent?.includes("Ben offers"))!;
+    expect(counter.querySelector('[data-testid="offer-text"]')?.textContent).toBe(
+      "You give 1 ore, you get 2 wool.",
+    );
+
+    // ---- Accept the counter: cards move, the counter closes, the first offer stays open.
+    click(byText(counter, "button", "Accept"));
+    pump();
+    expectInSync();
+    expect(server.state.players[ME]!.resources).toMatchObject({ ore: 1, wool: 2 });
+    expect(server.state.players[1]!.resources).toMatchObject({ ore: 1, wool: 1 });
+    expect(entries()).toHaveLength(1);
+    expect(useGameStore.getState().log.map((e) => e.type)).toContain("tradeAccepted");
+
+    // ---- Ending the turn withdraws the open offer.
+    click(btn("End turn"));
+    pump();
+    expectInSync();
+    expect(server.state.offers).toEqual([]);
+    expect(entries()).toHaveLength(0);
   });
 });

@@ -13,12 +13,15 @@ export function DialogContent({
   children,
   title,
   description,
+  hideHeader = false,
   ...props
 }: Omit<ComponentProps<typeof DialogPrimitive.Content>, "title"> & {
   /** Visible heading and accessible name. */
   title: ReactNode;
   /** Optional visible description (also the accessible description). */
   description?: ReactNode;
+  /** Keep title and description for assistive tech only (the dialog draws its own header). */
+  hideHeader?: boolean;
 }) {
   const container = useHudRoot();
   return (
@@ -36,11 +39,13 @@ export function DialogContent({
         {...(description === undefined ? { "aria-describedby": undefined } : {})}
         {...props}
       >
-        <DialogPrimitive.Title className="mb-2 text-base font-semibold">
+        <DialogPrimitive.Title className={hideHeader ? "sr-only" : "mb-2 text-base font-semibold"}>
           {title}
         </DialogPrimitive.Title>
         {description !== undefined && (
-          <DialogPrimitive.Description className="mb-2 text-xs text-muted-foreground">
+          <DialogPrimitive.Description
+            className={hideHeader ? "sr-only" : "mb-2 text-xs text-muted-foreground"}
+          >
             {description}
           </DialogPrimitive.Description>
         )}

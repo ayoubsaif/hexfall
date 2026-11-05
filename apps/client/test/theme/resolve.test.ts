@@ -4,7 +4,6 @@ import { FALLBACKS } from "../../src/theme/fallbacks/index.ts";
 import { ASSET_KEYS, type AssetKey } from "../../src/theme/keys.ts";
 import { parseManifest } from "../../src/theme/manifest.ts";
 import { type ResolvedTheme, loadFailureMessage, resolveAsset } from "../../src/theme/resolve.ts";
-import { BOARD_STYLES } from "../../src/theme/style.ts";
 import { instantiateModel } from "../../src/theme/tint.ts";
 
 function themeFrom(assets: Record<string, unknown>): ResolvedTheme {
@@ -16,13 +15,10 @@ function themeFrom(assets: Record<string, unknown>): ResolvedTheme {
 }
 
 describe("resolveAsset", () => {
-  it.each(BOARD_STYLES)(
-    "every supported key has a procedural fallback in the %s style",
-    (style) => {
-      expect(Object.keys(FALLBACKS[style]).sort()).toEqual([...ASSET_KEYS].sort());
-      for (const key of ASSET_KEYS) expect(typeof FALLBACKS[style][key]).toBe("function");
-    },
-  );
+  it("every supported key has a procedural fallback", () => {
+    expect(Object.keys(FALLBACKS).sort()).toEqual([...ASSET_KEYS].sort());
+    for (const key of ASSET_KEYS) expect(typeof FALLBACKS[key]).toBe("function");
+  });
 
   it("returns the image or model for mapped keys and the fallback for the rest", () => {
     const theme = themeFrom({

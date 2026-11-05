@@ -60,6 +60,54 @@ export const StartGameMessage = msg(
 );
 export const GameActionMessage = msg("gameAction", z.object({ action: ClientActionSchema }));
 
+/** A browser Web Push subscription (PushSubscription.toJSON()), size-limited. */
+export const PushSubscriptionSchema = z.object({
+  endpoint: z.url({ protocol: /^https$/ }).max(1024),
+  keys: z.object({
+    p256dh: z.string().min(1).max(256),
+    auth: z.string().min(1).max(256),
+  }),
+});
+export type PushSubscriptionJSON = z.infer<typeof PushSubscriptionSchema>;
+/** Seated connections only (game-server "Push subscriptions"). `lang` picks the notification text. */
+export const PushSubscribeMessage = msg(
+  "pushSubscribe",
+  z.object({ subscription: PushSubscriptionSchema, lang: z.string().min(1).max(8) }),
+);
+export const PushUnsubscribeMessage = msg(
+  "pushUnsubscribe",
+  z.object({ endpoint: z.string().min(1).max(1024) }),
+);
+/** Whether this connection's page is visible (game-server "Connection visibility"). */
+export const VisibilityMessage = msg("visibility", z.object({ visible: z.boolean() }));
+
+/** Host only: freeze a running game (game-pause). */
+export const PauseGameMessage = msg("pauseGame", z.object({}));
+/** Host only: continue a paused game. */
+export const ResumeGameMessage = msg("resumeGame", z.object({}));
+/** Host only: end a running or paused game now; most total VP wins (early-end). */
+export const EndGameMessage = msg("endGame", z.object({}));
+/** Max rooms per `lookupSeats`. */
+export const MAX_LOOKUP_SEATS = 20;
+/** Status of rooms this browser holds seat tokens for (saved-games). Binds no seat. */
+export const LookupSeatsMessage = msg(
+  "lookupSeats",
+  z.object({
+    seats: z
+      .array(z.object({ room: RoomCode, token: z.string().min(1).max(128) }))
+      .max(MAX_LOOKUP_SEATS),
+  }),
+);
+
+/**
+ * Host only, from the saved games list: end a running or paused game without taking the
+ * seat (early-end). Answered with `seatsInfo` holding that one room.
+ */
+export const EndSavedGameMessage = msg(
+  "endSavedGame",
+  z.object({ room: RoomCode, token: z.string().min(1).max(128) }),
+);
+
 export const ClientMessage = z.discriminatedUnion("type", [
   HelloMessage,
   PingMessage,
@@ -69,13 +117,26 @@ export const ClientMessage = z.discriminatedUnion("type", [
   LeaveRoomMessage,
   StartGameMessage,
   GameActionMessage,
+  PushSubscribeMessage,
+  PushUnsubscribeMessage,
+  VisibilityMessage,
+  PauseGameMessage,
+  ResumeGameMessage,
+  EndGameMessage,
+  LookupSeatsMessage,
+  EndSavedGameMessage,
 ]);
 export type ClientMessage = z.infer<typeof ClientMessage>;
 
 // ---- server -> client
 export const WelcomeMessage = msg(
   "welcome",
-  z.object({ serverVersion: z.string(), protocolVersion: z.number().int() }),
+  z.object({
+    serverVersion: z.string(),
+    protocolVersion: z.number().int(),
+    /** VAPID public key (base64url) when the server sends Web Push, else null. */
+    pushKey: z.string().nullable(),
+  }),
 );
 export const PongMessage = msg("pong", z.object({ t: z.number() }));
 export const ErrorCode = z.enum([
@@ -93,11 +154,14 @@ export const ErrorCode = z.enum([
   "already_in_room",
   "unavailable",
   "rate_limited",
+  "game_paused",
+  "not_paused",
+  "not_playing",
 ]);
 export type ErrorCode = z.infer<typeof ErrorCode>;
 export const ErrorMessage = msg("error", z.object({ code: ErrorCode, message: z.string() }));
 
-export const RoomStatus = z.enum(["lobby", "playing", "ended"]);
+export const RoomStatus = z.enum(["lobby", "playing", "paused", "ended"]);
 export type RoomStatus = z.infer<typeof RoomStatus>;
 export const SeatInfo = z.object({ seat: Seat, name: z.string(), connected: z.boolean() });
 export type SeatInfo = z.infer<typeof SeatInfo>;
@@ -108,10 +172,64 @@ export const RoomJoinedMessage = msg(
   z.object({ room: z.string(), seat: Seat, token: z.string().optional() }),
 );
 export const RoomLeftMessage = msg("roomLeft", z.object({ room: z.string() }));
+/** Outcome of a game the host ended early (early-end). Ties share the win. */
+export const EarlyResult = z.object({
+  reason: z.literal("host"),
+  /** Server ms when the game was ended. */
+  at: z.number(),
+  winners: z.array(Seat).min(1),
+  /** Per seat: total VP (public + hidden VP cards) and the hidden VP cards among it. */
+  scores: z.array(
+    z.object({
+      seat: Seat,
+      vp: z.number().int().nonnegative(),
+      hiddenVp: z.number().int().nonnegative(),
+    }),
+  ),
+});
+export type EarlyResult = z.infer<typeof EarlyResult>;
+
 export const RoomStateMessage = msg(
   "roomState",
-  z.object({ room: z.string(), status: RoomStatus, host: Seat, seats: z.array(SeatInfo) }),
+  z.object({
+    room: z.string(),
+    status: RoomStatus,
+    host: Seat,
+    seats: z.array(SeatInfo),
+    /** Server ms when the host paused; null unless paused. */
+    pausedAt: z.number().nullable(),
+    /** Set when the host ended the game early; null otherwise. */
+    result: EarlyResult.nullable(),
+  }),
 );
+
+/** One `seatsInfo` entry. `gone`: missing room or a token that matches no seat. */
+export const SeatInfoEntry = z.union([
+  z.object({ room: z.string(), status: z.literal("gone") }),
+  z.object({
+    room: z.string(),
+    status: RoomStatus,
+    /** The token's seat. */
+    seat: Seat,
+    host: Seat,
+    /** Index = seat. */
+    names: z.array(z.string()),
+    /** Turn number, only when the server holds the game in memory. */
+    turn: z.number().int().nonnegative().nullable(),
+    pausedAt: z.number().nullable(),
+    /** Server ms when the room expires. */
+    expiresAt: z.number().nullable(),
+    /** Server ms when the room was created. */
+    createdAt: z.number(),
+    /** Server ms when the game started; null in the lobby. */
+    startedAt: z.number().nullable(),
+    /** Server ms of the last game move or room change (pause, end); null if unknown. */
+    lastActiveAt: z.number().nullable(),
+  }),
+]);
+export type SeatInfoEntry = z.infer<typeof SeatInfoEntry>;
+/** Answer to `lookupSeats`, in request order. */
+export const SeatsInfoMessage = msg("seatsInfo", z.object({ rooms: z.array(SeatInfoEntry) }));
 /** Full view (with the whole redacted log), sent on start, join and resume. */
 export const GameSnapshotMessage = msg(
   "gameSnapshot",
@@ -150,6 +268,7 @@ export const ServerMessage = z.discriminatedUnion("type", [
   GameSnapshotMessage,
   GameUpdateMessage,
   ActionRejectedMessage,
+  SeatsInfoMessage,
 ]);
 export type ServerMessage = z.infer<typeof ServerMessage>;
 

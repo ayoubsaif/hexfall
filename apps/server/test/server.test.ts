@@ -34,6 +34,8 @@ function fakeService() {
           status: "lobby",
           host: 0,
           seats: [{ seat: 0, name, connected: true }],
+          pausedAt: null,
+          result: null,
         },
         re: req.seq,
       });
@@ -43,8 +45,16 @@ function fakeService() {
       return { ok: false, error: { code: "room_not_found", message: "no such room" } };
     },
     resumeRoom: ok,
+    pushSubscribe: ok,
+    pushUnsubscribe: ok,
+    setVisibility: () => {},
     leaveRoom: ok,
     startGame: ok,
+    pauseGame: ok,
+    resumeGame: ok,
+    endGame: ok,
+    lookupSeats: ok,
+    endSavedGame: ok,
     async gameAction() {
       return { ok: false, rejected: { code: "not_your_turn", message: "not your turn" } };
     },

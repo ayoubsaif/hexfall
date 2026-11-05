@@ -26,6 +26,8 @@ export interface SessionOptions {
   /** Clock (ms) for the rate limiter. Default Date.now. */
   now?: () => number;
   serverVersion: string;
+  /** VAPID public key sent in `welcome`, or null when push is off. */
+  pushKey?: string | null;
   log?: (msg: string) => void;
 }
 
@@ -95,7 +97,11 @@ export function createSession(opts: SessionOptions): Session {
       case "hello":
         sendOut({
           type: "welcome",
-          payload: { serverVersion: opts.serverVersion, protocolVersion: PROTOCOL_VERSION },
+          payload: {
+            serverVersion: opts.serverVersion,
+            protocolVersion: PROTOCOL_VERSION,
+            pushKey: opts.pushKey ?? null,
+          },
           re: msg.seq,
         });
         return;
@@ -125,6 +131,30 @@ export function createSession(opts: SessionOptions): Session {
       }
       case "gameAction":
         result = await service.gameAction(req, msg.payload.action);
+        break;
+      case "pushSubscribe":
+        result = await service.pushSubscribe(req, msg.payload.subscription, msg.payload.lang);
+        break;
+      case "pushUnsubscribe":
+        result = await service.pushUnsubscribe(req, msg.payload.endpoint);
+        break;
+      case "visibility":
+        service.setVisibility(conn, msg.payload.visible);
+        return;
+      case "pauseGame":
+        result = await service.pauseGame(req);
+        break;
+      case "resumeGame":
+        result = await service.resumeGame(req);
+        break;
+      case "endGame":
+        result = await service.endGame(req);
+        break;
+      case "lookupSeats":
+        result = await service.lookupSeats(req, msg.payload.seats);
+        break;
+      case "endSavedGame":
+        result = await service.endSavedGame(req, msg.payload.room, msg.payload.token);
         break;
     }
     if (result.ok) return;

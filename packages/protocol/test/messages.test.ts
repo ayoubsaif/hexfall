@@ -19,7 +19,7 @@ type Assignable<A, B> = [A] extends [B] ? true : false;
 
 describe("protocol v3", () => {
   it("is version 3 and has the Replaced close code", () => {
-    expect(PROTOCOL_VERSION).toBe(3);
+    expect(PROTOCOL_VERSION).toBe(5);
     expect(CloseCode.Replaced).toBe(4001);
   });
 
@@ -61,6 +61,8 @@ describe("protocol v3", () => {
           status: "lobby",
           host: 0,
           seats: [{ seat: 0, name: "Ana", connected: true }],
+          pausedAt: null,
+          result: null,
         },
         4,
       ),
@@ -186,5 +188,150 @@ describe("turn timer (floating-hud-turn-timer 2.1)", () => {
       payload: { version: 0, view: {}, legal: {} },
     });
     expect(decodeServerMessage(raw).ok).toBe(false);
+  });
+});
+
+describe("push and visibility messages (protocol v4)", () => {
+  const v = PROTOCOL_VERSION;
+  const sub = {
+    endpoint: "https://push.example.com/abc",
+    keys: { p256dh: "BPk", auth: "x1" },
+  };
+
+  it("accepts pushSubscribe, pushUnsubscribe and visibility", () => {
+    for (const m of [
+      { v, type: "pushSubscribe", seq: 0, payload: { subscription: sub, lang: "es" } },
+      { v, type: "pushUnsubscribe", seq: 0, payload: { endpoint: sub.endpoint } },
+      { v, type: "visibility", seq: 0, payload: { visible: false } },
+    ]) {
+      expect(decodeClientMessage(frame(m)), JSON.stringify(m)).toMatchObject({ ok: true });
+    }
+  });
+
+  it("rejects non-https, oversized or incomplete subscriptions", () => {
+    for (const subscription of [
+      { ...sub, endpoint: "http://push.example.com/abc" },
+      { ...sub, endpoint: `https://push.example.com/${"a".repeat(1100)}` },
+      { endpoint: sub.endpoint, keys: { p256dh: "BPk" } },
+    ]) {
+      const m = { v, type: "pushSubscribe", seq: 0, payload: { subscription, lang: "en" } };
+      expect(decodeClientMessage(frame(m))).toMatchObject({ ok: false, error: "bad_frame" });
+    }
+    const noLang = { v, type: "pushSubscribe", seq: 0, payload: { subscription: sub, lang: "" } };
+    expect(decodeClientMessage(frame(noLang))).toMatchObject({ ok: false });
+  });
+
+  it("welcome carries pushKey (string or null)", () => {
+    for (const pushKey of ["BKey", null]) {
+      const raw = encodeServer("welcome", { serverVersion: "1", protocolVersion: v, pushKey }, 0);
+      expect(decodeServerMessage(raw)).toMatchObject({ ok: true });
+    }
+  });
+});
+
+describe("pause, end and saved games (protocol v5)", () => {
+  const v = PROTOCOL_VERSION;
+  const seats = (n: number) =>
+    Array.from({ length: n }, (_, i) => ({ room: `R${i}`, token: `t${i}` }));
+
+  it("accepts pauseGame, resumeGame, endGame and lookupSeats", () => {
+    for (const m of [
+      { v, type: "pauseGame", seq: 0, payload: {} },
+      { v, type: "resumeGame", seq: 0, payload: {} },
+      { v, type: "endGame", seq: 0, payload: {} },
+      { v, type: "lookupSeats", seq: 0, payload: { seats: seats(20) } },
+      { v, type: "lookupSeats", seq: 0, payload: { seats: [] } },
+      { v, type: "endSavedGame", seq: 0, payload: { room: "abc234", token: "t" } },
+    ]) {
+      expect(decodeClientMessage(frame(m)), JSON.stringify(m)).toMatchObject({ ok: true });
+    }
+  });
+
+  it("rejects more than 20 lookups or empty tokens", () => {
+    for (const bad of [{ room: "ABC" }, { room: "ABC", token: "" }]) {
+      const m = { v, type: "endSavedGame", seq: 0, payload: bad };
+      expect(decodeClientMessage(frame(m))).toMatchObject({ ok: false, error: "bad_frame" });
+    }
+    for (const payload of [
+      { seats: seats(21) },
+      { seats: [{ room: "ABC", token: "" }] },
+      { seats: [{ room: "ABC" }] },
+    ]) {
+      const m = { v, type: "lookupSeats", seq: 0, payload };
+      expect(decodeClientMessage(frame(m))).toMatchObject({ ok: false, error: "bad_frame" });
+    }
+  });
+
+  it("round-trips paused and ended room states and seatsInfo", () => {
+    const base = { room: "ABC234", host: 0, seats: [{ seat: 0, name: "Ana", connected: true }] };
+    const cases = [
+      encodeServer("roomState", { ...base, status: "paused", pausedAt: 123, result: null }, 1),
+      encodeServer(
+        "roomState",
+        {
+          ...base,
+          status: "ended",
+          pausedAt: null,
+          result: {
+            reason: "host",
+            at: 5,
+            winners: [0, 2],
+            scores: [
+              { seat: 0, vp: 8, hiddenVp: 1 },
+              { seat: 1, vp: 6, hiddenVp: 0 },
+              { seat: 2, vp: 8, hiddenVp: 0 },
+            ],
+          },
+        },
+        2,
+      ),
+      encodeServer(
+        "seatsInfo",
+        {
+          rooms: [
+            {
+              room: "ABC234",
+              status: "paused",
+              seat: 1,
+              host: 0,
+              names: ["Ana", "Ben", "Cy"],
+              turn: null,
+              pausedAt: 10,
+              expiresAt: 20,
+              createdAt: 1,
+              startedAt: 2,
+              lastActiveAt: 9,
+            },
+            { room: "ZZZ999", status: "gone" },
+          ],
+        },
+        3,
+      ),
+      encodeServer("error", { code: "game_paused", message: "paused" }, 4),
+      encodeServer("error", { code: "not_paused", message: "x" }, 5),
+      encodeServer("error", { code: "not_playing", message: "x" }, 6),
+    ];
+    for (const raw of cases) {
+      const r = decodeServerMessage(raw);
+      expect(r.ok, raw).toBe(true);
+      if (r.ok) expect(r.message).toEqual(JSON.parse(raw));
+    }
+  });
+
+  it("rejects a result without winners", () => {
+    const raw = frame({
+      v,
+      type: "roomState",
+      seq: 0,
+      payload: {
+        room: "A",
+        status: "ended",
+        host: 0,
+        seats: [],
+        pausedAt: null,
+        result: { reason: "host", at: 1, winners: [], scores: [] },
+      },
+    });
+    expect(decodeServerMessage(raw)).toMatchObject({ ok: false, error: "bad_frame" });
   });
 });

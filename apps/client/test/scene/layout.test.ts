@@ -81,12 +81,12 @@ describe("boardLayout (beginner board)", () => {
     const slot1 = layout.harbors[1];
     expect(slot1?.type).toBe("grain");
     expect(slot1?.assetKey).toBe("harbor.grain");
-    expect(harborLabel("grain")).toEqual({ rate: "2:1", icon: "wheat" });
+    expect(harborLabel("grain")).toEqual({ rate: "2:1" });
     const generic = layout.harbors.filter((h) => h.type === "generic");
     expect(generic).toHaveLength(4);
     for (const h of generic) {
       expect(h.assetKey).toBe("harbor.generic");
-      expect(harborLabel(h.type)).toEqual({ rate: "3:1", icon: "anchor" });
+      expect(harborLabel(h.type)).toEqual({ rate: "3:1" });
     }
   });
 

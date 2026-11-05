@@ -18,13 +18,36 @@ const ConfigSchema = z.object({
     // Normalize to the exact form browsers send in the Origin header.
     .transform((list) => [...new Set(list.map((o) => new URL(o).origin))]),
   NODE_ENV: z.enum(["development", "production", "test"]).default("development"),
+  // Web Push (game-server "Push configuration"): all three or none.
+  VAPID_PUBLIC_KEY: z
+    .string()
+    .regex(/^[A-Za-z0-9_-]{40,}$/, "must be a base64url key")
+    .optional(),
+  VAPID_PRIVATE_KEY: z
+    .string()
+    .regex(/^[A-Za-z0-9_-]{20,}$/, "must be a base64url key")
+    .optional(),
+  VAPID_SUBJECT: z
+    .string()
+    .regex(/^(mailto:\S+@\S+|https:\/\/\S+)$/, "must be a mailto: or https: URL")
+    .optional(),
 });
+
+const VAPID_VARS = ["VAPID_PUBLIC_KEY", "VAPID_PRIVATE_KEY", "VAPID_SUBJECT"] as const;
+
+export interface PushConfig {
+  publicKey: string;
+  privateKey: string;
+  subject: string;
+}
 
 export interface Config {
   port: number;
   redisUrl: string;
   allowedOrigins: readonly string[];
   nodeEnv: "development" | "production" | "test";
+  /** Web Push keys, or null when push is off. */
+  push: PushConfig | null;
 }
 
 export type ConfigResult = { ok: true; config: Config } | { ok: false; errors: string[] };
@@ -41,6 +64,14 @@ export function parseConfig(env: Record<string, string | undefined>): ConfigResu
     };
   }
   const d = parsed.data;
+  const set = VAPID_VARS.filter((k) => d[k] !== undefined);
+  if (set.length > 0 && set.length < VAPID_VARS.length) {
+    const missing = VAPID_VARS.filter((k) => d[k] === undefined);
+    return {
+      ok: false,
+      errors: missing.map((k) => `${k}: required when any VAPID_* variable is set`),
+    };
+  }
   return {
     ok: true,
     config: {
@@ -48,6 +79,14 @@ export function parseConfig(env: Record<string, string | undefined>): ConfigResu
       redisUrl: d.REDIS_URL,
       allowedOrigins: d.ALLOWED_ORIGIN,
       nodeEnv: d.NODE_ENV,
+      push:
+        d.VAPID_PUBLIC_KEY && d.VAPID_PRIVATE_KEY && d.VAPID_SUBJECT
+          ? {
+              publicKey: d.VAPID_PUBLIC_KEY,
+              privateKey: d.VAPID_PRIVATE_KEY,
+              subject: d.VAPID_SUBJECT,
+            }
+          : null,
     },
   };
 }

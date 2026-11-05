@@ -16,11 +16,11 @@ import {
   yearOfPlentyCount,
 } from "../game/cards.ts";
 import { seatColor, seatColorName } from "../game/colors.ts";
-import { resourceLabel } from "../i18n/labels.ts";
 import { act } from "../net/actions.ts";
 import { openDialog, setVictimHex, useUiStore } from "../store/ui.ts";
 import { CountdownText } from "./actions/CountdownText.tsx";
 import { GameCard } from "./cards/GameCard.tsx";
+import { Stepper } from "./cards/Stepper.tsx";
 import { useCountdown } from "./countdown.ts";
 import { useNames } from "./names.ts";
 import { useInFlight, useLegal, useOwn, useView } from "./state.ts";
@@ -31,57 +31,6 @@ const mandatory = {
   onPointerDownOutside: (e: Event) => e.preventDefault(),
   onInteractOutside: (e: Event) => e.preventDefault(),
 };
-
-function Stepper({
-  resource,
-  value,
-  note,
-  canAdd,
-  onChange,
-}: {
-  resource: Resource;
-  value: number;
-  note?: string;
-  canAdd: boolean;
-  onChange: (next: number) => void;
-}) {
-  const { t } = useTranslation();
-  const label = resourceLabel(t, resource);
-  return (
-    <div className="flex items-center gap-2 py-1" data-resource={resource}>
-      <GameCard resource={resource} size="md" />
-      <span className="flex min-w-0 flex-1 flex-col">
-        <span className="text-sm font-semibold">{label}</span>
-        {note && <span className="text-xs text-muted-foreground">{note}</span>}
-      </span>
-      <Button
-        variant="secondary"
-        size="icon"
-        aria-label={t("dialogs.stepper.less", { resource: label })}
-        disabled={value <= 0}
-        onClick={() => onChange(value - 1)}
-      >
-        −
-      </Button>
-      <span
-        className="w-[2ch] text-center text-base font-semibold tabular-nums"
-        aria-live="polite"
-        data-stepper-value
-      >
-        {value}
-      </span>
-      <Button
-        variant="secondary"
-        size="icon"
-        aria-label={t("dialogs.stepper.more", { resource: label })}
-        disabled={!canAdd}
-        onClick={() => onChange(value + 1)}
-      >
-        +
-      </Button>
-    </div>
-  );
-}
 
 /** Always mounted; opens by itself when the viewer owes a discard. Cannot be dismissed. */
 export function DiscardDialog() {

@@ -1,10 +1,20 @@
 // Floating turn controls (specs/game-hud "Turn status and controls", "Turn countdown";
 // specs/hud-presentation "Resource picture cards": cost hints as small cards; design decision 6).
-// Build road / settlement / city, Buy development card, Trade with bank and End turn, as round
+// Build road / settlement / city, Buy development card, Trade with bank, Trade with players
+// (specs/player-trade "Trade with players button") and End turn, as round
 // icon buttons with no panel. Shown only to the active player after setup.
 import type { Resource, ResourceBundle } from "@hexfall/engine";
 import { COSTS, RESOURCES } from "@hexfall/engine/geometry";
-import { Castle, House, Landmark, Layers, type LucideIcon, Route, SkipForward } from "lucide-react";
+import {
+  Castle,
+  Handshake,
+  House,
+  Landmark,
+  Layers,
+  type LucideIcon,
+  Route,
+  SkipForward,
+} from "lucide-react";
 import { useEffect } from "react";
 import { useTranslation } from "react-i18next";
 import { TooltipProvider } from "@/components/ui/tooltip.tsx";
@@ -13,7 +23,13 @@ import { controlsOf, showBuildControls } from "../../game/status.ts";
 import type { T } from "../../i18n/index.ts";
 import { resourceLabel } from "../../i18n/labels.ts";
 import { act } from "../../net/actions.ts";
-import { type BuildChoice, chooseBuild, openDialog, useUiStore } from "../../store/ui.ts";
+import {
+  type BuildChoice,
+  chooseBuild,
+  openDialog,
+  openTrade,
+  useUiStore,
+} from "../../store/ui.ts";
 import { GameCard } from "../cards/GameCard.tsx";
 import { countdownText, useCountdown } from "../countdown.ts";
 import { useInFlight, useLegal, useOwn, useView } from "../state.ts";
@@ -166,6 +182,18 @@ export function ActionButtons() {
           label={t("play.actions.tradeBank")}
           disabled={!c.maritime}
           onClick={() => openDialog("maritime")}
+        />
+        <Fab
+          icon={Handshake}
+          label={t("play.actions.tradePlayers")}
+          disabled={!c.proposeTrade}
+          onClick={() =>
+            openTrade({
+              give: {},
+              get: {},
+              to: view.players.map((_, i) => i).filter((s) => s !== viewer),
+            })
+          }
         />
         <Fab
           icon={SkipForward}

@@ -52,6 +52,13 @@ export function recordSession(): Call[] {
     startGame: rec("startGame") as SessionApi["startGame"],
     playHere: rec("playHere") as SessionApi["playHere"],
     backToStart: rec("backToStart") as SessionApi["backToStart"],
+    pauseGame: rec("pauseGame") as SessionApi["pauseGame"],
+    resumeGame: rec("resumeGame") as SessionApi["resumeGame"],
+    endGame: rec("endGame") as SessionApi["endGame"],
+    lookupSeats: rec("lookupSeats") as SessionApi["lookupSeats"],
+    continueGame: rec("continueGame") as SessionApi["continueGame"],
+    forgetGame: rec("forgetGame") as SessionApi["forgetGame"],
+    endSavedGame: rec("endSavedGame") as SessionApi["endSavedGame"],
   });
   return calls;
 }

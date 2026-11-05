@@ -43,7 +43,7 @@ export interface Timers {
 /** Callbacks through which the connection reports state. The app wires these to the stores. */
 export interface ConnectionListener {
   status?(status: ConnectionStatus, attempts: number): void;
-  welcome?(info: { serverVersion: string; protocolVersion: number }): void;
+  welcome?(info: { serverVersion: string; protocolVersion: number; pushKey: string | null }): void;
   latency?(ms: number): void;
   message?(msg: ServerMessage): void;
 }

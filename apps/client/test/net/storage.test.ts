@@ -39,7 +39,9 @@ describe("seat storage", () => {
     seats.save("k7qx2m", "tok");
     expect(seats.token("K7QX2M")).toBe("tok");
     expect(seats.token("k7qx2m")).toBe("tok");
-    expect(JSON.parse(store.getItem(SEATS_KEY)!)).toEqual({ K7QX2M: "tok" });
+    expect(JSON.parse(store.getItem(SEATS_KEY)!)).toEqual({
+      K7QX2M: { token: "tok", usedAt: expect.any(Number) },
+    });
     seats.setLastRoom("k7qx2m");
     expect(seats.lastRoom()).toBe("K7QX2M");
     seats.forget("K7QX2M");
@@ -138,5 +140,25 @@ describe("address", () => {
     expect(a.room()).toBeNull();
     a.setRoom("ABC");
     expect(a.inviteLink("abc")).toBe("?room=ABC");
+  });
+});
+
+describe("saved seat list (saved-games)", () => {
+  it("records usedAt on save and when entering a room; old values read as usedAt 0", () => {
+    const store = new MapStorage();
+    let t = 10;
+    const seats = createSeatStorage(store, () => t);
+    store.setItem(SEATS_KEY, JSON.stringify({ OLDOLD: "old" }));
+    seats.save("newnew", "n");
+    expect(seats.list()).toEqual([
+      { room: "OLDOLD", token: "old", usedAt: 0 },
+      { room: "NEWNEW", token: "n", usedAt: 10 },
+    ]);
+    t = 50;
+    seats.setLastRoom("oldold");
+    expect(seats.list().find((s) => s.room === "OLDOLD")?.usedAt).toBe(50);
+    expect(seats.token("OLDOLD")).toBe("old");
+    seats.forget("NEWNEW");
+    expect(seats.list().map((s) => s.room)).toEqual(["OLDOLD"]);
   });
 });

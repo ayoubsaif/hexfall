@@ -103,6 +103,7 @@ export const game: Catalog["game"] = {
     largestArmyYou: "Te llevas el Gran Ejército",
     largestArmy: "{{name}} se lleva el Gran Ejército",
     shortage: "A la banca se le acabó el {{resource}}",
+    tradeOffered: "{{name}} te hizo una oferta de intercambio",
   },
   status: {
     rollForOrder: "Tira para decidir quién empieza",

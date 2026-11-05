@@ -22,9 +22,9 @@ Rules for both:
 - Orange dots are intersections, where settlements and cities sit.
 - Delete the `guides` layer before export.
 
-When any terrain image is isometric, the flat board style draws the island as raised
-tiles. The camera tilts to 60° and turns at most ±25° so the art stays aligned. The
-earth band shows along the coast. The 3D board style ignores theme images.
+When any terrain image is isometric, the board draws the island as raised tiles. The
+camera tilts to 60° and turns at most ±25° so the art stays aligned. The earth band
+shows along the coast.
 
 `node tools/check-assets.mjs` fails on an isometric image that is not 16:17. It warns
 on a top-down tile image that is not square.

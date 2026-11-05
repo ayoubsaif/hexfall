@@ -166,9 +166,8 @@ describe("Turn status and controls (full HUD)", () => {
     for (const s of states) {
       showGame(s, 0);
       m = mount(<Hud />);
-      // The event log is the only boxed card left in the HUD.
-      const cards = [...document.querySelectorAll<HTMLElement>('[data-slot="card"]')];
-      expect(cards.map((c) => c.getAttribute("aria-label"))).toEqual(cards.map(() => "Game log"));
+      // No boxed cards on the board: the event log lives in its drawer.
+      expect(document.querySelectorAll('[data-slot="card"]')).toHaveLength(0);
       expect(document.querySelector('[aria-label="Turn"], [aria-label="Build"]')).toBeNull();
       const rolls = [...document.querySelectorAll("button")].filter((b) =>
         (b.getAttribute("aria-label") ?? b.textContent ?? "").startsWith("Roll"),

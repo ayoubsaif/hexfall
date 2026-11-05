@@ -7,6 +7,8 @@ export interface ConnectionState {
   latencyMs: number | null;
   serverVersion: string | null;
   protocolVersion: number | null;
+  /** Server's VAPID public key from `welcome`; null when it does not send Web Push. */
+  pushKey: string | null;
   /** Reconnect attempts since the last `welcome`. */
   attempts: number;
 }
@@ -16,6 +18,7 @@ export const initialConnectionState: ConnectionState = {
   latencyMs: null,
   serverVersion: null,
   protocolVersion: null,
+  pushKey: null,
   attempts: 0,
 };
 

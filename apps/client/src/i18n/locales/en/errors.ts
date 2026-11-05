@@ -19,6 +19,9 @@ export const errors = {
     already_in_room: "You are already in a room.",
     unavailable: "The server is busy right now. Please try again in a moment.",
     rate_limited: "Too many requests. Slow down a little.",
+    game_paused: "The host paused the game.",
+    not_paused: "The game is not paused.",
+    not_playing: "The game is not running.",
   } as const satisfies Record<ErrorCode, string>,
   rule: {
     invalid_config: "That game setup is not valid.",

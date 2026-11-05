@@ -102,6 +102,7 @@ export const game = {
     largestArmyYou: "You take Largest Army",
     largestArmy: "{{name}} takes Largest Army",
     shortage: "The bank ran short of {{resource}}",
+    tradeOffered: "{{name}} made you a trade offer",
   },
   status: {
     rollForOrder: "Roll for the starting player",

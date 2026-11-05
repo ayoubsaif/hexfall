@@ -1,27 +1,27 @@
 // The dice tray (specs/game-hud "Dice display", "Your-turn focus", "Turn countdown"; openspec
-// dice-tray-3d, design decisions 3–5; floating-hud-turn-timer, design decision 8): two 3D dice
-// and the total, docked at the bottom-right of the board area, or enlarged at the center of
-// the screen while the your-turn focus is open. It is also the Roll dice / Roll for order control.
-import { useEffect, useLayoutEffect, useRef, useState, type AnimationEvent } from "react";
+// dice-tray-3d, design decisions 4–5; floating-hud-turn-timer, design decision 8;
+// physics-dice-3d, design decision 9): the Roll dice / Roll for order control and the total
+// of the latest roll, docked at the bottom-right of the board area, or enlarged at the center
+// of the screen while the your-turn focus is open. The dice themselves roll on the board
+// (scene/dice/BoardDice.tsx); the tray announces the roll when they come to rest.
+import { Dices } from "lucide-react";
+import { useEffect, useLayoutEffect, useRef, useState } from "react";
 import type { Seat } from "@hexfall/engine";
 import { useTranslation } from "react-i18next";
 import { cn } from "@/lib/utils.ts";
+import { THROW_MS, useDiceThrow } from "../../game/diceThrow.ts";
 import { controlsOf, latestRoll, type DiceRoll } from "../../game/status.ts";
 import type { T } from "../../i18n/index.ts";
 import { act } from "../../net/actions.ts";
 import { useGameStore } from "../../store/game.ts";
+import { useDiceStore } from "../../store/dice.ts";
 import { useDockStore } from "../../store/dock.ts";
 import { setTurnFocus, useUiStore } from "../../store/ui.ts";
 import { prefersReducedMotion } from "../cards/useCountChange.ts";
 import { countdownText, useCountdown } from "../countdown.ts";
 import { useInFlight, useLegal, useView } from "../state.ts";
-import { Die3d, type DieValue } from "./Die3d.tsx";
-import { useDiceThrow } from "./useDiceThrow.ts";
 
-/** Longest throw: the second die's 80 ms delay plus its 900 ms bounce. */
-export const THROW_MS = 980;
-/** Faces shown before any roll this turn (faded, with no total). */
-const IDLE: readonly [DieValue, DieValue] = [5, 3];
+export { THROW_MS };
 
 /** "Rolled 3 and 4, total 7", or the no-roll text. */
 export function rollText(dice: readonly [number, number] | null, t: T): string {
@@ -60,8 +60,9 @@ export function DiceTray({ onSettled = closeFocusOnOwnRoll }: DiceTrayProps = {}
   const { t } = useTranslation();
   const roll = latestRoll(log);
   const thrown = useDiceThrow(roll);
-  const [settledKey, setSettledKey] = useState(-1);
-  const settled = thrown.mode === "static" || settledKey === thrown.key;
+  const boardSettled = useDiceStore((s) => roll !== null && s.settledIndex === roll.index);
+  const [timedOutKey, setTimedOutKey] = useState(-1);
+  const settled = thrown.mode === "static" || boardSettled || timedOutKey === thrown.key;
   const moveRef = useRef<HTMLDivElement>(null);
   const lastRect = useRef<DOMRect | null>(null);
   const viewer = view?.viewer ?? null;
@@ -69,10 +70,10 @@ export function DiceTray({ onSettled = closeFocusOnOwnRoll }: DiceTrayProps = {}
   // The roll present at mount is already at rest: only later rolls report settling.
   const reported = useRef(rollIndex);
 
-  // Fallback if animationend never fires (hidden tab, interrupted animation).
+  // Fallback if the board dice never report rest (hidden tab, no WebGL).
   useEffect(() => {
     if (thrown.mode !== "animate") return;
-    const id = setTimeout(() => setSettledKey(thrown.key), THROW_MS + 250);
+    const id = setTimeout(() => setTimedOutKey(thrown.key), THROW_MS + 250);
     return () => clearTimeout(id);
   }, [thrown]);
 
@@ -116,8 +117,6 @@ export function DiceTray({ onSettled = closeFocusOnOwnRoll }: DiceTrayProps = {}
       : action === "rollDice"
         ? t("play.dice.rollDice")
         : text;
-  const [a, b] = (roll?.dice ?? IDLE) as readonly [DieValue, DieValue];
-  const throwing = thrown.mode === "animate" && !settled;
   const total = roll && settled ? roll.dice[0] + roll.dice[1] : null;
   // The viewer's own roll wait: the countdown sits on the dice (the focus shows it when open).
   const own =
@@ -125,15 +124,6 @@ export function DiceTray({ onSettled = closeFocusOnOwnRoll }: DiceTrayProps = {}
       ? countdown
       : null;
   const showCountdown = own !== null && action !== null && !centered;
-
-  const onAnimationEnd = (e: AnimationEvent) => {
-    if (
-      e.animationName === "dice-bounce" &&
-      (e.target as HTMLElement).closest('[data-die-slot="1"]')
-    ) {
-      setSettledKey(thrown.key);
-    }
-  };
 
   return (
     <div
@@ -159,22 +149,19 @@ export function DiceTray({ onSettled = closeFocusOnOwnRoll }: DiceTrayProps = {}
           onClick={() => {
             if (action) act({ type: action });
           }}
-          onAnimationEnd={onAnimationEnd}
           className={cn(
-            "flex items-center gap-[calc(var(--die)*0.45)] rounded-2xl bg-hud px-[calc(var(--die)*0.4)] pt-[calc(var(--die)*0.3)] pb-[calc(var(--die)*0.4)] shadow-lg shadow-black/25 outline-none",
+            "flex items-center gap-[calc(var(--die)*0.45)] rounded-2xl bg-hud px-[calc(var(--die)*0.4)] py-[calc(var(--die)*0.35)] shadow-lg shadow-black/25 outline-none",
             "transition-[translate,box-shadow] duration-150 focus-visible:ring-2 focus-visible:ring-ring",
             "data-[ready]:cursor-pointer data-[ready]:ring-2 data-[ready]:ring-wait data-[ready]:hover:-translate-y-0.5",
             "disabled:cursor-default",
           )}
         >
-          <span key={thrown.key} className="flex items-center gap-[calc(var(--die)*0.35)]">
-            <span data-die-slot="0" className="inline-flex">
-              <Die3d value={a} throwing={throwing} idle={!roll} />
-            </span>
-            <span data-die-slot="1" className="inline-flex">
-              <Die3d value={b} throwing={throwing} delay={80} idle={!roll} />
-            </span>
-          </span>
+          <Dices
+            aria-hidden
+            data-rolling={(thrown.mode === "animate" && !settled) || undefined}
+            className="size-[var(--die)] text-hud-fg data-[rolling]:opacity-60"
+            strokeWidth={1.6}
+          />
           <span
             data-testid="dice-total"
             data-seven={total === 7 || undefined}

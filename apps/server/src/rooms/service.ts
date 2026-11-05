@@ -2,16 +2,28 @@
 // (design.md decisions 2, 5-8). Owner: rooms agent (bodies). The exported types and
 // signatures are the contract the session layer codes against.
 import type { RuleErrorCode } from "@hexfall/engine";
-import type {
-  ClientAction,
-  ErrorCode,
-  PayloadOf,
-  ServerMessage,
-  ServerMessageType,
-  TurnTimerPreset,
+import {
+  MAX_LOOKUP_SEATS,
+  type ClientAction,
+  type PushSubscriptionJSON,
+  type ErrorCode,
+  type PayloadOf,
+  type SeatInfoEntry,
+  type ServerMessage,
+  type ServerMessageType,
+  type TurnTimerPreset,
 } from "@hexfall/protocol";
+import type { TurnNotifier } from "../push/notify.ts";
+import type { PushStore } from "../push/store.ts";
 import { StoreUnavailableError, type RoomMeta, type RoomStore } from "../store/types.ts";
-import { generateCode, generateToken, hashToken, normalizeCode, validateName } from "./codes.ts";
+import {
+  generateCode,
+  generateToken,
+  hashToken,
+  normalizeCode,
+  tokenMatches,
+  validateName,
+} from "./codes.ts";
 import { BAD_TOKEN_MESSAGE, Room, fail, type RoomDeps } from "./room.ts";
 
 /** A server message without envelope; the session adds `v` and `seq`. */
@@ -23,6 +35,8 @@ export type Outgoing = {
 export interface Conn {
   /** Unique per socket. */
   readonly id: string;
+  /** Page visibility reported by the client; unset counts as visible (game-server "Connection visibility"). */
+  visible?: boolean;
   send(msg: Outgoing): void;
   close(code: number, reason: string): void;
 }
@@ -65,6 +79,8 @@ export interface RoomServiceOptions {
   /** Evict a room from memory after this long with no connections. Default 10 min. */
   idleEvictMs?: number;
   log?: (msg: string) => void;
+  /** Web Push, only when the server has VAPID keys (game-server "Push configuration"). */
+  push?: { store: PushStore; notifier: TurnNotifier };
 }
 
 export interface RoomService {
@@ -74,6 +90,28 @@ export interface RoomService {
   leaveRoom(req: Request): Promise<ServiceResult>;
   startGame(req: Request, opts: StartOptions): Promise<ServiceResult>;
   gameAction(req: Request, action: ClientAction): Promise<ServiceResult>;
+  /** Host only: pause / resume / end the game early (pause-and-resume-games). */
+  pauseGame(req: Request): Promise<ServiceResult>;
+  resumeGame(req: Request): Promise<ServiceResult>;
+  endGame(req: Request): Promise<ServiceResult>;
+  /**
+   * Answers `seatsInfo` with the status of each room a token holds a seat in. Reads stored
+   * metadata only: no seat, no presence change, no expiry refresh (saved-games).
+   */
+  lookupSeats(
+    req: Request,
+    seats: readonly { room: string; token: string }[],
+  ): Promise<ServiceResult>;
+  /**
+   * The host ends a game from the saved games list (seat proven by token, not taken).
+   * Answers `seatsInfo` with that one room.
+   */
+  endSavedGame(req: Request, room: string, token: string): Promise<ServiceResult>;
+  /** Stores a Web Push subscription for the connection's seat (no-op when push is off). */
+  pushSubscribe(req: Request, sub: PushSubscriptionJSON, lang: string): Promise<ServiceResult>;
+  pushUnsubscribe(req: Request, endpoint: string): Promise<ServiceResult>;
+  /** The connection's page became visible or hidden. */
+  setVisibility(conn: Conn, visible: boolean): void;
   /** The socket closed: mark the seat disconnected and broadcast presence. */
   disconnect(conn: Conn): void;
   /** Rooms currently held in memory (for /healthz). */
@@ -129,11 +167,17 @@ export function createRoomService(opts: RoomServiceOptions): RoomService {
     timers.set(room, t);
   };
 
+  const push = opts.push ?? null;
+  /** Runs a push-store cleanup in the background; failures are only logged. */
+  const cleanup = (what: string, p: Promise<void>) =>
+    void p.catch((e: unknown) => log(`push ${what} failed: ${String(e)}`));
+
   const deps: RoomDeps = {
     store,
     log,
     bind(conn, room) {
       bound.set(conn.id, room);
+      conn.visible = true;
       cancelIdle(room);
     },
     unbind(conn) {
@@ -142,12 +186,34 @@ export function createRoomService(opts: RoomServiceOptions): RoomService {
       if (room) armIdle(room);
     },
     deleted(room) {
+      if (push) cleanup("clearRoom", push.store.clearRoom(room.code));
       cancelIdle(room);
       room.disarm();
       if (rooms.get(room.code) === room) rooms.delete(room.code);
     },
     settled(room) {
       armIdle(room);
+    },
+    seatLeft(room, tokenHash) {
+      if (push) cleanup("clearHolder", push.store.clearHolder(room.code, tokenHash));
+    },
+    expiryChanged(room, ttlMs) {
+      if (push) cleanup("touch", push.store.touch(room.code, ttlMs));
+    },
+    waitsChanged(room, before, after) {
+      if (!push) return;
+      push.notifier.waitsChanged({
+        room: room.code,
+        before,
+        after,
+        holders: room.meta.seats.map((s) => s.tokenHash),
+        visible: (seat) => {
+          const c = room.conns[seat];
+          return c != null && c.visible !== false;
+        },
+        deadline: room.deadline(),
+        now: now(),
+      });
     },
     now,
     setTimer: (fn, ms) => turnTimers.setTimer(fn, ms),
@@ -219,6 +285,37 @@ export function createRoomService(opts: RoomServiceOptions): RoomService {
     if (!room) return Promise.resolve(fail("no_seat", "this connection holds no seat"));
     return guard(what, () => fn(room));
   };
+
+  /** One saved-games entry; a missing room and a wrong token look the same. */
+  async function lookupOne(rawCode: string, token: string): Promise<SeatInfoEntry> {
+    const code = normalizeCode(rawCode);
+    const gone: SeatInfoEntry = { room: code ?? rawCode, status: "gone" };
+    if (!code) return gone;
+    const stored = await store.loadMeta(code);
+    if (!stored) return gone;
+    const { meta, ttlMs, lastActionAt } = stored;
+    let seat = -1;
+    for (const [i, s] of meta.seats.entries()) {
+      if (tokenMatches(token, s.tokenHash)) seat = i;
+    }
+    if (seat < 0) return gone;
+    // A room already in memory gives the turn and a natural game end; never load one for this.
+    const held = rooms.get(code);
+    const live = held && !held.deleted && held.meta.rev === meta.rev ? held : null;
+    return {
+      room: code,
+      status: live ? live.status() : meta.status,
+      seat,
+      host: meta.host,
+      names: meta.seats.map((s) => s.name),
+      turn: live?.state && meta.status !== "lobby" ? live.state.turn.number : null,
+      pausedAt: meta.status === "paused" ? (meta.pausedAt ?? null) : null,
+      expiresAt: now() + ttlMs,
+      createdAt: meta.createdAt,
+      startedAt: meta.startedAt ?? null,
+      lastActiveAt: lastActive(meta, lastActionAt),
+    };
+  }
 
   function disconnect(conn: Conn): void {
     if (claiming.has(conn.id)) closedWhileClaiming.add(conn.id);
@@ -301,6 +398,71 @@ export function createRoomService(opts: RoomServiceOptions): RoomService {
       return seated("gameAction", req.conn, (room) => room.act(req, action));
     },
 
+    pauseGame(req) {
+      return seated("pauseGame", req.conn, (room) => room.pause(req));
+    },
+
+    resumeGame(req) {
+      return seated("resumeGame", req.conn, (room) => room.resumeGame(req));
+    },
+
+    endGame(req) {
+      return seated("endGame", req.conn, (room) => room.end(req));
+    },
+
+    lookupSeats(req, seats) {
+      return guard("lookupSeats", async () => {
+        if (seats.length > MAX_LOOKUP_SEATS) {
+          return fail("bad_frame", `at most ${MAX_LOOKUP_SEATS} rooms per lookup`);
+        }
+        const entries: SeatInfoEntry[] = [];
+        for (const { room, token } of seats) entries.push(await lookupOne(room, token));
+        req.conn.send({ type: "seatsInfo", payload: { rooms: entries }, re: req.seq });
+        return { ok: true };
+      });
+    },
+
+    endSavedGame(req, rawCode, token) {
+      return guard("endSavedGame", async () => {
+        const code = normalizeCode(rawCode);
+        const room = code ? await getRoom(code) : null;
+        if (!code || !room) return fail("bad_token", BAD_TOKEN_MESSAGE);
+        const r = await room.endWithToken(req, token);
+        if (!r.ok) {
+          return "error" in r && r.error.code === "room_not_found"
+            ? fail("bad_token", BAD_TOKEN_MESSAGE)
+            : r;
+        }
+        const entry = await lookupOne(code, token);
+        req.conn.send({ type: "seatsInfo", payload: { rooms: [entry] }, re: req.seq });
+        return { ok: true };
+      });
+    },
+
+    pushSubscribe(req, sub, lang) {
+      return seated("pushSubscribe", req.conn, async (room) => {
+        if (!push) return { ok: true };
+        const holder = room.meta.seats[room.seatOf(req.conn)]?.tokenHash;
+        if (!holder) return fail("no_seat", "this connection holds no seat");
+        await push.store.add(room.code, holder, { ...sub, lang });
+        return { ok: true };
+      });
+    },
+
+    pushUnsubscribe(req, endpoint) {
+      return seated("pushUnsubscribe", req.conn, async (room) => {
+        if (!push) return { ok: true };
+        const holder = room.meta.seats[room.seatOf(req.conn)]?.tokenHash;
+        if (!holder) return fail("no_seat", "this connection holds no seat");
+        await push.store.remove(room.code, holder, endpoint);
+        return { ok: true };
+      });
+    },
+
+    setVisibility(conn, visible) {
+      conn.visible = visible;
+    },
+
     disconnect,
 
     loadedRooms() {
@@ -313,6 +475,19 @@ export function createRoomService(opts: RoomServiceOptions): RoomService {
       for (const room of rooms.values()) room.disarm();
     },
   };
+}
+
+/** Latest known activity: last move, pause, resume, early end or start (not the lobby). */
+function lastActive(meta: RoomMeta, lastActionAt: number | null): number | null {
+  const lastPause = meta.pauses?.at(-1);
+  const times = [
+    lastActionAt,
+    meta.pausedAt,
+    lastPause ? lastPause.at + lastPause.ms : undefined,
+    meta.result?.at,
+    meta.startedAt,
+  ].filter((t): t is number => typeof t === "number");
+  return times.length > 0 ? Math.max(...times) : null;
 }
 
 const DEFAULT_IDLE_EVICT_MS = 10 * 60 * 1000;

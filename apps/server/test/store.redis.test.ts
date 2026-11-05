@@ -91,6 +91,25 @@ describe.skipIf(realRedisUrl === undefined)("Redis store", () => {
     await expectFresh([meta, actions, snap]);
   });
 
+  it("saveMeta with a ttl sets it on every key; loadMeta reads it without refreshing", async () => {
+    const prefix = `${runPrefix}pttl:`;
+    const store = createRedisStore(client, { prefix });
+    const code = freshCode();
+    await store.createMeta(makeMeta(code));
+    await store.appendAction(code, 0, roll(), makeSnapshot(1));
+    expect(await store.saveMeta(makeMeta(code, { rev: 1 }), 0, 50_000)).toEqual({ ok: true });
+    for (const key of keysOf(prefix, code)) {
+      const pttl = await client.pttl(key);
+      expect(pttl).toBeGreaterThan(40_000);
+      expect(pttl).toBeLessThanOrEqual(50_000);
+    }
+    const got = await store.loadMeta(code);
+    expect(got?.meta).toEqual(makeMeta(code, { rev: 1 }));
+    expect(got?.ttlMs).toBeLessThanOrEqual(50_000);
+    expect(await client.pttl(keysOf(prefix, code)[0]!)).toBeLessThanOrEqual(50_000);
+    expect(await store.loadMeta(freshCode())).toBeNull();
+  });
+
   it("expires rooms after ttlMs without writes", async () => {
     const store = createRedisStore(client, { prefix: `${runPrefix}exp:`, ttlMs: 150 });
     const code = freshCode();
@@ -155,6 +174,7 @@ describe("Redis store with an unreachable server", () => {
       expect(await store.appendAction("DEAD", 0, roll(), makeSnapshot(1))).toEqual(down);
       expect(await store.deleteRoom("DEAD")).toEqual(down);
       await expect(store.loadRoom("DEAD")).rejects.toBeInstanceOf(StoreUnavailableError);
+      await expect(store.loadMeta("DEAD")).rejects.toBeInstanceOf(StoreUnavailableError);
       // Programmer errors still throw plain Errors.
       await expect(store.createMeta(makeMeta("DEAD", { rev: 2 }))).rejects.not.toBeInstanceOf(
         StoreUnavailableError,

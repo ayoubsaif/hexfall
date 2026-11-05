@@ -4,10 +4,12 @@ import { resetGame, useGameStore } from "../../src/store/game.ts";
 import { resetRoom, useRoomStore } from "../../src/store/room.ts";
 import {
   bindUiToGame,
+  clearIntent,
   chooseBuild,
   dismissToast,
   intentKey,
   openDialog,
+  openTrade,
   pushToast,
   resetUi,
   setVictimHex,
@@ -68,6 +70,27 @@ describe("stores", () => {
     setVictimHex(4);
     chooseBuild("city");
     expect(useUiStore.getState()).toMatchObject({ build: "city", victimHex: null, dialog: null });
+  });
+
+  it("opening the trade composer stores a fresh draft; other intent drops it", () => {
+    chooseBuild("road");
+    openTrade({ give: { ore: 1 }, get: {}, to: [1, 2] });
+    const first = useUiStore.getState().tradeDraft;
+    expect(useUiStore.getState()).toMatchObject({ build: null, dialog: "trade" });
+    expect(first).toMatchObject({ give: { ore: 1 }, get: {}, to: [1, 2] });
+    openTrade({ give: {}, get: {}, to: [3] });
+    expect(useUiStore.getState().tradeDraft?.id).not.toBe(first?.id);
+    openDialog(null);
+    expect(useUiStore.getState()).toMatchObject({ dialog: null, tradeDraft: null });
+    openTrade({ give: {}, get: {}, to: [3] });
+    chooseBuild("city");
+    expect(useUiStore.getState().tradeDraft).toBeNull();
+    openTrade({ give: {}, get: {}, to: [3] });
+    clearIntent();
+    expect(useUiStore.getState()).toMatchObject({ dialog: null, tradeDraft: null });
+    openTrade({ give: {}, get: {}, to: [3] });
+    resetUi();
+    expect(useUiStore.getState().tradeDraft).toBeNull();
   });
 
   it("toasts close on their own", () => {

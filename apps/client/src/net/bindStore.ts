@@ -5,8 +5,8 @@ import type { ConnectionListener } from "./connection.ts";
 export function storeListener(store = useConnectionStore): ConnectionListener {
   return {
     status: (status, attempts) => store.setState({ status, attempts }),
-    welcome: ({ serverVersion, protocolVersion }) =>
-      store.setState({ serverVersion, protocolVersion }),
+    welcome: ({ serverVersion, protocolVersion, pushKey }) =>
+      store.setState({ serverVersion, protocolVersion, pushKey }),
     latency: (latencyMs) => store.setState({ latencyMs }),
   };
 }

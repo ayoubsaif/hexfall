@@ -1,9 +1,14 @@
 // Durable room storage contract (design.md decisions 3-4). Redis in production,
 // an in-memory fake in tests. Every write refreshes the room's TTL.
 import type { Action, BoardMode, GameState, Seat } from "@hexfall/engine";
-import type { RoomStatus, TurnTimerPreset } from "@hexfall/protocol";
+import type { EarlyResult, RoomStatus, TurnTimerPreset } from "@hexfall/protocol";
 
-export const ROOM_TTL_MS = 14 * 24 * 60 * 60 * 1000;
+const DAY_MS = 24 * 60 * 60 * 1000;
+export const ROOM_TTL_MS = 14 * DAY_MS;
+/** A paused room expires this long after the pause (game-pause "Paused room expiry"). */
+export const PAUSED_TTL_MS = 7 * DAY_MS;
+/** A room the host ended early expires this long after the end (early-end). */
+export const ENDED_EARLY_TTL_MS = DAY_MS;
 /** A snapshot is written when the new version is a multiple of this, and at game end. */
 export const SNAPSHOT_EVERY = 25;
 
@@ -37,6 +42,22 @@ export interface RoomMeta {
   turnTimer?: TurnTimerPreset;
   /** ms since epoch (server clock) when the game started; the first timer anchor. */
   startedAt?: number;
+  /** Server ms when the host paused; set only while `status` is "paused". */
+  pausedAt?: number;
+  /** Completed pauses (start time and length), newest last, capped at MAX_PAUSES. */
+  pauses?: { at: number; ms: number }[];
+  /** Set when the host ended the game early. */
+  result?: EarlyResult;
+}
+
+/** Completed pauses kept in RoomMeta.pauses. */
+export const MAX_PAUSES = 50;
+
+/** What `loadMeta` returns. */
+export interface StoredMeta {
+  meta: RoomMeta;
+  ttlMs: number;
+  lastActionAt: number | null;
 }
 
 /** One stored action. */
@@ -84,8 +105,17 @@ export class StoreUnavailableError extends Error {
 export interface RoomStore {
   /** Stores a new room (meta.rev must be 0). Fails with "exists" if the code is taken. */
   createMeta(meta: RoomMeta): Promise<WriteResult>;
-  /** Replaces meta if the stored rev equals expectedRev; meta.rev must be expectedRev + 1. */
-  saveMeta(meta: RoomMeta, expectedRev: number): Promise<WriteResult>;
+  /**
+   * Replaces meta if the stored rev equals expectedRev; meta.rev must be expectedRev + 1.
+   * Sets the room's expiry to `ttlMs` (default: the store's normal TTL).
+   */
+  saveMeta(meta: RoomMeta, expectedRev: number, ttlMs?: number): Promise<WriteResult>;
+  /**
+   * The room's metadata, remaining time to live (ms) and the server time of its last
+   * stored action (null when none, or stored before the timer), or null if absent. Never
+   * refreshes the expiry. Throws StoreUnavailableError on outage.
+   */
+  loadMeta(code: string): Promise<StoredMeta | null>;
   /**
    * Appends `record` if exactly `expectedVersion` actions are stored, and stores
    * `snapshot` (version = expectedVersion + 1) when given.

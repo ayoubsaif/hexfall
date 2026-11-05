@@ -33,7 +33,7 @@ export interface HexfallServer {
 }
 
 export function createServer(
-  config: Pick<Config, "allowedOrigins">,
+  config: Pick<Config, "allowedOrigins"> & Partial<Pick<Config, "push">>,
   deps: ServerDeps,
 ): HexfallServer {
   const heartbeatMs = deps.heartbeatMs ?? 30_000;
@@ -77,6 +77,7 @@ export function createServer(
       service,
       id: randomUUID(),
       serverVersion: SERVER_VERSION,
+      pushKey: config.push?.publicKey ?? null,
       log,
       ...(deps.now ? { now: deps.now } : {}),
       send: (raw) => {

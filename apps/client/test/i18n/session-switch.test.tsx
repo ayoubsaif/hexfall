@@ -1,11 +1,12 @@
-// Language switch (specs/client-i18n, "Manual language choice", "Document language").
+// Language choice in Settings (specs/client-i18n, "Manual language choice", "Document language").
 import { act } from "react";
 import { afterEach, beforeEach, describe, expect, it } from "vite-plus/test";
 import { Hud } from "../../src/hud/Hud.tsx";
-import { LanguageSwitch } from "../../src/hud/LanguageSwitch.tsx";
 import { StartScreen } from "../../src/hud/StartScreen.tsx";
 import { i18n } from "../../src/i18n/index.ts";
 import { LANGUAGE_STORAGE_KEY } from "../../src/i18n/language.ts";
+import { LanguageSection as LanguageSwitch } from "../../src/settings/sections/LanguageSection.tsx";
+import { setSettingsOpen } from "../../src/settings/sections.ts";
 import { resetRoom } from "../../src/store/room.ts";
 import { mount, type Mounted } from "../hud/helpers.tsx";
 
@@ -41,11 +42,15 @@ afterEach(async () => {
   }
 });
 
-describe("LanguageSwitch", () => {
+function groupName(container: HTMLElement): string | null | undefined {
+  const id = container.querySelector('[role="radiogroup"]')?.getAttribute("aria-labelledby");
+  return id ? document.getElementById(id)?.textContent : null;
+}
+
+describe("LanguageSection", () => {
   it("lists each language by its own name, with a translated group name", () => {
     m = mount(<LanguageSwitch />);
-    const group = m.container.querySelector('[role="radiogroup"]');
-    expect(group?.getAttribute("aria-label")).toBe("Language");
+    expect(groupName(m.container)).toBe("Language");
     const names = [...m.container.querySelectorAll('[role="radio"]')].map((b) => b.textContent);
     expect(names).toEqual(["English", "Español"]);
     expect(radio(m.container, "English").getAttribute("aria-checked")).toBe("true");
@@ -58,9 +63,7 @@ describe("LanguageSwitch", () => {
     expect(document.documentElement.lang).toBe("es");
     expect(localStorage.getItem(LANGUAGE_STORAGE_KEY)).toBe("es");
     expect(radio(m.container, "Español").getAttribute("aria-checked")).toBe("true");
-    expect(m.container.querySelector('[role="radiogroup"]')?.getAttribute("aria-label")).toBe(
-      "Idioma",
-    );
+    expect(groupName(m.container)).toBe("Idioma");
   });
 
   it("the start screen re-renders in Spanish after switching", () => {
@@ -77,13 +80,20 @@ describe("LanguageSwitch", () => {
     expect(m.container.textContent).not.toContain("Create room");
   });
 
-  it("is shown on the start screen of the HUD next to the board style switch", () => {
+  it("is reached from the Settings button on the start screen of the HUD", async () => {
     m = mount(<Hud />);
-    const switches = m.container.querySelectorAll('[data-testid="language-switch"]');
-    expect(switches.length).toBe(1);
+    expect(m.container.querySelectorAll('[data-testid="settings-button"]').length).toBe(1);
     expect(m.container.textContent).toContain("Create room");
-    act(() => radio(m!.container, "Español").click());
+    await act(async () => {
+      m!.container.querySelector<HTMLButtonElement>('[data-testid="settings-button"]')!.click();
+      await import("../../src/settings/SettingsDialog.tsx");
+    });
+    await act(async () => {});
+    act(() => radio(document.body, "Español").click());
     expect(m.container.textContent).toContain("Crear sala");
-    expect(m.container.textContent).toContain("Plano");
+    expect(document.querySelector('[data-testid="settings-dialog"]')?.textContent).toContain(
+      "Idioma",
+    );
+    act(() => setSettingsOpen(false));
   });
 });

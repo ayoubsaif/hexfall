@@ -123,6 +123,8 @@ export interface Controls {
   buildSettlement: boolean;
   buildCity: boolean;
   maritime: boolean;
+  /** Making a player trade offer (own turn or, for others, to the active player). */
+  proposeTrade: boolean;
   devCards: PlayableDevCard[];
   revealVictoryPoints: boolean;
 }
@@ -136,6 +138,7 @@ const NONE: Controls = {
   buildSettlement: false,
   buildCity: false,
   maritime: false,
+  proposeTrade: false,
   devCards: [],
   revealVictoryPoints: false,
 };
@@ -158,6 +161,7 @@ export function controlsOf(
     buildSettlement: main && legal.buildSettlement.length > 0,
     buildCity: main && legal.buildCity.length > 0,
     maritime: legal.maritime !== null,
+    proposeTrade: legal.proposeTrade,
     devCards: [...legal.playDevCard],
     revealVictoryPoints: legal.revealVictoryPoints,
   };
@@ -175,6 +179,17 @@ export function latestRoll(log: readonly GameEvent[]): DiceRoll | null {
   for (let i = log.length - 1; i >= 0; i--) {
     const e = log[i]!;
     if (e.type === "turnStarted") return null;
+    if (e.type === "diceRolled" || e.type === "orderRolled") {
+      return { dice: e.dice, seat: e.seat, index: i };
+    }
+  }
+  return null;
+}
+
+/** Latest roll anywhere in the log (any turn), or null: what the resting dice show. */
+export function previousRoll(log: readonly GameEvent[]): DiceRoll | null {
+  for (let i = log.length - 1; i >= 0; i--) {
+    const e = log[i]!;
     if (e.type === "diceRolled" || e.type === "orderRolled") {
       return { dice: e.dice, seat: e.seat, index: i };
     }

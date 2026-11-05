@@ -2,15 +2,22 @@
 export { Asset, type AssetProps, useAsset } from "./Asset.tsx";
 export { useTheme } from "./context.ts";
 export {
+  CHIP,
+  CHIP_HEIGHT,
   FLAT_LAYER,
   HARBOR_BADGE_CORNER,
   HARBOR_BADGE_SIZE,
   HEX_RADIUS,
-  TOKEN_LABEL_Y,
   TOKEN_RADIUS,
 } from "./flat.tsx";
+export {
+  DIE_EDGE,
+  DIE_FACE_AXES,
+  DIE_VALUES,
+  type Axis,
+  type DieValue,
+} from "./die.ts";
 export { ASSET_KEYS, type AssetKey, type AssetKind, assetKind } from "./keys.ts";
-export { BOARD_STYLES, type BoardStyle, useBoardStyle } from "./style.ts";
 export {
   ISO_ELEVATION_DEG,
   ISO_IMAGE_HEIGHT,

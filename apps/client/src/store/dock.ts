@@ -1,6 +1,6 @@
 // Where the dice tray docks (specs/game-hud "Dice display"): its distance from the viewport's
-// right and bottom edges. Hud.tsx measures the HUD (edge hand, floating buttons, side log) and
-// `hudLayout` turns that into the dock and the CSS variables that place the side log and the
+// right and bottom edges. Hud.tsx measures the HUD (edge hand, floating buttons, corner
+// controls) and `hudLayout` turns that into the dock and the CSS variables that place the
 // status pill. The board itself stays a full-screen background and is never resized around it.
 import { create } from "zustand";
 
@@ -34,16 +34,12 @@ export interface HudMetrics {
   handHeight: number;
   /** The floating action button cluster's box. */
   cluster: { left: number; top: number };
-  /** The side log's box, or null/zero width when the log is a drawer. */
-  aside: { left: number; width: number } | null;
   /** Height of the board-style and credits controls when they sit above the hand (0 if not). */
   cornerHeight: number;
 }
 
 export interface HudLayout {
   dock: Dock;
-  /** Viewport bottom to the top of the floating buttons or the raised hand (places the side log). */
-  hudBottom: number;
   /** Status pill's distance from the viewport bottom. */
   pillBottom: number;
   /** Horizontal room the status pill leaves on each side (to clear the floating buttons). */
@@ -52,32 +48,21 @@ export interface HudLayout {
 
 /**
  * Lays out the floating HUD (design decision 9). The buttons sit at the bottom-right above the
- * raised hand, so a rising card never covers them.
- * - Desktop (side log visible): dice left of the side log, just above the buttons; the status
- *   pill just above the hand, clear of the buttons.
- * - Otherwise: dice left of the buttons, just above the raised hand; the status pill above the
- *   dice and the corner controls.
+ * raised hand, so a rising card never covers them. The dice sit left of the buttons, just above
+ * the raised hand; the status pill sits above the dice and the corner controls. The event log is
+ * a drawer in every layout, so nothing else docks on the board.
  */
 export function hudLayout(m: HudMetrics): HudLayout {
-  const desktop = m.width >= 1024 && m.height >= 600;
   const compact = m.width < 640 || m.height < 600;
   const hand = Math.ceil(m.handHeight);
   const clusterUp = Math.ceil(m.height - m.cluster.top);
   const clusterSide = Math.ceil(m.width - m.cluster.left);
-  const aside = m.aside && m.aside.width > 0 ? m.aside : null;
-
-  const dock: Dock =
-    desktop && aside
-      ? { right: Math.ceil(m.width - aside.left) + HUD_GAP, bottom: clusterUp + HUD_GAP }
-      : { right: clusterSide + HUD_GAP, bottom: hand + HUD_GAP };
+  const dock: Dock = { right: clusterSide + HUD_GAP, bottom: hand + HUD_GAP };
 
   const dice = compact ? DICE_HEIGHT.compact : DICE_HEIGHT.normal;
-  const pillBottom =
-    desktop && aside
-      ? hand + HUD_GAP
-      : hand + HUD_GAP + Math.max(dice, Math.ceil(m.cornerHeight)) + 8;
+  const pillBottom = hand + HUD_GAP + Math.max(dice, Math.ceil(m.cornerHeight)) + 8;
   // Below the top of the buttons the pill must stay clear of them on both sides (it is centered).
   const pillSide = pillBottom < clusterUp ? clusterSide + 8 : HUD_GAP;
 
-  return { dock, hudBottom: Math.max(clusterUp, hand), pillBottom, pillSide };
+  return { dock, pillBottom, pillSide };
 }

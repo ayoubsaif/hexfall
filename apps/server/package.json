@@ -13,11 +13,13 @@
     "@hexfall/engine": "workspace:*",
     "@hexfall/protocol": "workspace:*",
     "ioredis": "^5",
+    "web-push": "catalog:",
     "ws": "^8",
     "zod": "^4"
   },
   "devDependencies": {
     "@types/node": "catalog:",
+    "@types/web-push": "catalog:",
     "@types/ws": "^8",
     "typescript": "catalog:",
     "vite-plus": "catalog:"

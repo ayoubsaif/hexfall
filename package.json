@@ -10,7 +10,9 @@
     "test": "vp run -r test",
     "build": "vp run -r build",
     "models:pieces": "node tools/stl-to-glb.mjs",
-    "cards:build": "node tools/cards-from-tiles.mjs"
+    "models:dice": "node tools/obj-to-glb.mjs",
+    "cards:build": "node tools/cards-from-tiles.mjs",
+    "icons:build": "node tools/icons.mjs"
   },
   "devDependencies": {
     "@types/node": "catalog:",

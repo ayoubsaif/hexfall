@@ -1,11 +1,12 @@
 // Draws a board value: a thin map over the pure layout model (specs/board-view).
 // A live game passes the robber hex and the hexes that just produced (board-interaction).
 import type { Board, HexId } from "@hexfall/engine";
-import { useFrame } from "@react-three/fiber";
-import { useMemo, useRef, useState } from "react";
+import { useFrame, useThree } from "@react-three/fiber";
+import { useCallback, useMemo, useRef, useState } from "react";
 import type { Group, MeshBasicMaterial } from "three";
 import type { WriteSource } from "../store/game.ts";
 import { Asset } from "../theme/index.ts";
+import { cameraYaw, turnChips } from "./chipYaw.ts";
 import { HarborMarker } from "./HarborMarker.tsx";
 import { type XZ, boardLayout } from "./layout.ts";
 import {
@@ -107,6 +108,32 @@ function Glow({ ms }: { ms: number }) {
   );
 }
 
+/** Orbit target of the default controls, or the origin. */
+type WithTarget = { target?: { x: number; z: number } };
+
+/**
+ * Registers chip groups and turns them all by the shared camera yaw once per frame
+ * (design decision 3). Returns a callback ref for each chip's turning group.
+ */
+function useChipYaw(): (g: Group | null) => void {
+  const groups = useRef(new Set<Group>());
+  const yaw = useRef(0);
+  const controls = useThree((s) => s.controls) as WithTarget | null;
+  useFrame(({ camera }) => {
+    const target = controls?.target ?? { x: 0, z: 0 };
+    yaw.current = cameraYaw(camera.position, target, yaw.current);
+    turnChips(groups.current, yaw.current);
+  });
+  return useCallback((g: Group | null) => {
+    if (!g) return;
+    groups.current.add(g);
+    g.rotation.y = yaw.current;
+    return () => {
+      groups.current.delete(g);
+    };
+  }, []);
+}
+
 export function BoardView({
   board,
   robberHex,
@@ -118,6 +145,7 @@ export function BoardView({
   const reduced = useReducedMotion();
   const glowMs = motionDurations(reduced).glow;
   const glowing = useMemo(() => new Set(glowHexes ?? []), [glowHexes]);
+  const chipRef = useChipYaw();
   return (
     <>
       {layout.sea.map((s) => (
@@ -132,7 +160,9 @@ export function BoardView({
       ))}
       {layout.tokens.map((t) => (
         <group key={t.key} position={[t.position[0], 0, t.position[1]]}>
-          <NumberToken value={t.value} />
+          <group ref={chipRef} name="chip">
+            <NumberToken value={t.value} />
+          </group>
           {glowMs > 0 && glowing.has(t.hex) && <Glow key={glowKey} ms={glowMs} />}
         </group>
       ))}

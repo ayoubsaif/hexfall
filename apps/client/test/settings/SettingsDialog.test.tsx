@@ -1,0 +1,188 @@
+// Settings entry point and dialog (specs/client-settings).
+import { act } from "react";
+import { afterEach, beforeEach, describe, expect, it } from "vite-plus/test";
+import { Hud } from "../../src/hud/Hud.tsx";
+import { i18n } from "../../src/i18n/index.ts";
+import { SettingsDialog } from "../../src/settings/SettingsDialog.tsx";
+import {
+  SECTION_IDS,
+  openSettings,
+  setSettingsOpen,
+  setSettingsSection,
+  useSettingsStore,
+} from "../../src/settings/sections.ts";
+import {
+  DEFAULT_PREFS,
+  PREFS_STORAGE_KEY,
+  readPrefs,
+  usePrefsStore,
+} from "../../src/store/prefs.ts";
+import { click, mount, resetAll, seatRoom, showGame, type Mounted } from "../hud/helpers.tsx";
+import { playState } from "../game/fixtures.ts";
+
+let m: Mounted | null = null;
+
+const q = <E extends Element = HTMLElement>(sel: string) => document.querySelector<E>(sel);
+const byTestId = <E extends Element = HTMLElement>(id: string) => q<E>(`[data-testid="${id}"]`);
+
+async function openFromButton() {
+  await act(async () => {
+    m!.container.querySelector<HTMLButtonElement>('[data-testid="settings-button"]')!.click();
+    await import("../../src/settings/SettingsDialog.tsx");
+  });
+  await act(async () => {});
+}
+
+beforeEach(() => {
+  resetAll();
+  usePrefsStore.setState({ ...DEFAULT_PREFS });
+  useSettingsStore.setState({ open: false, section: "language" });
+});
+
+afterEach(async () => {
+  act(() => setSettingsOpen(false));
+  m?.unmount();
+  m = null;
+  resetAll();
+  await act(async () => {
+    await i18n.changeLanguage("en");
+  });
+  try {
+    localStorage.removeItem(PREFS_STORAGE_KEY);
+  } catch {
+    // ignore
+  }
+});
+
+describe("Settings entry point", () => {
+  it("start screen: one Settings button that opens the dialog on its first section", async () => {
+    m = mount(<Hud />);
+    const buttons = m.container.querySelectorAll('[data-testid="settings-button"]');
+    expect(buttons.length).toBe(1);
+    expect(buttons[0]!.getAttribute("aria-label")).toBe("Settings");
+    for (const old of ["language-switch", "sound-toggle", "notify-toggle", "credits-toggle"])
+      expect(m.container.querySelector(`[data-testid="${old}"]`)).toBeNull();
+    await openFromButton();
+    const dialog = byTestId("settings-dialog");
+    expect(dialog?.getAttribute("role")).toBe("dialog");
+    expect(document.getElementById(dialog!.getAttribute("aria-labelledby")!)?.textContent).toBe(
+      "Settings",
+    );
+    expect(byTestId("settings-section-language")).not.toBeNull();
+  });
+
+  it("lobby and game: still exactly one Settings button", () => {
+    seatRoom(0);
+    m = mount(<Hud />);
+    expect(m.container.querySelectorAll('[data-testid="settings-button"]').length).toBe(1);
+    showGame(playState({ seat: 0 }), 0);
+    act(() => {});
+    expect(m.container.querySelectorAll('[data-testid="settings-button"]').length).toBe(1);
+  });
+
+  it("Escape closes the dialog and returns focus to the Settings button", async () => {
+    m = mount(<Hud />);
+    await openFromButton();
+    expect(byTestId("settings-dialog")).not.toBeNull();
+    act(() => {
+      document.activeElement?.dispatchEvent(
+        new KeyboardEvent("keydown", { key: "Escape", bubbles: true }),
+      );
+    });
+    expect(byTestId("settings-dialog")).toBeNull();
+    // Radix restores focus on a zero-delay timer after unmount.
+    await act(async () => {
+      await new Promise((r) => setTimeout(r, 0));
+    });
+    expect(document.activeElement?.getAttribute("data-testid")).toBe("settings-button");
+  });
+
+  it("the close button closes the dialog", async () => {
+    m = mount(<Hud />);
+    await openFromButton();
+    act(() => byTestId<HTMLButtonElement>("settings-close")!.click());
+    expect(byTestId("settings-dialog")).toBeNull();
+  });
+});
+
+describe("Settings dialog layout", () => {
+  function render() {
+    openSettings();
+    m = mount(<SettingsDialog />);
+  }
+
+  it("lists the five sections in order in the sidebar and the phone picker", () => {
+    render();
+    const nav = SECTION_IDS.map((s) => byTestId(`settings-nav-${s}`)?.textContent);
+    expect(nav).toEqual(["Language", "Sound", "Notifications", "Accessibility", "About"]);
+    const options = [...document.querySelectorAll('[data-testid="settings-picker"] option')].map(
+      (o) => o.textContent,
+    );
+    expect(options).toEqual(nav);
+  });
+
+  it("selecting Sound marks it active, updates the breadcrumb and shows the sound settings", () => {
+    render();
+    act(() => click(byTestId("settings-nav-sound")!));
+    expect(byTestId("settings-nav-sound")?.getAttribute("data-active")).toBe("true");
+    expect(byTestId("settings-nav-sound")?.getAttribute("aria-current")).toBe("page");
+    expect(byTestId("settings-breadcrumb")?.textContent).toContain("Settings");
+    expect(byTestId("settings-breadcrumb")?.textContent).toContain("Sound");
+    expect(byTestId("settings-section-sound")).not.toBeNull();
+  });
+
+  it("the phone picker switches sections", () => {
+    render();
+    const select = byTestId<HTMLSelectElement>("settings-picker")!;
+    act(() => {
+      select.value = "about";
+      select.dispatchEvent(new Event("change", { bubbles: true }));
+    });
+    expect(byTestId("settings-section-about")).not.toBeNull();
+  });
+
+  it("remembers the last section for the page session", () => {
+    render();
+    act(() => setSettingsSection("accessibility"));
+    act(() => setSettingsOpen(false));
+    act(() => openSettings());
+    expect(byTestId("settings-section-accessibility")).not.toBeNull();
+  });
+
+  it("switching language updates the open dialog on the same section", async () => {
+    render();
+    const es = [...document.querySelectorAll<HTMLButtonElement>('[role="radio"]')].find(
+      (b) => b.textContent === "Español",
+    )!;
+    await act(async () => es.click());
+    expect(byTestId("settings-nav-language")?.textContent).toBe("Idioma");
+    expect(byTestId("settings-breadcrumb")?.textContent).toContain("Ajustes");
+    expect(byTestId("settings-section-language")).not.toBeNull();
+  });
+
+  it("volume and motion apply at once and persist", () => {
+    render();
+    act(() => setSettingsSection("accessibility"));
+    const reduce = [...document.querySelectorAll<HTMLButtonElement>('[role="radio"]')].find(
+      (b) => b.textContent === "Reduce motion",
+    )!;
+    act(() => reduce.click());
+    expect(usePrefsStore.getState().motion).toBe("reduce");
+    act(() => setSettingsSection("sound"));
+    const thumb = q<HTMLElement>('[data-testid="settings-volume"] [role="slider"]')!;
+    expect(thumb.getAttribute("aria-valuenow")).toBe("60");
+    act(() => {
+      thumb.focus();
+      thumb.dispatchEvent(new KeyboardEvent("keydown", { key: "ArrowLeft", bubbles: true }));
+    });
+    expect(usePrefsStore.getState().volume).toBe(0.55);
+    expect(readPrefs()).toMatchObject({ volume: 0.55, motion: "reduce" });
+  });
+
+  it("About shows the version and the theme credits", () => {
+    render();
+    act(() => setSettingsSection("about"));
+    expect(byTestId("settings-version")?.textContent).toMatch(/Version /);
+    expect(byTestId("settings-section-about")?.textContent).toContain("Credits");
+  });
+});

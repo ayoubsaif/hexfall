@@ -18,6 +18,10 @@ import {
   type TurnTimerPreset,
 } from "@hexfall/protocol";
 import {
+  ENDED_EARLY_TTL_MS,
+  MAX_PAUSES,
+  PAUSED_TTL_MS,
+  ROOM_TTL_MS,
   SNAPSHOT_EVERY,
   type ActionRecord,
   type GameConfigRecord,
@@ -29,6 +33,7 @@ import {
 } from "../store/types.ts";
 import { generateSeed, generateToken, hashToken, tokenMatches, validateName } from "./codes.ts";
 import type { Conn, Outgoing, Request, ServiceResult, StartOptions } from "./service.ts";
+import { earlyResult } from "./result.ts";
 import { deadlineOf, nextAnchor, timerInfo } from "./timer.ts";
 
 export const MAX_SEATS = 4;
@@ -60,6 +65,12 @@ export interface RoomDeps {
   /** Schedules `fn` after `ms` (setTimeout in production, a fake scheduler in tests). */
   setTimer(fn: () => void, ms: number): unknown;
   clearTimer(handle: unknown): void;
+  /** The game moved from `before` (null at start) to `after`, already stored and sent. */
+  waitsChanged?(room: Room, before: GameState | null, after: GameState): void;
+  /** A seat left the lobby; `tokenHash` identified it. */
+  seatLeft?(room: Room, tokenHash: string): void;
+  /** The room's stored expiry changed (pause, resume, early end); `ttlMs` is the new TTL. */
+  expiryChanged?(room: Room, ttlMs: number): void;
 }
 
 export const fail = (
@@ -118,7 +129,24 @@ export function rebuildState(loaded: LoadedRoom, loadTime: number): Rebuilt {
     anchor = nextAnchor(anchor, state, record, r.state, loadTime);
     state = r.state;
   }
-  return { state, anchor };
+  return { state, anchor: anchor + pausedSince(meta, anchor) };
+}
+
+/**
+ * Total length of the completed pauses that began while `anchor` was in force (at or after
+ * it): the countdown did not run during them (pause-and-resume-games design decision 2).
+ */
+export function pausedSince(meta: RoomMeta, anchor: number): number {
+  let ms = 0;
+  for (const p of meta.pauses ?? []) if (p.at >= anchor) ms += p.ms;
+  return ms;
+}
+
+/** `meta` without its pause time. */
+function withoutPause(meta: RoomMeta): RoomMeta {
+  const next = { ...meta };
+  delete next.pausedAt;
+  return next;
 }
 
 export class Room {
@@ -185,15 +213,20 @@ export class Room {
     return this.meta.turnTimer ?? "off";
   }
 
-  /** Server-clock deadline of the current wait, or null (timer off, lobby, game over). */
+  /** No countdown and no game actions: paused, or ended early by the host. */
+  frozen(): boolean {
+    return this.meta.status === "paused" || this.meta.result !== undefined;
+  }
+
+  /** Server-clock deadline of the current wait, or null (timer off, lobby, paused, game over). */
   deadline(): number | null {
-    if (!this.state || this.meta.status === "lobby") return null;
+    if (!this.state || this.meta.status === "lobby" || this.frozen()) return null;
     return deadlineOf(this.state, this.anchor, this.preset());
   }
 
   /** The countdown for a message built now. */
   timer(): TimerInfo {
-    if (!this.state || this.meta.status === "lobby") return null;
+    if (!this.state || this.meta.status === "lobby" || this.frozen()) return null;
     return timerInfo(this.state, this.anchor, this.preset(), this.deps.now());
   }
 
@@ -306,6 +339,7 @@ export class Room {
         return OK;
       }
       const host = this.meta.host;
+      const leaver = this.meta.seats[seat]?.tokenHash;
       const next: RoomMeta = {
         ...this.meta,
         rev: this.meta.rev + 1,
@@ -316,6 +350,7 @@ export class Room {
       if (w) return w;
       this.conns.splice(seat, 1);
       this.deps.unbind(conn);
+      if (leaver) this.deps.seatLeft?.(this, leaver);
       this.send(conn, { type: "roomLeft", payload: { room: this.code } }, req);
       this.broadcastRoomState();
       return OK;
@@ -365,6 +400,7 @@ export class Room {
         if (c) this.sendSnapshot(s, c.id === req.conn.id ? req : undefined);
       }
       this.arm();
+      this.deps.waitsChanged?.(this, null, state);
       return OK;
     });
   }
@@ -377,6 +413,113 @@ export class Room {
       if (seat < 0) return fail("no_seat", "this connection holds no seat");
       return this.commit({ ...action, seat } as Action, this.deps.now(), { req, seat });
     });
+  }
+
+  // ---- pause, resume, early end (pause-and-resume-games)
+
+  /** Host only: freezes a playing game; the room then expires PAUSED_TTL_MS later. */
+  pause(req: Request): Promise<ServiceResult> {
+    return this.run(async () => {
+      const denied = this.hostOnly(req, "pause");
+      if (denied) return denied;
+      if (this.status() !== "playing") return fail("not_playing", "the game is not running");
+      const next: RoomMeta = {
+        ...this.meta,
+        rev: this.meta.rev + 1,
+        status: "paused",
+        pausedAt: this.deps.now(),
+      };
+      const w = await this.saveMeta(next, PAUSED_TTL_MS);
+      if (w) return w;
+      this.disarm();
+      this.deps.expiryChanged?.(this, PAUSED_TTL_MS);
+      this.broadcastRoomState(req);
+      this.broadcastSnapshots();
+      return OK;
+    });
+  }
+
+  /** Host only: continues a paused game with the countdown time that was left. */
+  resumeGame(req: Request): Promise<ServiceResult> {
+    return this.run(async () => {
+      const denied = this.hostOnly(req, "resume");
+      if (denied) return denied;
+      const state = this.state;
+      if (this.meta.status !== "paused" || !state) {
+        return fail("not_paused", "the game is not paused");
+      }
+      const now = this.deps.now();
+      const pausedAt = this.meta.pausedAt ?? now;
+      const ms = Math.max(0, now - pausedAt);
+      const next: RoomMeta = {
+        ...withoutPause(this.meta),
+        rev: this.meta.rev + 1,
+        status: "playing",
+        pauses: [...(this.meta.pauses ?? []), { at: pausedAt, ms }].slice(-MAX_PAUSES),
+      };
+      const w = await this.saveMeta(next);
+      if (w) return w;
+      this.anchor += ms;
+      this.deps.expiryChanged?.(this, ROOM_TTL_MS);
+      this.broadcastRoomState(req);
+      this.broadcastSnapshots();
+      this.arm();
+      this.deps.waitsChanged?.(this, null, state);
+      return OK;
+    });
+  }
+
+  /** Host only: ends a playing or paused game now; most total VP wins, ties share. */
+  end(req: Request): Promise<ServiceResult> {
+    return this.run(async () => {
+      const denied = this.hostOnly(req, "end");
+      return denied ?? this.endNow(req);
+    });
+  }
+
+  /**
+   * The host ends the game from the saved games list: proven by the host seat's token,
+   * without taking the seat (no bind, no presence change).
+   */
+  endWithToken(req: Request, token: string): Promise<ServiceResult> {
+    return this.run(async () => {
+      let seat = -1;
+      for (const [i, s] of this.meta.seats.entries()) {
+        if (tokenMatches(token, s.tokenHash)) seat = i;
+      }
+      if (seat < 0) return fail("bad_token", BAD_TOKEN_MESSAGE);
+      if (seat !== this.meta.host) return fail("not_host", "only the host can end the game");
+      return this.endNow(req);
+    });
+  }
+
+  /** Stores the early-end result and tells everyone. Runs inside `run()`. */
+  private async endNow(req: Request): Promise<ServiceResult> {
+    const status = this.status();
+    if (!this.state || (status !== "playing" && status !== "paused")) {
+      return fail("not_playing", "the game is not running");
+    }
+    const next: RoomMeta = {
+      ...withoutPause(this.meta),
+      rev: this.meta.rev + 1,
+      status: "ended",
+      result: earlyResult(this.state, this.deps.now()),
+    };
+    const w = await this.saveMeta(next, ENDED_EARLY_TTL_MS);
+    if (w) return w;
+    this.disarm();
+    this.deps.expiryChanged?.(this, ENDED_EARLY_TTL_MS);
+    this.broadcastRoomState(req);
+    this.broadcastSnapshots();
+    return OK;
+  }
+
+  /** null when `req` holds the host seat, else the error to answer. */
+  private hostOnly(req: Request, what: string): ServiceResult | null {
+    const seat = this.seatOf(req.conn);
+    if (seat < 0) return fail("no_seat", "this connection holds no seat");
+    if (seat !== this.meta.host) return fail("not_host", `only the host can ${what} the game`);
+    return null;
   }
 
   /**
@@ -395,6 +538,10 @@ export class Room {
         rejected: { code: "wrong_phase", message: "the game has not started" },
       };
     }
+    if (this.meta.result) {
+      return { ok: false, rejected: { code: "game_over", message: "the host ended the game" } };
+    }
+    if (this.meta.status === "paused") return fail("game_paused", "the host paused the game");
     const r = applyAction(state, action);
     if (!r.ok) return { ok: false, rejected: { code: r.code, message: r.message } };
     const next = r.state;
@@ -442,6 +589,7 @@ export class Room {
     }
     if (ended) this.broadcastRoomState();
     this.arm();
+    this.deps.waitsChanged?.(this, state, next);
     return OK;
   }
 
@@ -536,6 +684,8 @@ export class Room {
           name: s.name,
           connected: this.conns[seat] != null,
         })),
+        pausedAt: this.meta.status === "paused" ? (this.meta.pausedAt ?? null) : null,
+        result: this.meta.result ?? null,
       },
     };
   }
@@ -546,6 +696,11 @@ export class Room {
     for (const c of this.conns) {
       if (c) this.send(c, msg, req && c.id === req.conn.id ? req : undefined);
     }
+  }
+
+  /** A fresh snapshot (new countdown) to every connected seat. */
+  private broadcastSnapshots(): void {
+    for (const [s, c] of this.conns.entries()) if (c) this.sendSnapshot(s);
   }
 
   sendSnapshot(seat: number, req?: Request): void {
@@ -577,8 +732,8 @@ export class Room {
   // ---- store
 
   /** Writes `next` and swaps it in; returns an error result on failure. */
-  private async saveMeta(next: RoomMeta): Promise<ServiceResult | null> {
-    const w = await this.deps.store.saveMeta(next, this.meta.rev);
+  private async saveMeta(next: RoomMeta, ttlMs?: number): Promise<ServiceResult | null> {
+    const w = await this.deps.store.saveMeta(next, this.meta.rev, ttlMs);
     if (!w.ok) return this.writeFailed(w);
     this.meta = next;
     return null;

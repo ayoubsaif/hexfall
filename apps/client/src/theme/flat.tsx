@@ -10,6 +10,7 @@
 import {
   BufferGeometry,
   CircleGeometry,
+  CylinderGeometry,
   DoubleSide,
   Float32BufferAttribute,
   RingGeometry,
@@ -20,7 +21,6 @@ import {
 import type { AssetKey } from "./keys.ts";
 import { ISO_SIDE_HEIGHT, ISO_THICKNESS, type Projection, isoTopPixel, pixelUv } from "./relief.ts";
 import { useLandRelief } from "./useLandRelief.ts";
-import type { BoardStyle } from "./style.ts";
 
 /** Hex circumradius: tiles and sea are pointy-top hexes with corners at ±Z. */
 export const HEX_RADIUS = 1;
@@ -49,14 +49,35 @@ export const FLAT_LAYER = {
   label: 0.006,
 } as const;
 
+/** Thickness of the number-token chip (spec cap: 0.05 hex radii). */
+export const CHIP_HEIGHT = 0.035;
+/** Side color of the chip, darker than the face so its thickness reads. */
+export const CHIP_EDGE = "#a8916a";
+
 /**
- * Height for a label drawn on top of the `token` asset, per board style. The "3d" style's
- * diorama token is a raised disc whose top face sits at y = 0.04.
+ * Heights of the chip's parts: the side spans 0..CHIP_HEIGHT, the face (image or color),
+ * its outline and the client-drawn number sit on top, in that order.
  */
-export const TOKEN_LABEL_Y: Readonly<Record<BoardStyle, number>> = {
-  flat: FLAT_LAYER.label,
-  "3d": 0.042,
-};
+export const CHIP = {
+  face: CHIP_HEIGHT + FLAT_LAYER.marker,
+  outline: CHIP_HEIGHT + FLAT_LAYER.markerOutline,
+  label: CHIP_HEIGHT + FLAT_LAYER.label,
+} as const;
+
+let chipSideCache: BufferGeometry | undefined;
+
+/** The chip's open side wall, base on y = 0. */
+export function chipSideGeometry(): BufferGeometry {
+  chipSideCache ??= new CylinderGeometry(
+    TOKEN_RADIUS,
+    TOKEN_RADIUS,
+    CHIP_HEIGHT,
+    48,
+    1,
+    true,
+  ).translate(0, CHIP_HEIGHT / 2, 0);
+  return chipSideCache;
+}
 
 export type FlatShapeKind = "hex" | "token" | "badge";
 
@@ -257,8 +278,11 @@ export function FlatShape({ assetKey, color, map, projection = "top" }: FlatShap
   const onSea = assetKey === "sea" || assetKey.startsWith("harbor.");
   const base = onSea ? relief.seaLevel : 0;
   const land = shape === "hex" && assetKey !== "sea";
-  const y = base + (marker ? FLAT_LAYER.marker : FLAT_LAYER.tile);
-  const outlineY = base + (marker ? FLAT_LAYER.markerOutline : FLAT_LAYER.tileOutline);
+  const chip = shape === "token";
+  const y = chip ? CHIP.face : base + (marker ? FLAT_LAYER.marker : FLAT_LAYER.tile);
+  const outlineY = chip
+    ? CHIP.outline
+    : base + (marker ? FLAT_LAYER.markerOutline : FLAT_LAYER.tileOutline);
   return (
     <group>
       {land && relief.raised && (
@@ -271,6 +295,11 @@ export function FlatShape({ assetKey, color, map, projection = "top" }: FlatShap
             metalness={0}
             side={DoubleSide}
           />
+        </mesh>
+      )}
+      {chip && (
+        <mesh geometry={chipSideGeometry()} name="chip-side" castShadow receiveShadow>
+          <meshStandardMaterial color={CHIP_EDGE} roughness={0.9} metalness={0} />
         </mesh>
       )}
       <mesh geometry={fill} position={[0, y, 0]} receiveShadow>

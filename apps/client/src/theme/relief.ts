@@ -5,7 +5,6 @@
 // prisms so the band shows along the coast, and lowers the sea by the prism height.
 import type { AssetKey } from "./keys.ts";
 import type { ResolvedEntries } from "./manifest.ts";
-import type { BoardStyle } from "./style.ts";
 
 /** Camera elevation the art is painted for (and the board camera uses). */
 export const ISO_ELEVATION_DEG = 60;
@@ -61,11 +60,10 @@ export interface LandRelief {
 const FLAT_RELIEF: LandRelief = { raised: false, thickness: 0, seaLevel: 0 };
 
 /**
- * The island is raised in the flat style when any terrain key uses an isometric image.
- * Pure, so it is unit-testable; `useLandRelief` binds it to the active theme and style.
+ * The island is raised when any terrain key uses an isometric image.
+ * Pure, so it is unit-testable; `useLandRelief` binds it to the active theme.
  */
-export function landRelief(entries: ResolvedEntries, style: BoardStyle): LandRelief {
-  if (style !== "flat") return FLAT_RELIEF;
+export function landRelief(entries: ResolvedEntries): LandRelief {
   const raised = LAND_KEYS.some((k) => {
     const e = entries[k];
     return e?.kind === "image" && e.projection === "isometric";

@@ -1,5 +1,5 @@
 // English text: "session" namespace (source of truth for keys). Start screen, lobby,
-// replaced-seat notice, credits, the HUD shell and shared UI components.
+// replaced-seat notice, the HUD shell and shared UI components.
 export const session = {
   start: {
     yourName: "Your name",
@@ -39,14 +39,6 @@ export const session = {
     text: "This game is open in another tab or window.",
     playHere: "Play here",
   },
-  credits: {
-    title: "Credits",
-    by: "by",
-    otherAssets: "Other theme assets: ",
-    themeAssets: "Theme assets: ",
-    procedural: "built-in procedural shapes.",
-    close: "Close",
-  },
   hud: {
     connection: {
       connecting: "Connecting",
@@ -59,14 +51,51 @@ export const session = {
     tryCount: "try {{count}}",
     newVersion: "A new version is available, please reload.",
     reload: "Reload",
-    boardStyle: "Board style",
-    style: {
-      flat: "Flat",
-      "3d": "3D",
-    },
     log: "Log",
     eventLog: "Event log",
-    gameLog: "Game log",
+  },
+  saved: {
+    title: "Your games",
+    loading: "Checking your games…",
+    room: "Room {{code}}",
+    status: {
+      lobby: "Waiting in the lobby",
+      playing: "In progress",
+      paused: "Paused by the host",
+      ended: "Finished",
+    },
+    turn: "Turn {{n}}",
+    expires: "Saved until {{date}}",
+    you: "you",
+    continue: "Continue",
+    remove: "Remove",
+    removeLabel: "Remove room {{code}} from this list",
+    created: "Created {{date}}",
+    started: "Started {{date}}",
+    lastMove: "last move {{date}}",
+    end: "End game",
+    endLabel: "End the game in room {{code}}",
+  },
+  pause: {
+    menu: "Game",
+    menuTitle: "Game options",
+    closeForNow: "Close game for now",
+    closeForNowHint: "Saved for 7 days; only you can resume it.",
+    confirmClose: "Close the game for now?",
+    confirmCloseText:
+      "The game is saved for 7 days and the turn timer stops. Everyone can close their tab and come back from the start screen. Only you, the host, can resume it.",
+    endNow: "End game now",
+    endNowHint: "The player with the most VP wins.",
+    confirmEnd: "End the game now?",
+    confirmEndText:
+      "The game ends for everyone. The player with the most victory points, counting hidden VP cards, wins; tied players share the win. This cannot be undone.",
+    cancel: "Cancel",
+    pausedTitle: "Paused by the host",
+    pausedText:
+      "The game is saved until {{date}}. You can close this tab and continue later from the start screen.",
+    waitingHost: "Waiting for the host to resume the game.",
+    resume: "Resume game",
+    end: "End game",
   },
   ui: {
     close: "Close",

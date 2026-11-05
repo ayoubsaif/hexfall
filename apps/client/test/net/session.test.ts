@@ -1,5 +1,5 @@
 import type { GameEvent } from "@hexfall/engine";
-import { CloseCode, PROTOCOL_VERSION } from "@hexfall/protocol";
+import { CloseCode, PROTOCOL_VERSION, type EarlyResult } from "@hexfall/protocol";
 import { afterEach, beforeEach, describe, expect, it } from "vite-plus/test";
 import { act, createRoom, setSessionApi } from "../../src/net/actions.ts";
 import { createAddress, type AddressEnv } from "../../src/net/address.ts";
@@ -54,6 +54,8 @@ let session: SessionController;
 let seq = 0;
 let logs: string[];
 
+let seatedCalls = 0;
+
 function boot(search = "") {
   env = addressEnv(search);
   seats = createSeatStorage(storage);
@@ -67,7 +69,13 @@ function boot(search = "") {
       random: () => 0.5,
       log: () => {},
     },
-    { seats, address: createAddress(env), timers: clock, log: (m) => logs.push(m) },
+    {
+      seats,
+      address: createAddress(env),
+      timers: clock,
+      log: (m) => logs.push(m),
+      onSeated: () => void seatedCalls++,
+    },
   );
   conn = built.connection;
   session = built.session;
@@ -87,7 +95,9 @@ const send = (type: string, payload: unknown) => FakeSocket.last().serverSend(fr
 function welcome() {
   const s = FakeSocket.last();
   s.serverOpen();
-  s.serverSend(frame("welcome", { serverVersion: "9", protocolVersion: PROTOCOL_VERSION }));
+  s.serverSend(
+    frame("welcome", { serverVersion: "9", protocolVersion: PROTOCOL_VERSION, pushKey: null }),
+  );
 }
 
 /** Client messages sent on the current socket, without hello/ping. */
@@ -98,8 +108,21 @@ function sent(s = FakeSocket.last()) {
 const seatsInfo = (n: number) =>
   ["Ana", "Ben", "Cy", "Di"].slice(0, n).map((name, seat) => ({ seat, name, connected: true }));
 
-function roomState(status: "lobby" | "playing" | "ended" = "lobby", n = 3, host = 0) {
-  send("roomState", { room: "K7QX2M", status, host, seats: seatsInfo(n) });
+function roomState(
+  status: "lobby" | "playing" | "paused" | "ended" = "lobby",
+  n = 3,
+  host = 0,
+  extra: { pausedAt?: number | null; result?: EarlyResult | null } = {},
+) {
+  send("roomState", {
+    room: "K7QX2M",
+    status,
+    host,
+    seats: seatsInfo(n),
+    pausedAt: null,
+    result: null,
+    ...extra,
+  });
 }
 
 function snapshot(version = 10) {
@@ -149,6 +172,19 @@ describe("names", () => {
     expect(cleanName("   ")).toBeNull();
     expect(cleanName("x".repeat(20))).toHaveLength(20);
     expect(cleanName("x".repeat(21))).toBeNull();
+  });
+});
+
+describe("seated hook (turn-sound-and-push)", () => {
+  it("calls onSeated after every roomJoined, with the room store updated", () => {
+    seatedCalls = 0;
+    boot();
+    welcome();
+    send("roomJoined", { room: "ABCD", seat: 2, token: "tok" });
+    expect(seatedCalls).toBe(1);
+    expect(useRoomStore.getState()).toMatchObject({ room: "ABCD", seat: 2 });
+    send("roomJoined", { room: "ABCD", seat: 2 });
+    expect(seatedCalls).toBe(2);
   });
 });
 
@@ -479,5 +515,196 @@ describe("sending game actions", () => {
     FakeSocket.last().serverClose(1006);
     expect(useGameStore.getState().inFlight).toBe(false);
     expect(act({ type: "rollDice" })).toBe(false); // offline
+  });
+});
+
+describe("pause, resume and early end (pause-and-resume-games)", () => {
+  function inGame() {
+    storage.setItem("hexfall.seats", JSON.stringify({ K7QX2M: "s" }));
+    boot("?room=K7QX2M");
+    welcome();
+    send("roomJoined", { room: "K7QX2M", seat: 0 });
+    roomState("playing", 4);
+    snapshot(10);
+  }
+
+  it("pause sends pauseGame, waits for the paused room state, and freezes controls", () => {
+    inGame();
+    expect(useGameStore.getState().legal).not.toBeNull();
+    expect(session.pauseGame()).toBe(true);
+    expect(sent().at(-1)).toMatchObject({ type: "pauseGame", payload: {} });
+    expect(useRoomStore.getState().pending).toBe("pause");
+    expect(session.pauseGame()).toBe(false); // one at a time
+    roomState("paused", 4, 0, { pausedAt: 123 });
+    expect(useRoomStore.getState()).toMatchObject({
+      status: "paused",
+      pausedAt: 123,
+      pending: null,
+    });
+    expect(useGameStore.getState()).toMatchObject({ legal: null, timer: null });
+    // Snapshots while paused keep the controls off.
+    snapshot(10);
+    expect(useGameStore.getState().legal).toBeNull();
+    expect(act({ type: "rollDice" })).toBe(true); // the server answers game_paused
+  });
+
+  it("resume clears the pause and the next snapshot brings the moves back", () => {
+    inGame();
+    roomState("paused", 4, 0, { pausedAt: 5 });
+    expect(session.resumeGame()).toBe(true);
+    expect(sent().at(-1)).toMatchObject({ type: "resumeGame" });
+    roomState("playing", 4);
+    expect(useRoomStore.getState()).toMatchObject({ pausedAt: null, pending: null });
+    snapshot(10);
+    expect(useGameStore.getState().legal).not.toBeNull();
+  });
+
+  it("a refused host request shows its error", () => {
+    inGame();
+    session.endGame();
+    send("error", { code: "not_host", message: "only the host" });
+    expect(useRoomStore.getState()).toMatchObject({
+      pending: null,
+      error: { request: "end", code: "not_host" },
+    });
+  });
+
+  it("early end stores the result and freezes controls", () => {
+    inGame();
+    expect(session.endGame()).toBe(true);
+    expect(sent().at(-1)).toMatchObject({ type: "endGame" });
+    const result: EarlyResult = {
+      reason: "host",
+      at: 9,
+      winners: [0, 2],
+      scores: [0, 1, 2, 3].map((seat) => ({ seat, vp: seat === 1 ? 3 : 5, hiddenVp: 0 })),
+    };
+    roomState("ended", 4, 0, { result });
+    expect(useRoomStore.getState()).toMatchObject({ status: "ended", result, pending: null });
+    expect(useGameStore.getState().legal).toBeNull();
+  });
+});
+
+describe("saved games (saved-games)", () => {
+  const info = (rooms: unknown[]) => send("seatsInfo", { rooms });
+  const entry = (room: string, status: string, seat = 0) => ({
+    room,
+    status,
+    seat,
+    host: 0,
+    names: ["Ana", "Ben", "Cy"],
+    turn: null,
+    pausedAt: status === "paused" ? 1 : null,
+    expiresAt: 2,
+    createdAt: 0,
+    startedAt: status === "lobby" ? null : 1,
+    lastActiveAt: status === "lobby" ? null : 1,
+  });
+
+  it("looks up every saved seat and keeps only rooms that still exist", async () => {
+    const s = createSeatStorage(storage, () => 100);
+    s.save("AAAAAA", "ta");
+    s.save("BBBBBB", "tb");
+    s.save("CCCCCC", "tc");
+    s.save("DDDDDD", "td");
+    // Old plain-string values still count, with usedAt 0.
+    const raw = JSON.parse(storage.getItem("hexfall.seats")!) as Record<string, unknown>;
+    storage.setItem("hexfall.seats", JSON.stringify({ ...raw, EEEEEE: "te" }));
+    storage.setItem("hexfall.lastRoom", "");
+    boot();
+    welcome();
+    expect(session.lookupSeats()).toBe(true);
+    const msg = sent().at(-1);
+    expect(msg?.type).toBe("lookupSeats");
+    const asked = (msg?.payload as { seats: { room: string }[] } | undefined)?.seats ?? [];
+    expect(asked.map((x) => x.room).sort()).toEqual([
+      "AAAAAA",
+      "BBBBBB",
+      "CCCCCC",
+      "DDDDDD",
+      "EEEEEE",
+    ]);
+    const { useSavedGamesStore } = await import("../../src/store/savedGames.ts");
+    expect(useSavedGamesStore.getState().loading).toBe(true);
+    info([
+      entry("AAAAAA", "lobby"),
+      { room: "BBBBBB", status: "gone" },
+      entry("CCCCCC", "ended"),
+      entry("DDDDDD", "paused", 1),
+      entry("EEEEEE", "playing"),
+    ]);
+    const st = useSavedGamesStore.getState();
+    expect(st.loading).toBe(false);
+    expect(st.entries.map((e) => e.room)).toEqual(["DDDDDD", "EEEEEE", "AAAAAA"]);
+    expect(seats.token("BBBBBB")).toBeNull();
+    expect(seats.token("CCCCCC")).toBeNull();
+    expect(seats.token("AAAAAA")).toBe("ta");
+
+    // Remove forgets locally only.
+    session.forgetGame("aaaaaa");
+    expect(seats.token("AAAAAA")).toBeNull();
+    expect(useSavedGamesStore.getState().entries.map((e) => e.room)).toEqual(["DDDDDD", "EEEEEE"]);
+    expect(sent().at(-1)?.type).toBe("lookupSeats");
+
+    // Continue resumes with the stored token.
+    expect(session.continueGame("DDDDDD")).toBe(true);
+    expect(sent().at(-1)).toMatchObject({
+      type: "resumeRoom",
+      payload: { room: "DDDDDD", token: "td" },
+    });
+    send("roomJoined", { room: "DDDDDD", seat: 1 });
+    send("roomState", {
+      room: "DDDDDD",
+      status: "paused",
+      host: 0,
+      seats: seatsInfo(3),
+      pausedAt: 1,
+      result: null,
+    });
+    expect(useRoomStore.getState()).toMatchObject({ room: "DDDDDD", status: "paused" });
+  });
+
+  it("sends nothing without saved seats, and stops loading on an error", async () => {
+    const { useSavedGamesStore } = await import("../../src/store/savedGames.ts");
+    boot();
+    welcome();
+    expect(session.lookupSeats()).toBe(false);
+    expect(sent()).toEqual([]);
+    seats.save("AAAAAA", "ta");
+    seats.setLastRoom(null);
+    expect(session.lookupSeats()).toBe(true);
+    send("error", { code: "unavailable", message: "later" });
+    expect(useSavedGamesStore.getState().loading).toBe(false);
+  });
+
+  it("End from the list sends the stored token and drops the ended room", async () => {
+    const { useSavedGamesStore } = await import("../../src/store/savedGames.ts");
+    boot();
+    welcome();
+    seats.save("AAAAAA", "ta");
+    seats.save("BBBBBB", "tb");
+    seats.setLastRoom(null);
+    session.lookupSeats();
+    info([entry("AAAAAA", "playing"), entry("BBBBBB", "paused")]);
+    expect(session.endSavedGame("aaaaaa")).toBe(true);
+    expect(sent().at(-1)).toMatchObject({
+      type: "endSavedGame",
+      payload: { room: "AAAAAA", token: "ta" },
+    });
+    expect(useSavedGamesStore.getState().ending).toBe("AAAAAA");
+    expect(session.endSavedGame("BBBBBB")).toBe(false); // one at a time
+    info([entry("AAAAAA", "ended")]);
+    expect(useSavedGamesStore.getState()).toMatchObject({ ending: null, error: null });
+    expect(useSavedGamesStore.getState().entries.map((e) => e.room)).toEqual(["BBBBBB"]);
+    expect(seats.token("AAAAAA")).toBeNull();
+    expect(seats.token("BBBBBB")).toBe("tb");
+    // A refused end keeps the entry and shows the error.
+    session.endSavedGame("BBBBBB");
+    send("error", { code: "not_host", message: "only the host" });
+    expect(useSavedGamesStore.getState()).toMatchObject({
+      ending: null,
+      error: { room: "BBBBBB", code: "not_host" },
+    });
+    expect(useSavedGamesStore.getState().entries.map((e) => e.room)).toEqual(["BBBBBB"]);
   });
 });

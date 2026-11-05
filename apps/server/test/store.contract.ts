@@ -292,5 +292,33 @@ export function storeContract(name: string, make: () => Promise<StoreFixture>): 
       expect(await store.saveMeta(renamed, 0)).toEqual({ ok: true });
       expect((await store.loadRoom(code))?.meta).toEqual(renamed);
     });
+
+    it("loadMeta returns meta and a positive TTL, or null", async () => {
+      const code = freshCode();
+      expect(await store.loadMeta(code)).toBeNull();
+      const meta = makeMeta(code, { status: "paused", pausedAt: 5, pauses: [{ at: 1, ms: 2 }] });
+      expect(await store.createMeta(meta)).toEqual({ ok: true });
+      const got = await store.loadMeta(code);
+      expect(got?.meta).toEqual(meta);
+      expect(got?.ttlMs).toBeGreaterThan(0);
+      expect(got?.lastActionAt).toBeNull();
+      expect(await store.appendAction(code, 0, roll(1))).toEqual({ ok: true });
+      expect((await store.loadMeta(code))?.lastActionAt).toBe(roll(1).at);
+    });
+
+    it("saveMeta with a ttl sets the expiry; loadMeta never refreshes it", async () => {
+      const code = freshCode();
+      await seed(code, 1);
+      expect(await store.saveMeta(makeMeta(code, { rev: 1 }), 0, 60_000)).toEqual({ ok: true });
+      const first = await store.loadMeta(code);
+      expect(first?.ttlMs).toBeGreaterThan(0);
+      expect(first?.ttlMs).toBeLessThanOrEqual(60_000);
+      await store.loadMeta(code);
+      await store.loadRoom(code);
+      expect((await store.loadMeta(code))?.ttlMs).toBeLessThanOrEqual(first?.ttlMs ?? 0);
+      // A later write without a ttl restores the normal expiry.
+      expect(await store.saveMeta(makeMeta(code, { rev: 2 }), 1)).toEqual({ ok: true });
+      expect((await store.loadMeta(code))?.ttlMs).toBeGreaterThan(60_000);
+    });
   });
 }

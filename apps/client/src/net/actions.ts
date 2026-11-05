@@ -16,6 +16,18 @@ export interface SessionApi {
   playHere(): void;
   /** After game over: forget the seat and get a fresh, unseated connection. */
   backToStart(): void;
+  /** Host only (pause-and-resume-games). */
+  pauseGame(): boolean;
+  resumeGame(): boolean;
+  endGame(): boolean;
+  /** Saved games list: ask the server about every saved seat. */
+  lookupSeats(): boolean;
+  /** Resume a saved seat from the list. */
+  continueGame(room: string): boolean;
+  /** Forget a saved seat locally. */
+  forgetGame(room: string): void;
+  /** Host only: end a saved game from the list. */
+  endSavedGame(room: string): boolean;
 }
 
 const offline: SessionApi = {
@@ -26,6 +38,13 @@ const offline: SessionApi = {
   startGame: () => false,
   playHere: () => {},
   backToStart: () => {},
+  pauseGame: () => false,
+  resumeGame: () => false,
+  endGame: () => false,
+  lookupSeats: () => false,
+  continueGame: () => false,
+  forgetGame: () => {},
+  endSavedGame: () => false,
 };
 
 let api: SessionApi = offline;
@@ -46,3 +65,10 @@ export const startGame = (
 ): boolean => api.startGame(mode, startingPlayer, turnTimer);
 export const playHere = (): void => api.playHere();
 export const backToStart = (): void => api.backToStart();
+export const pauseGame = (): boolean => api.pauseGame();
+export const resumeGame = (): boolean => api.resumeGame();
+export const endGame = (): boolean => api.endGame();
+export const lookupSeats = (): boolean => api.lookupSeats();
+export const continueGame = (room: string): boolean => api.continueGame(room);
+export const forgetGame = (room: string): void => api.forgetGame(room);
+export const endSavedGame = (room: string): boolean => api.endSavedGame(room);

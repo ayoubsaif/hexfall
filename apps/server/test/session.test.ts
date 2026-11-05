@@ -36,6 +36,15 @@ function fakeService() {
     leaveRoom: record("leaveRoom"),
     startGame: record("startGame"),
     gameAction: record("gameAction"),
+    pauseGame: record("pauseGame"),
+    resumeGame: record("resumeGame"),
+    endGame: record("endGame"),
+    lookupSeats: record("lookupSeats"),
+    endSavedGame: record("endSavedGame"),
+    pushSubscribe: record("pushSubscribe"),
+    pushUnsubscribe: record("pushUnsubscribe"),
+    setVisibility: (conn, visible) =>
+      void calls.push({ method: "setVisibility", conn, seq: -1, args: [visible] }),
     disconnect: (conn) => void disconnects.push(conn),
     loadedRooms: () => 0,
     close: () => {},
@@ -92,7 +101,7 @@ describe("hello / ping", () => {
       v: PROTOCOL_VERSION,
       type: "welcome",
       re: 5,
-      payload: { serverVersion: "9.9.9", protocolVersion: PROTOCOL_VERSION },
+      payload: { serverVersion: "9.9.9", protocolVersion: PROTOCOL_VERSION, pushKey: null },
     });
     expect(s.out[1]).toMatchObject({ type: "pong", re: 6, payload: { t: 42 } });
   });
@@ -171,6 +180,21 @@ describe("routing", () => {
       { method: "gameAction", seq: 16, args: [{ type: "rollDice" }] },
       { method: "startGame", seq: 17, args: [{ mode: "variable", turnTimer: "relaxed" }] },
     ]);
+    s.calls.length = 0;
+    await s.session.handle(encodeClient("pauseGame", {}, 20));
+    await s.session.handle(encodeClient("resumeGame", {}, 21));
+    await s.session.handle(encodeClient("endGame", {}, 22));
+    await s.session.handle(
+      encodeClient("lookupSeats", { seats: [{ room: "abcdef", token: "tok" }] }, 23),
+    );
+    await s.session.handle(encodeClient("endSavedGame", { room: "abcdef", token: "tok" }, 24));
+    expect(s.calls.map(({ method, seq, args }) => ({ method, seq, args }))).toEqual([
+      { method: "pauseGame", seq: 20, args: [] },
+      { method: "resumeGame", seq: 21, args: [] },
+      { method: "endGame", seq: 22, args: [] },
+      { method: "lookupSeats", seq: 23, args: [[{ room: "abcdef", token: "tok" }]] },
+      { method: "endSavedGame", seq: 24, args: ["abcdef", "tok"] },
+    ]);
     // Same conn object every time, with the session id.
     expect(new Set(s.calls.map((c) => c.conn)).size).toBe(1);
     expect(s.calls[0]!.conn.id).toBe("conn-1");
@@ -184,9 +208,12 @@ describe("routing", () => {
     await s.session.handle(encodeClient("joinRoom", { room: "ZZZZZZ", name: "Bo" }, 3));
     s.script(() => ({ ok: false, rejected: { code: "not_your_turn", message: "wait" } }));
     await s.session.handle(encodeClient("gameAction", { action: { type: "endTurn" } }, 4));
+    s.script(() => ({ ok: false, error: { code: "game_paused", message: "paused" } }));
+    await s.session.handle(encodeClient("gameAction", { action: { type: "rollDice" } }, 5));
     expect(s.out).toMatchObject([
       { type: "error", re: 3, payload: { code: "room_not_found", message: "no room" } },
       { type: "actionRejected", re: 4, payload: { code: "not_your_turn", message: "wait" } },
+      { type: "error", re: 5, payload: { code: "game_paused", message: "paused" } },
     ]);
   });
 
@@ -213,7 +240,14 @@ describe("routing", () => {
       });
       req.conn.send({
         type: "roomState",
-        payload: { room: "ABCDEF", status: "lobby", host: 0, seats: [] },
+        payload: {
+          room: "ABCDEF",
+          status: "lobby",
+          host: 0,
+          seats: [],
+          pausedAt: null,
+          result: null,
+        },
         re: req.seq,
       });
       return { ok: true };

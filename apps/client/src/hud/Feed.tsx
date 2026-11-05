@@ -152,16 +152,35 @@ export function Rejection() {
   );
 }
 
-/** Always mounted; shows when the view has a winner. */
+/**
+ * Always mounted; shows when the view has a winner, or when the host ended the game early
+ * (room result: one or several winners, VP totals from the result).
+ */
 export function GameOver() {
   const { t } = useTranslation();
   const view = useView();
+  const result = useRoomStore((s) => s.result);
   const names = useNames();
-  if (!view || view.winner === null) return null;
-  const w = seatColor(view.winner);
-  const rows = view.players
-    .map((p) => ({ seat: p.seat, vp: p.publicVp + (p.hiddenVp ?? 0), hidden: p.hiddenVp ?? 0 }))
-    .sort((a, b) => b.vp - a.vp);
+  if (!view || (view.winner === null && result === null)) return null;
+  const winners = result ? result.winners : [view.winner as number];
+  const w = seatColor(winners[0] ?? 0);
+  const rows = (
+    result
+      ? result.scores.map((r) => ({ seat: r.seat, vp: r.vp, hidden: r.hiddenVp }))
+      : view.players.map((p) => ({
+          seat: p.seat,
+          vp: p.publicVp + (p.hiddenVp ?? 0),
+          hidden: p.hiddenVp ?? 0,
+        }))
+  ).sort((a, b) => b.vp - a.vp);
+  const headline =
+    winners.length === 1
+      ? t("dialogs.feed.wins", { name: names(winners[0] as number) })
+      : t("dialogs.feed.winTogether", {
+          names: new Intl.ListFormat(i18n.language, { type: "conjunction" }).format(
+            winners.map((s) => names(s)),
+          ),
+        });
   // Not dismissable: the only way on is "Back to start".
   return (
     <Dialog open>
@@ -170,14 +189,19 @@ export function GameOver() {
         aria-labelledby={undefined}
         title={
           <span className="flex items-center gap-1.5">
-            <Swatch hex={w.hex} name={w.name} />
-            {t("dialogs.feed.wins", { name: names(view.winner) })}
+            {winners.length === 1 && <Swatch hex={w.hex} name={w.name} />}
+            {headline}
           </span>
         }
         onEscapeKeyDown={(e) => e.preventDefault()}
         onPointerDownOutside={(e) => e.preventDefault()}
         onInteractOutside={(e) => e.preventDefault()}
       >
+        {result && (
+          <p className="text-sm text-muted-foreground" data-testid="ended-by-host">
+            {t("dialogs.feed.endedByHost")}
+          </p>
+        )}
         <table className="mt-2 mb-3.5 w-full border-collapse">
           <thead>
             <tr>
@@ -193,7 +217,7 @@ export function GameOver() {
             {rows.map((r) => (
               <tr
                 key={r.seat}
-                data-winner={r.seat === view.winner || undefined}
+                data-winner={winners.includes(r.seat) || undefined}
                 className="data-[winner]:font-bold"
               >
                 <td className="px-1.5 py-1">

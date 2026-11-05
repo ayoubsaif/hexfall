@@ -255,6 +255,11 @@ export function toastFor(
     }
     case "turnStarted":
       return me(event.seat) ? { text: t("game.toast.yourTurn"), tone: "good" } : null;
+    // specs/player-trade "Incoming offer notification": only offers made to the viewer.
+    case "tradeOffered":
+      return viewer !== null && !me(event.offer.from) && event.offer.to.includes(viewer)
+        ? { text: t("game.toast.tradeOffered", { name: names(event.offer.from) }), tone: "info" }
+        : null;
     case "produced":
       return me(event.seat)
         ? {

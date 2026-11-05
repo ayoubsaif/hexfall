@@ -1,13 +1,15 @@
 import { Vector3 } from "three";
 import { describe, expect, it } from "vite-plus/test";
 import {
-  DIORAMA_FALLBACKS,
-  FLAT_FALLBACKS,
+  FALLBACKS,
   HARBOR_COLORS,
   SEA_COLOR,
   TERRAIN_COLORS,
 } from "../../src/theme/fallbacks/index.ts";
 import {
+  CHIP,
+  CHIP_HEIGHT,
+  chipSideGeometry,
   FLAT_LAYER,
   FLAT_SHAPE,
   HARBOR_BADGE_SIZE,
@@ -39,11 +41,8 @@ describe("flat shapes", () => {
     expect(Object.keys(FLAT_SHAPE).sort()).toEqual(flat);
   });
 
-  it("differ per style for flat keys; pieces are shared by both styles", () => {
-    for (const key of ASSET_KEYS) {
-      if (assetKind(key) === "model") expect(FLAT_FALLBACKS[key]).toBe(DIORAMA_FALLBACKS[key]);
-      else expect(FLAT_FALLBACKS[key]).not.toBe(DIORAMA_FALLBACKS[key]);
-    }
+  it("has one fallback per key and no diorama variants", () => {
+    expect(Object.keys(FALLBACKS).sort()).toEqual([...ASSET_KEYS].sort());
   });
 
   function points(shape: "hex" | "token" | "badge") {
@@ -100,5 +99,34 @@ describe("flat shapes", () => {
     expect(FLAT_LAYER.harborLink).toBeGreaterThan(FLAT_LAYER.tileOutline);
     expect(FLAT_LAYER.marker).toBeGreaterThan(FLAT_LAYER.harborLink);
     expect(FLAT_LAYER.label).toBeGreaterThan(FLAT_LAYER.markerOutline);
+  });
+});
+
+describe("token chip", () => {
+  it("is thin: more than zero and at most 0.05 hex radii", () => {
+    expect(CHIP_HEIGHT).toBeGreaterThan(0);
+    expect(CHIP.label).toBeLessThanOrEqual(0.05);
+  });
+
+  it("has a side wall from the board plane to its thickness, at the token radius", () => {
+    const g = chipSideGeometry();
+    g.computeBoundingBox();
+    const box = g.boundingBox!;
+    expect(box.min.y).toBeCloseTo(0);
+    expect(box.max.y).toBeCloseTo(CHIP_HEIGHT);
+    expect(box.max.x).toBeCloseTo(TOKEN_RADIUS);
+    expect(box.max.z).toBeCloseTo(TOKEN_RADIUS);
+  });
+
+  it("stacks face, outline and number above the side", () => {
+    expect(CHIP.face).toBeGreaterThan(CHIP_HEIGHT);
+    expect(CHIP.outline).toBeGreaterThan(CHIP.face);
+    expect(CHIP.label).toBeGreaterThan(CHIP.outline);
+  });
+
+  it("uses one shape for the themed image and the fallback", () => {
+    // Both FlatAsset (themed) and the token fallback draw FlatShape with key "token".
+    expect(FLAT_SHAPE.token).toBe("token");
+    expect(typeof FALLBACKS.token).toBe("function");
   });
 });

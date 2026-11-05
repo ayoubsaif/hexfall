@@ -34,6 +34,13 @@ pnpm run check   # format, lint, type-check, engine purity and asset checks
 pnpm run build   # production builds of every package
 ```
 
+## Saving and ending games
+
+- **Close game for now**: during a game the host has a "Game" button next to settings. Closing the game pauses it for everyone: no moves, and the turn timer stops with its time left. Players can close their tabs. The paused game stays in Redis for 7 days after the pause, then it is deleted. Only the host can resume it, and the timer continues where it stopped.
+- **Your games**: the start screen lists every room this browser holds a seat in (paused, running or in the lobby), with when each game started and its last move, and "Continue" and "Remove". The host also gets "End game" there for old games. Rooms that expired or ended drop off the list.
+- **End game now**: the host can end a running or paused game early. The player with the most victory points (hidden VP cards included) wins; tied players share the win. Everyone sees the final scores. The result is kept for 1 day.
+- Other rooms expire 14 days after their last change.
+
 ## Deploy
 
 A deployment has three parts:
@@ -46,15 +53,19 @@ A deployment has three parts:
 
 ### Configuration
 
-| Variable           | Used by      | Example                                | Notes                                                                                                                             |
-| ------------------ | ------------ | -------------------------------------- | --------------------------------------------------------------------------------------------------------------------------------- |
-| `REDIS_URL`        | server       | `rediss://default:…@….upstash.io:6379` | `redis://` or `rediss://` (TLS). Keep it secret.                                                                                  |
-| `ALLOWED_ORIGIN`   | server       | `https://hexfall.example.com`          | The client's origin. Use commas for several. Upgrades from any other origin are refused with 403.                                 |
-| `PORT`             | server       | `8080`                                 | Port the server listens on.                                                                                                       |
-| `NODE_ENV`         | server       | `production`                           |                                                                                                                                   |
-| `VITE_SERVER_URL`  | client build | `wss://hexfall-server.example.com`     | The server's base URL, **without** `/ws`. Baked into the bundle at build time. Use `wss://` when the client is served over HTTPS. |
-| `VITE_THEME`       | client build | `diorama`                              | Optional.                                                                                                                         |
-| `VITE_APP_VERSION` | client build | `1.0.0`                                | Optional. Sent to the server in `hello`.                                                                                          |
+| Variable            | Used by      | Example                                | Notes                                                                                                                             |
+| ------------------- | ------------ | -------------------------------------- | --------------------------------------------------------------------------------------------------------------------------------- |
+| `REDIS_URL`         | server       | `rediss://default:…@….upstash.io:6379` | `redis://` or `rediss://` (TLS). Keep it secret.                                                                                  |
+| `ALLOWED_ORIGIN`    | server       | `https://hexfall.example.com`          | The client's origin. Use commas for several. Upgrades from any other origin are refused with 403.                                 |
+| `PORT`              | server       | `8080`                                 | Port the server listens on.                                                                                                       |
+| `NODE_ENV`          | server       | `production`                           |                                                                                                                                   |
+| `VITE_SERVER_URL`   | client build | `wss://hexfall-server.example.com`     | The server's base URL, **without** `/ws`. Baked into the bundle at build time. Use `wss://` when the client is served over HTTPS. |
+| `VITE_THEME`        | client build | `diorama`                              | Optional.                                                                                                                         |
+| `VITE_APP_VERSION`  | client build | `1.0.0`                                | Optional. Sent to the server in `hello`.                                                                                          |
+| `VITE_SITE_URL`     | client build | `https://hexfall.example.com`          | Optional. The client's public URL. Makes `og:image`, `og:url` and the canonical link absolute so shared links show a preview.     |
+| `VAPID_PUBLIC_KEY`  | server       | `BEl62iUY…`                            | Optional. Web Push key pair for turn notifications. Set all three VAPID variables or none; without them push is off.              |
+| `VAPID_PRIVATE_KEY` | server       | `Dt1CLgQl…`                            | Keep it secret.                                                                                                                   |
+| `VAPID_SUBJECT`     | server       | `mailto:ops@hexfall.example.com`       | A `mailto:` or `https:` contact for push services.                                                                                |
 
 Client variables are public. They end up in the JavaScript bundle, so never put secrets in them. The server reads its variables once at startup. If a value is invalid, the server prints the problem and exits.
 
@@ -104,11 +115,21 @@ curl https://hexfall-server.example.com/healthz
 # {"ok":true,"redis":"up","version":"0.0.0","rooms":0}
 ```
 
+**Turn notifications (optional).** Generate a VAPID key pair once and keep it: changing it invalidates every stored subscription.
+
+```sh
+npx web-push generate-vapid-keys
+fly secrets set VAPID_PUBLIC_KEY=… VAPID_PRIVATE_KEY=… VAPID_SUBJECT=mailto:ops@hexfall.example.com
+```
+
+The server then sends a push when the game starts waiting on a player whose tab is hidden or closed. Players turn notifications on with the bell next to the language switch. On iPhone and iPad, push only works after adding the game to the home screen.
+
 ### 3. Client
 
 ```sh
 pnpm install --frozen-lockfile
-VITE_SERVER_URL='wss://hexfall-server.example.com' pnpm --filter @hexfall/client build
+VITE_SERVER_URL='wss://hexfall-server.example.com' VITE_SITE_URL='https://hexfall.example.com' \
+  pnpm --filter @hexfall/client build
 ```
 
 Upload `apps/client/dist` to any static host: Vercel, Netlify, Cloudflare Pages, S3 + CDN, nginx… The app is a single page and invite links use a query string (`/?room=CODE`), so no rewrite rules are needed. It must be served from the site root (`/`).
@@ -123,8 +144,10 @@ On Vercel, for example: set the root directory to `apps/client`, the build comma
 
 ### Updating
 
-Deploy the server and the client together whenever `PROTOCOL_VERSION` in `packages/protocol/src/envelope.ts` changes. An old client talking to a new server gets a "new version" banner asking the player to reload. Games in progress survive server restarts.
+Deploy the server and the client together whenever `PROTOCOL_VERSION` in `packages/protocol/src/envelope.ts` changes (version 5 added pausing, ending early and the saved games list). An old client talking to a new server gets a "new version" banner asking the player to reload. Games in progress survive server restarts.
 
 ## Assets
+
+App icons, `favicon.ico` and the link-preview image (`og-image.png`) are generated from `apps/client/brand/icon.png`. After changing that image, run `pnpm run icons:build` and commit the files it writes to `apps/client/public/`.
 
 `assets/` holds third-party reference images. It is git-ignored and is never built, committed or deployed. The shipped art lives in `apps/client/public/themes/`.

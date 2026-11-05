@@ -5,7 +5,6 @@
 import { type ReactNode, act } from "react";
 import { type Root, createRoot } from "react-dom/client";
 import { afterEach, beforeEach, describe, expect, it, vi } from "vite-plus/test";
-import { resolveForStyle } from "../../src/theme/Asset.tsx";
 import type { AssetResolution } from "../../src/theme/resolve.ts";
 import {
   ThemedSlot,
@@ -135,33 +134,5 @@ describe("failure registry", () => {
       key: "tile.hills",
       reason: "failed",
     });
-  });
-});
-
-describe("board style resolution", () => {
-  const image: AssetResolution = {
-    kind: "image",
-    key: "tile.hills",
-    url: URL_HILLS,
-    projection: "top",
-  };
-  const city: AssetResolution = {
-    kind: "model",
-    key: "piece.city",
-    url: "/themes/diorama/city.glb",
-    transform: undefined,
-  };
-
-  it("the flat style keeps themed images", () => {
-    expect(resolveForStyle(image, "tile.hills", "flat")).toBe(image);
-  });
-
-  it("the 3d style ignores theme images for flat keys", () => {
-    expect(resolveForStyle(image, "tile.hills", "3d").kind).toBe("fallback");
-  });
-
-  it("model keys are unaffected by the style", () => {
-    expect(resolveForStyle(city, "piece.city", "3d")).toBe(city);
-    expect(resolveForStyle(city, "piece.city", "flat")).toBe(city);
   });
 });

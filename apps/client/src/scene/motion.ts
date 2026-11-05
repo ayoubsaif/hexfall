@@ -1,7 +1,6 @@
 // Board motion (specs/board-interaction, "Board motion"; design.md decision 6).
 // Timing and "what animates" are pure functions; components only drive them per frame.
 import type { Board, GameEvent, HexId } from "@hexfall/engine";
-import { useSyncExternalStore } from "react";
 import type { WriteSource } from "../store/game.ts";
 
 export const DROP_MS = 300;
@@ -107,30 +106,6 @@ export function producingHexes(
   return out;
 }
 
-// ---- reduced-motion preference
+// ---- reduced-motion preference (viewer choice + browser setting, store/motion.ts)
 
-const QUERY = "(prefers-reduced-motion: reduce)";
-
-function mediaQuery(): MediaQueryList | null {
-  return typeof matchMedia === "function" ? matchMedia(QUERY) : null;
-}
-
-export function prefersReducedMotion(): boolean {
-  return mediaQuery()?.matches ?? false;
-}
-
-function subscribe(onChange: () => void): () => void {
-  const mq = mediaQuery();
-  if (!mq) return () => {};
-  if (typeof mq.addEventListener === "function") {
-    mq.addEventListener("change", onChange);
-    return () => mq.removeEventListener("change", onChange);
-  }
-  mq.addListener(onChange);
-  return () => mq.removeListener(onChange);
-}
-
-/** Reactive `prefers-reduced-motion: reduce` (false when matchMedia is missing). */
-export function useReducedMotion(): boolean {
-  return useSyncExternalStore(subscribe, prefersReducedMotion, () => false);
-}
+export { prefersReducedMotion, useReducedMotion } from "../store/motion.ts";

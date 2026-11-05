@@ -1,7 +1,6 @@
 // <Asset assetKey=... /> renders a key through the theme layer. Flat-kind keys (tiles,
-// sea, token, harbors) depend on the board style: "flat" draws a flat shape, textured with
-// the theme image when mapped and loaded; "3d" draws the procedural diorama (theme images
-// are ignored). Model keys (pieces) draw the theme GLB in either style. Otherwise
+// sea, token, harbors) draw their flat shape (the token: a thin chip), textured with the
+// theme image when mapped and loaded. Model keys (pieces) draw the theme GLB. Otherwise
 // (unmapped, loading, or failed) the procedural fallback renders. Scene code never sees
 // file paths.
 import { useGLTF } from "@react-three/drei";
@@ -23,34 +22,11 @@ import type { Transform } from "./manifest.ts";
 import { type AssetResolution, resolveAsset } from "./resolve.ts";
 import type { Projection } from "./relief.ts";
 import { ThemedSlot, effectiveResolution } from "./slot.tsx";
-import { type BoardStyle, useBoardStyle } from "./style.ts";
 import { instantiateModel } from "./tint.ts";
 
-/**
- * Resolves a key for the given board style. In the "3d" style flat-kind keys always use
- * the diorama fallback (theme images are for the flat style only).
- */
-export function resolveForStyle(
-  resolution: AssetResolution,
-  key: AssetKey,
-  style: BoardStyle,
-): AssetResolution {
-  if (style === "3d" && isFlatAssetKey(key)) return { kind: "fallback", key, reason: "unmapped" };
-  return effectiveResolution(resolution);
-}
-
-export function useAsset(key: AssetKey): {
-  resolution: AssetResolution;
-  themeId: string;
-  style: BoardStyle;
-} {
+export function useAsset(key: AssetKey): { resolution: AssetResolution; themeId: string } {
   const { theme } = useTheme();
-  const { style } = useBoardStyle();
-  return {
-    resolution: resolveForStyle(resolveAsset(theme, key), key, style),
-    themeId: theme.id,
-    style,
-  };
+  return { resolution: effectiveResolution(resolveAsset(theme, key)), themeId: theme.id };
 }
 
 export interface AssetProps {
@@ -60,8 +36,8 @@ export interface AssetProps {
 }
 
 export function Asset({ assetKey, playerColor }: AssetProps) {
-  const { resolution, themeId, style } = useAsset(assetKey);
-  const Fallback = FALLBACKS[style][assetKey];
+  const { resolution, themeId } = useAsset(assetKey);
+  const Fallback = FALLBACKS[assetKey];
   const fallback = <Fallback playerColor={playerColor} />;
   if (resolution.kind === "fallback") return fallback;
   return (
