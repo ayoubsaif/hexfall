@@ -4,7 +4,7 @@ import { isLowPower } from "./waterTextures.ts";
 
 export type QualityTier = Exclude<GraphicsQuality, "auto">;
 export const QUALITY = {
-  low: { dpr: 1, segments: 64, waves: 3, shadows: false, shadowSize: 512 },
+  low: { dpr: 1, segments: 1, waves: 3, shadows: false, shadowSize: 512 },
   medium: { dpr: 1.5, segments: 160, waves: 5, shadows: true, shadowSize: 1024 },
   high: { dpr: 2, segments: 256, waves: 7, shadows: true, shadowSize: 2048 },
 } as const;
@@ -28,7 +28,7 @@ export class QualitySampler {
   private slowWindows = 0;
 
   sample(delta: number, tier: QualityTier, visible = true): QualityTier {
-    if (!visible || !Number.isFinite(delta) || delta <= 0 || delta > 0.25) {
+    if (!visible || !Number.isFinite(delta) || delta <= 0 || delta > 2) {
       this.seconds = this.frames = this.slowWindows = 0;
       return tier;
     }

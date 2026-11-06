@@ -1,15 +1,16 @@
 // A wooden pier: planked deck on mooring posts, lying on the sea and running from the group's
 // origin along (dx, dz). Procedural (one textured box and four posts), so nothing to download.
-// The harbor draws two, one toward each of its slot's intersections.
+// The marker supplies the coastal edge normal, so the deck meets that hex edge squarely.
 import { useMemo } from "react";
 import { CanvasTexture, SRGBColorSpace } from "three";
 
 const WOOD = "#a67a45";
 const WOOD_DARK = "#5e3d22";
-const WIDTH = 0.16;
+const WIDTH = 0.64;
 /** Deck height above the sea surface, and the thickness of the deck. */
 const DECK_Y = 0.09;
 const DECK_THICKNESS = 0.035;
+export const HARBOR_DECK_TOP = DECK_Y + DECK_THICKNESS / 2;
 const POST_HEIGHT = 0.2;
 
 let plankTexture: CanvasTexture | null | undefined;

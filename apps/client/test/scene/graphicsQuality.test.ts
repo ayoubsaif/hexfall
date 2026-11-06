@@ -51,4 +51,7 @@ describe("automatic quality", () => {
     const tier = run(s, 30, 12, "high");
     expect(run(s, 60, 60, tier)).toBe("medium");
   });
+  it("still lowers quality when a very slow device renders below four FPS", () => {
+    expect(run(new QualitySampler(), 2, 12, "high")).toBe("medium");
+  });
 });

@@ -5,7 +5,7 @@ import { create } from "zustand";
 export type ViewPreset = "free" | "top" | "diagonal";
 
 /** Zoom is shown in percent of the fitted view: 100 % = the whole island fits the screen. */
-export const ZOOM_MIN = 67; // camera at 1.5 x the fit distance (Scene maxDistance)
+export const ZOOM_MIN = 85;
 export const ZOOM_MAX = 222; // camera at 0.45 x the fit distance (Scene minDistance)
 
 export function clampZoom(percent: number): number {

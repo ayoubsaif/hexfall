@@ -1,3 +1,4 @@
+import type { ShaderMaterial } from "three";
 // Loads the optional sea and coast textures (specs/sea-coast-rendering, "Procedural fallback").
 // A slot that is not declared, still loading, or failed to load stays undefined, and the water
 // shader then uses its procedural look for that layer. Never throws.
@@ -74,4 +75,16 @@ export function isLowPower(
 export const STILL_WATER_TIME = 1.2;
 export function waterTime(reduced: boolean, elapsed: number): number {
   return reduced ? STILL_WATER_TIME : elapsed;
+}
+
+/** R3F copies uniform entries during prop application. Update the live material's
+ * entries, preserving its dictionary reference, after time/texture/simulation changes. */
+export function syncWaterUniforms(
+  material: ShaderMaterial | null,
+  values: Record<string, { value: unknown }>,
+): void {
+  if (!material) return;
+  for (const [name, uniform] of Object.entries(values)) {
+    if (material.uniforms[name]) material.uniforms[name].value = uniform.value;
+  }
 }

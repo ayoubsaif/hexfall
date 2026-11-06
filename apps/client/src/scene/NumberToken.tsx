@@ -1,19 +1,19 @@
 // Number token: the themed `token` chip plus a client-drawn value and pips label on its top
 // face. The board view turns the whole chip to face the camera (scene/chipYaw.ts).
 import type { CanvasTexture } from "three";
-import { Asset, CHIP } from "../theme/index.ts";
+import { CHIP, TOKEN_RADIUS } from "../theme/index.ts";
 import { makeLabelTexture } from "./canvasLabel.ts";
 import { tokenLabel } from "./labels.ts";
 import { LabelQuad } from "./LabelQuad.tsx";
 
+import { ChipDisc } from "./ChipDisc.tsx";
+
 const SERIF = "'Cormorant Garamond Variable', 'Cormorant Garamond', Georgia, serif";
 
-/**
- * Font size (fraction of the label) by probability: 1 pip (2, 12) is smallest, 5 pips (6, 8)
- * largest, so the likeliest numbers stand out. Always larger for more pips.
- */
-export function numberSize(pips: number): number {
-  return 0.3 + 0.07 * (pips - 1);
+/** One generous size for every roll; probability changes weight only. */
+export const NUMBER_SIZE = 0.64;
+export function numberWeight(pips: number): number {
+  return [300, 400, 500, 700, 900][Math.max(0, Math.min(4, pips - 1))]!;
 }
 
 // One texture per value (2–12 without 7), drawn on first use.
@@ -28,7 +28,16 @@ function tokenTexture(value: number): CanvasTexture | null {
         ctx.fillStyle = color;
         ctx.textAlign = "center";
         ctx.textBaseline = "middle";
-        ctx.font = `bold ${Math.round(s * numberSize(pips))}px ${SERIF}`;
+        ctx.font = `${numberWeight(pips)} ${Math.round(s * NUMBER_SIZE)}px ${SERIF}`;
+        // Fit all labels, including two-digit values, inside the chip's printable width.
+        const width = ctx.measureText(text).width;
+        if (width > s * 0.82)
+          ctx.font = `${numberWeight(pips)} ${Math.round((s * NUMBER_SIZE * s * 0.82) / width)}px ${SERIF}`;
+        if (numberWeight(pips) > 700) {
+          ctx.strokeStyle = color;
+          ctx.lineWidth = s * 0.012;
+          ctx.strokeText(text, s / 2, s * 0.42);
+        }
         ctx.fillText(text, s / 2, s * 0.42);
         const r = s * 0.035;
         const gap = s * 0.1;
@@ -48,8 +57,8 @@ export function NumberToken({ value }: { value: number }) {
   const texture = tokenTexture(value);
   return (
     <>
-      <Asset assetKey="token" />
-      {texture && <LabelQuad texture={texture} size={0.5} y={CHIP.label} />}
+      <ChipDisc />
+      {texture && <LabelQuad texture={texture} size={TOKEN_RADIUS * (5 / 3)} y={CHIP.label} />}
     </>
   );
 }

@@ -5,17 +5,21 @@
 // soft lace foam, caustic light and a wet-sand band add the softer look. A tiling noise texture
 // (the theme's caustics image) breaks the lines up; with no texture, hash noise stands in. The
 // sand texture is optional too: nothing here needs an asset file.
-import { useFrame } from "@react-three/fiber";
-import { useEffect, useMemo } from "react";
-import { Color, type DataTexture, Texture } from "three";
+import { useFrame, useThree } from "@react-three/fiber";
+import { useEffect, useMemo, useRef, useState } from "react";
+import { Color, type DataTexture, type ShaderMaterial, Texture } from "three";
 import { resolveWaterUrls, useTheme } from "../theme/index.ts";
 import { FIELD_HALF, coastFieldTexture } from "./coastField.ts";
 import type { XZ } from "./layout.ts";
 import { useReducedMotion } from "./motion.ts";
-import { loadWaterTextures, waterTime } from "./waterTextures.ts";
+import { loadWaterTextures, waterTime, syncWaterUniforms } from "./waterTextures.ts";
 
 import { usePrefsStore } from "../store/prefs.ts";
 import { QUALITY, useGraphicsQuality } from "./graphicsQuality.ts";
+import { visibleSeaHalf } from "./seaBounds.ts";
+import { CoastTerrain } from "./CoastTerrain.tsx";
+import { coastRocks } from "./coastTerrain.ts";
+import { supportsWaterSimulation, WaterSimulation } from "./waterSimulation.ts";
 import { realisticVertex, realisticFragment } from "./realisticWater.ts";
 
 export const WATER_DEEP = "#12547d";
@@ -25,9 +29,10 @@ export const WATER_FOAM = "#f6fcf9";
 export const WATER_SKY = "#bfe3ee";
 
 const vertex = /* glsl */ `
+uniform float uSeaHalf;
 varying vec3 vWorld;
 void main() {
-  vec4 w = modelMatrix * vec4(position, 1.0);
+  vec4 w = modelMatrix * vec4(position.xy * uSeaHalf / 100.0, position.z, 1.0);
   vWorld = w.xyz;
   gl_Position = projectionMatrix * viewMatrix * w;
 }`;
@@ -170,12 +175,34 @@ void main() {
   #include <colorspace_fragment>
 }`;
 
-export function Water({ land, y }: { land: readonly XZ[]; y: number }) {
+export function Water({
+  land,
+  harbors,
+  y,
+}: {
+  land: readonly XZ[];
+  harbors: readonly XZ[];
+  y: number;
+}) {
+  const renderer = useThree((s) => s.gl);
+  const material = useRef<ShaderMaterial>(null);
+  const [simulation, setSimulation] = useState<WaterSimulation | null>(null);
   const reduced = useReducedMotion();
   const mode = usePrefsStore((s) => s.graphicsMode);
   const tier = useGraphicsQuality();
   const quality = QUALITY[tier];
   const realistic = mode === "realistic";
+  const physical = realistic && tier === "high" && supportsWaterSimulation(renderer);
+  const rocks = useMemo(() => coastRocks(land, harbors), [land, harbors]);
+  useEffect(() => {
+    if (!physical) {
+      setSimulation(null);
+      return;
+    }
+    const solver = new WaterSimulation(land, rocks, y);
+    setSimulation(solver);
+    return () => solver.dispose();
+  }, [physical, land, rocks, y]);
   const defines = useMemo(() => ({ WAVE_COUNT: quality.waves }), [quality.waves]);
   const { theme } = useTheme();
   // The island's shore distance, baked once (the board's land hexes never move).
@@ -186,6 +213,11 @@ export function Water({ land, y }: { land: readonly XZ[]; y: number }) {
   const uniforms = useMemo(
     () => ({
       uField: { value: field as Texture },
+      uSimulation: { value: blank },
+      uBed: { value: blank },
+      uPhysical: { value: 0 },
+      uSeaLevel: { value: y },
+      uSeaHalf: { value: 20 },
       uNoise: { value: blank },
       uSand: { value: blank },
       uTime: { value: 0 },
@@ -198,7 +230,7 @@ export function Water({ land, y }: { land: readonly XZ[]; y: number }) {
       uFoam: { value: new Color(WATER_FOAM) },
       uSky: { value: new Color(WATER_SKY) },
     }),
-    [field, blank],
+    [field, blank, y],
   );
   useEffect(() => () => blank.dispose(), [blank]);
   useEffect(() => {
@@ -233,23 +265,48 @@ export function Water({ land, y }: { land: readonly XZ[]; y: number }) {
       owned.forEach((texture) => texture.dispose());
     };
   }, [theme, uniforms, blank]);
-  useFrame(({ clock }) => {
+  useFrame(({ clock, camera }, delta) => {
+    uniforms.uSeaHalf.value = visibleSeaHalf(camera, y);
+    uniforms.uPhysical.value = physical && simulation ? 1 : 0;
+    if (physical && simulation) {
+      simulation.advance(renderer, delta, reduced);
+      uniforms.uSimulation.value = simulation.texture;
+      uniforms.uBed.value = simulation.bed;
+    }
     // Reduced motion: a still sea (waves, caustics and tide frozen), never an animation.
     uniforms.uTime.value = waterTime(reduced, clock.elapsedTime);
+    syncWaterUniforms(material.current, uniforms);
   });
   return (
-    <mesh rotation={[-Math.PI / 2, 0, 0]} position={[0, y, 0]}>
-      <planeGeometry
-        args={[200, 200, realistic ? quality.segments : 1, realistic ? quality.segments : 1]}
-      />
-      <shaderMaterial
-        key={`${mode}-${tier}`}
-        defines={defines}
-        uniforms={uniforms}
-        vertexShader={realistic ? realisticVertex : vertex}
-        fragmentShader={realistic ? realisticFragment : fragment}
-        toneMapped={false}
-      />
-    </mesh>
+    <>
+      {realistic && (
+        <CoastTerrain
+          land={land}
+          rocks={rocks}
+          y={y}
+          raisedBeach={physical && !!simulation}
+          detail={tier === "low" ? 1 : tier === "medium" ? 2 : 3}
+        />
+      )}
+      <mesh
+        frustumCulled={false}
+        raycast={() => {}}
+        rotation={[-Math.PI / 2, 0, 0]}
+        position={[0, y, 0]}
+      >
+        <planeGeometry
+          args={[200, 200, realistic ? quality.segments : 1, realistic ? quality.segments : 1]}
+        />
+        <shaderMaterial
+          ref={material}
+          key={`${mode}-${tier}`}
+          defines={defines}
+          uniforms={uniforms}
+          vertexShader={realistic ? realisticVertex : vertex}
+          fragmentShader={realistic ? realisticFragment : fragment}
+          toneMapped={false}
+        />
+      </mesh>
+    </>
   );
 }

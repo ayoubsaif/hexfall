@@ -9,10 +9,8 @@ describe("tokenLabel", () => {
     expect(tokenLabel(9)).toEqual({ text: "9", pips: 4, color: INK });
   });
 
-  it("uses red only for 6 and 8", () => {
-    expect(tokenLabel(6).color).toBe(TOKEN_RED);
-    expect(tokenLabel(8).color).toBe(TOKEN_RED);
-    expect(TOKEN_RED).not.toBe(INK);
+  it("6 and 8 are red, every other number is ink", () => {
+    for (const n of [6, 8]) expect(tokenLabel(n).color).toBe(TOKEN_RED);
     for (const n of [2, 3, 4, 5, 9, 10, 11, 12]) expect(tokenLabel(n).color).toBe(INK);
   });
 });
@@ -39,12 +37,11 @@ describe("fitDistance", () => {
   });
 });
 
-import { numberSize } from "../../src/scene/NumberToken.tsx";
+import { NUMBER_SIZE, numberWeight } from "../../src/scene/NumberToken.tsx";
 
-describe("number token font size by probability", () => {
-  it("grows with the number of pips, so 6 and 8 are the largest", () => {
-    const sizes = [1, 2, 3, 4, 5].map(numberSize);
-    for (let i = 1; i < sizes.length; i++) expect(sizes[i]!).toBeGreaterThan(sizes[i - 1]!);
-    expect(numberSize(5)).toBeGreaterThan(numberSize(4));
+describe("number token typography", () => {
+  it("uses one size and five weights from light to extra bold", () => {
+    expect(NUMBER_SIZE).toBe(0.64);
+    expect([1, 2, 3, 4, 5].map(numberWeight)).toEqual([300, 400, 500, 700, 900]);
   });
 });

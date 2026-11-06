@@ -9,11 +9,11 @@ const ev = (deltaX: number, deltaY: number, deltaMode = 0, ctrlKey = false) => (
 });
 
 describe("classifyWheel", () => {
-  it("Mac trackpad two-finger scroll pans", () => {
-    expect(classifyWheel(ev(3.5, 12.25))).toBe("pan");
+  it("Mac trackpad two-finger scroll zooms around the center", () => {
+    expect(classifyWheel(ev(3.5, 12.25))).toBe("zoom");
   });
-  it("Windows precision touchpad small whole deltas pan", () => {
-    expect(classifyWheel(ev(0, 8))).toBe("pan");
+  it("Windows precision touchpad small whole deltas zoom", () => {
+    expect(classifyWheel(ev(0, 8))).toBe("zoom");
   });
   it("notched wheel (120 px or lines) zooms", () => {
     expect(classifyWheel(ev(0, 120))).toBe("zoom");

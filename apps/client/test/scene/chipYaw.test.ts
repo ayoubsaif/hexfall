@@ -1,6 +1,7 @@
+import { faceChips } from "../../src/scene/chipYaw.ts";
 // Number-token chips turn to the camera (openspec flat-board-3d-chips, tasks 3.1 and 3.3;
 // specs/board-view "Number tokens").
-import { Group, Mesh, PlaneGeometry, Quaternion, Vector3 } from "three";
+import { PerspectiveCamera, Group, Mesh, PlaneGeometry, Quaternion, Vector3 } from "three";
 import { describe, expect, it } from "vite-plus/test";
 import { YAW_EPSILON, cameraYaw, turnChips } from "../../src/scene/chipYaw.ts";
 
@@ -64,4 +65,22 @@ describe("turnChips", () => {
       });
     }
   });
+});
+
+it("faces the camera in pitch and yaw while keeping the lowest rim on the deck", () => {
+  const chip = new Group();
+  chip.scale.setScalar(0.7);
+  const camera = new PerspectiveCamera();
+  camera.position.set(5, 6, 8);
+  camera.lookAt(0, 0, 0);
+  faceChips([chip], camera.quaternion);
+  const normal = new Vector3(0, 1, 0).applyQuaternion(chip.quaternion);
+  const facing = new Vector3(0, 0, 1).applyQuaternion(camera.quaternion);
+  expect(normal.distanceTo(facing)).toBeLessThan(1e-10);
+  const rise = 0.3 * 0.7 * Math.sqrt(1 - normal.y ** 2);
+  expect(chip.position.y - rise).toBeCloseTo(0, 10);
+  const textUp = new Vector3(0, 0, -1).applyQuaternion(chip.quaternion);
+  expect(textUp.distanceTo(new Vector3(0, 1, 0).applyQuaternion(camera.quaternion))).toBeLessThan(
+    1e-10,
+  );
 });

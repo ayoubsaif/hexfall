@@ -1,21 +1,20 @@
-// Harbor marker: one short wooden pier at the slot and, floating above it, a chip like the
+// Harbor marker: one edge-aligned wooden pier with a chip resting directly on its deck, like the
 // number tokens showing the resource icon and the trade rate (specs/board-view "Harbor markers").
 import type { HarborType } from "@hexfall/engine";
-import { useFrame } from "@react-three/fiber";
 import { useTexture } from "@react-three/drei";
-import { useRef } from "react";
 import { type CanvasTexture, type Group, SRGBColorSpace } from "three";
-import { Asset, CHIP, useLandRelief } from "../theme/index.ts";
+import { CHIP, useLandRelief } from "../theme/index.ts";
 import { makeLabelTexture } from "./canvasLabel.ts";
 import { INK, harborLabel } from "./labels.ts";
 import { LabelQuad } from "./LabelQuad.tsx";
-import { HarborDock } from "./HarborDock.tsx";
+import { HarborDock, HARBOR_DECK_TOP } from "./HarborDock.tsx";
 import type { HarborItem } from "./layout.ts";
-import { useReducedMotion } from "./motion.ts";
+
+import { ChipDisc } from "./ChipDisc.tsx";
 
 const SANS = "'Cormorant Garamond Variable', 'Cormorant Garamond', Georgia, serif";
 
-/** The floating marker's colors: the resource card frame colors (style.css `--color-res-*`). */
+/** The marker's colors: the resource card frame colors (style.css `--color-res-*`). */
 export const HARBOR_COLORS: Readonly<Record<HarborType, string>> = {
   generic: "#d9c9a3",
   brick: "#a8472a",
@@ -24,19 +23,14 @@ export const HARBOR_COLORS: Readonly<Record<HarborType, string>> = {
   ore: "#5f6b78",
   wool: "#7fa046",
 };
-/** Length of the single short pier, and how high each chip floats above the sea. */
-const PIER_LENGTH = 0.42;
-/** Resource harbors ride low, just above the land hexes; the plain 3:1 chip keeps its height. */
-const CHIP_FLOAT = 0.55;
-const SPECIAL_FLOAT = 0.22;
 /** The plain 3:1 chip is a small, icon-free disc showing only the rate. */
 const GENERIC_SCALE = 0.7;
 
 /** Light halo under the ink so the rate reads on dark badge art and on the sea. */
-const HALO = "#f4efe1";
+const HALO = "#f7edd5";
 
 /** Rate text size and center, as fractions of the canvas: in the lower part of the chip. */
-export const RATE_SIZE = 0.3;
+export const RATE_SIZE = 0.38;
 export const RATE_CENTER_Y = 0.78;
 
 // The label has no words, so one texture per harbor type serves every language.
@@ -46,7 +40,7 @@ function harborTexture(type: HarborType): CanvasTexture | null {
   if (!cache.has(type)) {
     const { rate } = harborLabel(type);
     const plain = type === "generic";
-    const size = plain ? 0.42 : RATE_SIZE;
+    const size = plain ? 0.57 : RATE_SIZE;
     const cy = plain ? 0.5 : RATE_CENTER_Y;
     cache.set(
       type,
@@ -54,6 +48,9 @@ function harborTexture(type: HarborType): CanvasTexture | null {
         ctx.textAlign = "center";
         ctx.textBaseline = "middle";
         ctx.font = `bold ${Math.round(s * size)}px ${SANS}`;
+        const width = ctx.measureText(rate).width;
+        if (width > s * 0.86)
+          ctx.font = `bold ${Math.floor((s * size * s * 0.86) / width)}px ${SANS}`;
         ctx.lineJoin = "round";
         ctx.lineWidth = s * 0.06;
         ctx.strokeStyle = HALO;
@@ -67,7 +64,7 @@ function harborTexture(type: HarborType): CanvasTexture | null {
 }
 
 /**
- * The floating harbor chip: the same chip as a number token, hovering over the pier, turned to
+ * The harbor chip: the same chip as a number token, resting on the pier, turned to
  * face the camera like the number chips. It carries the resource icon above the trade rate
  * (3:1 or 2:1) and a thin ring in the resource color so the harbor reads from afar.
  */
@@ -82,33 +79,14 @@ function HarborChip({
   y: number;
   chipRef: (g: Group | null) => void;
 }) {
-  const ref = useRef<Group>(null);
-  const reduced = useReducedMotion();
-  // Special harbors reuse the resource card icon on a disc in the card's frame color.
+  // Special harbors retain their resource icon on the shared paper disc.
   const special = item.type !== "generic";
   const icon = useTexture(special ? `/ui/resources/${item.type}.webp` : "/ui/resources/wool.webp");
   icon.colorSpace = SRGBColorSpace;
-  useFrame(({ clock }) => {
-    const g = ref.current;
-    if (g) g.position.y = y + (reduced ? 0 : Math.sin(clock.elapsedTime * 1.2 + item.slot) * 0.015);
-  });
   return (
-    <group ref={ref} position={[0, y, 0]}>
+    <group position={[0, y, 0]}>
       <group ref={chipRef} name="chip" scale={special ? 1 : GENERIC_SCALE}>
-        {special ? (
-          <mesh position={[0, CHIP.label / 2 - 0.0005, 0]}>
-            <cylinderGeometry args={[0.3, 0.3, CHIP.label - 0.001, 40]} />
-            <meshStandardMaterial color={HARBOR_COLORS[item.type]} roughness={0.6} />
-          </mesh>
-        ) : (
-          <>
-            <mesh position={[0, -0.004, 0]}>
-              <cylinderGeometry args={[0.3, 0.3, 0.02, 40]} />
-              <meshStandardMaterial color={HARBOR_COLORS[item.type]} roughness={0.6} />
-            </mesh>
-            <Asset assetKey="token" />
-          </>
-        )}
+        <ChipDisc />
         {special && (
           <group position={[0, 0, -0.08]}>
             <LabelQuad texture={icon} size={0.34} y={CHIP.label + 0.001} />
@@ -131,18 +109,25 @@ export function HarborMarker({
   // On a raised island the sea sits lower, and the harbor sits on it.
   const { seaLevel } = useLandRelief();
   const [px, pz] = item.position;
-  // One short pier running from the slot toward the island center, plus the floating chip.
-  const d = Math.hypot(px, pz) || 1;
-  const dx = (-px / d) * PIER_LENGTH;
-  const dz = (-pz / d) * PIER_LENGTH;
+  // Use the slot edge midpoint, not the island center: outer hex edges have six exact normals.
+  // Extend the sea end enough to support the complete 0.6-wide chip.
+  const mx = (item.ends[0][0] + item.ends[1][0]) / 2;
+  const mz = (item.ends[0][1] + item.ends[1][1]) / 2;
+  const dx = mx - px;
+  const dz = mz - pz;
+  const extension = 0.15 / Math.hypot(dx, dz);
+  const ox = -dx * extension;
+  const oz = -dz * extension;
+  const pierX = dx - ox;
+  const pierZ = dz - oz;
   return (
-    <group position={[px, 0, pz]}>
-      <HarborDock dx={dx} dz={dz} seaLevel={seaLevel} />
-      <group position={[dx / 2, 0, dz / 2]}>
+    <group position={[px + ox, 0, pz + oz]}>
+      <HarborDock dx={pierX} dz={pierZ} seaLevel={seaLevel} />
+      <group position={[pierX / 2, 0, pierZ / 2]}>
         <HarborChip
           item={item}
           texture={texture}
-          y={seaLevel + (item.type === "generic" ? CHIP_FLOAT : SPECIAL_FLOAT)}
+          y={seaLevel + HARBOR_DECK_TOP}
           chipRef={chipRef}
         />
       </group>

@@ -1,3 +1,6 @@
+import { applyProps } from "@react-three/fiber";
+import { ShaderMaterial } from "three";
+import { syncWaterUniforms } from "../../src/scene/waterTextures.ts";
 import { Texture } from "three";
 import { describe, expect, it, vi } from "vite-plus/test";
 import {
@@ -78,4 +81,20 @@ describe("waterTime", () => {
     expect(waterTime(true, 99)).toBe(STILL_WATER_TIME);
     expect(waterTime(false, 5)).toBe(5);
   });
+});
+
+it("updates actual R3F material entries after asynchronous texture and animation changes", () => {
+  const material = new ShaderMaterial();
+  const values = { uTime: { value: 0 }, uHasNoise: { value: 0 }, uPhysical: { value: 0 } };
+  applyProps(material, { uniforms: values });
+  const dictionary = material.uniforms;
+  values.uTime.value = 2.5;
+  values.uHasNoise.value = 1;
+  values.uPhysical.value = 1;
+  syncWaterUniforms(material, values);
+  expect(material.uniforms).toBe(dictionary);
+  expect(material.uniforms.uTime!.value).toBe(2.5);
+  expect(material.uniforms.uHasNoise!.value).toBe(1);
+  expect(material.uniforms.uPhysical!.value).toBe(1);
+  material.dispose();
 });

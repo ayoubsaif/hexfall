@@ -1,7 +1,7 @@
 // Pure camera-gesture rules (openspec improve-touch-camera-and-hud-layout, specs/camera-gestures):
 // which wheel events are a touchpad pan, a pinch or a mouse-wheel zoom, and the tap threshold.
 
-export type WheelKind = "pan" | "pinch" | "zoom";
+export type WheelKind = "pinch" | "zoom";
 export type WheelMode = "auto" | "zoom";
 
 export interface WheelLike {
@@ -11,19 +11,9 @@ export interface WheelLike {
   ctrlKey: boolean;
 }
 
-/**
- * Classifies a wheel event. Pinch on a touchpad arrives with `ctrlKey`. A touchpad two-finger
- * scroll has pixel deltas that are fractional, have a horizontal part, or are small; a notched
- * mouse wheel reports lines or large whole steps (100, 120 ...). In "zoom" mode every plain
- * wheel event zooms.
- */
-export function classifyWheel(e: WheelLike, mode: WheelMode = "auto"): WheelKind {
-  if (e.ctrlKey) return "pinch";
-  if (mode === "zoom") return "zoom";
-  if (e.deltaMode !== 0) return "zoom";
-  const whole = Number.isInteger(e.deltaY) && Number.isInteger(e.deltaX);
-  if (e.deltaX !== 0 || !whole || Math.abs(e.deltaY) < 50) return "pan";
-  return "zoom";
+/** Scroll and pinch only zoom: panning is disabled even for legacy saved "auto" preferences. */
+export function classifyWheel(e: WheelLike, _mode: WheelMode = "auto"): WheelKind {
+  return e.ctrlKey ? "pinch" : "zoom";
 }
 
 /** Pointer travel (px) above which a press is a camera drag, not a tap. */

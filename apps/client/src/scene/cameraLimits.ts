@@ -4,7 +4,7 @@
 import { Vector3 } from "three";
 
 /** Farthest the orbit target may be panned from the island centre, in hex radii. */
-export const MAX_PAN = 4;
+export const MAX_PAN = 0;
 /** Lowest camera elevation above the board plane, in degrees. Keeps the horizon out of frame. */
 export const MIN_ELEVATION_DEG = 30;
 /** OrbitControls polar angle (from straight up) that corresponds to MIN_ELEVATION_DEG. */

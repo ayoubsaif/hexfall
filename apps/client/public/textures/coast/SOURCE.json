@@ -1,0 +1,9 @@
+{
+  "name": "Rock 2",
+  "author": "Rob Tuytel",
+  "source": "https://polyhaven.com/a/rock_2",
+  "license": "CC0-1.0",
+  "licenseUrl": "https://polyhaven.com/license",
+  "input": "Owner-supplied local rock_2_4k material",
+  "processing": "512px WebP color, displacement (bump), and roughness maps"
+}

@@ -28,3 +28,7 @@ The sea is a fully procedural shader (`apps/client/src/scene/Water.tsx`): flat g
 - Tests: client scene tests for fallback and reduced motion; asset check for texture size and license declaration.
 - Dependencies: none new. Higgsfield is used only at authoring time and credits are spent then.
 - Risk: look drifts from the reference or hurts mobile GPU cost. Mitigated by owner approval gate and a fragment cost budget.
+
+## Continued owner scope (2026-11-07)
+
+Upgrade Realistic High to raised sand, textured rocks and evolving GPU shallow-water physics. Preserve Classic and cheaper tiers. The no-geometry limitation is superseded for High; no gameplay or engine changes. Validate bounded solver stepping, obstacles, fallback, reduced motion and resource cleanup.

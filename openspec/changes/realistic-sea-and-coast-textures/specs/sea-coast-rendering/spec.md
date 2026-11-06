@@ -70,3 +70,15 @@ The sea and coast textures SHALL total no more than 300 KB, and SHALL be loaded 
 #### Scenario: First render not blocked
 - **WHEN** the page loads on a slow connection
 - **THEN** the board and HUD are interactive before the sea textures finish downloading
+
+### Requirement: Physical High-quality coast
+
+Realistic High SHALL render raised sand and textured rocks clear of playable paths and harbor approaches. Water SHALL evolve height and velocity on the GPU using finite depth and shore/rock obstacles, with bounded fixed timesteps and offshore forcing. Displacement and normals SHALL follow that state; foam SHALL respond to water/terrain intersection. This is a shallow-water height field, not a particle-volume simulation. High is exempt from the original per-fragment three-fetch budget. Classic and lower quality modes SHALL preserve their cheaper rendering. Unsupported float rendering SHALL fall back safely. Reduced motion SHALL stop solver advancement and all water animation. Resources SHALL be released on mode, quality, board and theme changes or unmount.
+
+#### Scenario: Physical surf
+- **WHEN** Realistic High renders a supported device
+- **THEN** waves propagate over a sloping seabed and around rock obstacles, with visible raised sand above the waterline
+
+#### Scenario: Safe downgrade
+- **WHEN** quality leaves High or float render targets are unsupported
+- **THEN** the cheaper water renders and simulation resources are released

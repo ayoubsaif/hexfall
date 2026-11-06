@@ -29,5 +29,11 @@ export function makeLabelTexture(
   const texture = new CanvasTexture(canvas);
   texture.colorSpace = SRGBColorSpace;
   texture.anisotropy = 8;
+  // Cached labels must be repainted once the self-hosted variable font arrives.
+  void document.fonts?.ready.then(() => {
+    ctx.clearRect(0, 0, LABEL_PX, LABEL_PX);
+    draw(ctx, LABEL_PX);
+    texture.needsUpdate = true;
+  });
   return texture;
 }

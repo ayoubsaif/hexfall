@@ -41,3 +41,31 @@ Constraints: no engine changes; procedural fallback must stay (see `asset-themin
 
 - Should the turquoise lagoon tint also apply in the isometric board style, where the sea is lowered by the prism height? Default: yes, same shader, only `y` changes.
 - Keep `sand.webp` as the fallback source or fully replace it? Default: replace and delete after the new sand is approved.
+
+## Physical coast continuation (owner request, 2026-11-07)
+
+The continued request supersedes the original no-geometry/no-mesh-wave non-goals for Realistic High only. Add a lit, sloping beach and optimized owner-supplied CC0 Rock 2 material. Keep game geometry and engine untouched. Use a bounded fixed-step GPU height/velocity wave solver over finite-depth bathymetry, with reflecting shore/rock obstacles, offshore forcing and an absorbing outer boundary. This is a shallow-water height-field approximation, not particle-volume fluid simulation. High uses simulated mesh displacement, finite-difference normals and terrain intersection foam; other modes retain their existing shaders. Reduced motion stops simulation, unsupported float render targets fall back, and quality changes release simulation targets and scenery. The original three-fetch budget applies to the earlier inexpensive path, not the High solver and physical shading.
+
+The follow-up harbor request aligns piers with each slot's midpoint-to-marker normal instead of the island-center direction. A 0.64-wide, 0.70-long deck supports the chip, whose base is seated at the deck top. Remove harbor bobbing and the old floating offsets; keep camera-facing label yaw and the engine harbor slots unchanged.
+
+Owner follow-ups: chip faces use pale-yellow player-card paper grain and gold edging;
+faces/text follow camera pitch and yaw, with the lowest rim seated on the supporting surface.
+Number typography uses uniform size/ink with probability weight 300–900. The camera target
+is locked to the origin for all input; panning and its settings control are removed.
+
+Water animation/texture fix: this R3F version copies uniform entries when applying material
+props. Changing the source entries alone leaves rendered time/texture flags unchanged.
+Synchronize values into the live material each frame, preserving its dictionary identity;
+the regression test exercises R3F applyProps. Prior visual checks did not establish that
+the simulation was connected to the on-screen material; the direct GPU solver tests were valid.
+
+Owner approved Low-quality sea plus rocks. Realistic Low/Medium now mount only rock scenery,
+with no High beach mesh or simulation allocation. Rocks are 35% smaller, use untinted color
+maps and a small ambient material lift to keep surface detail visible. Classic is unchanged.
+
+Centered-view optimization: derive sea bounds from the four camera-frustum rays intersecting
+the water plane, with a small margin. This retains all visible ocean during zoom/orbit and
+portrait resizing instead of keeping a fixed 200×200 surface. Low has no vertex displacement,
+so its 64×64 grid becomes a single quad (8192 triangles -> 2). Rock meshes use detail 1 on Low,
+2 on Medium and 3 on High; Low/Medium skip the unused physical-beach sand map. Fragment shading
+still covers the visible viewport; this optimization reduces geometry cost, not screen pixels.

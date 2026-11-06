@@ -12,6 +12,7 @@ import { Water } from "./Water.tsx";
 import { boardLayout } from "./layout.ts";
 import { resolveCursor, setCameraDragging, useCursorStore } from "../store/cursor.ts";
 import { useGameStore } from "../store/game.ts";
+import { ZOOM_MIN } from "../store/view.ts";
 import { ISO_ELEVATION_DEG, useLandRelief } from "../theme/index.ts";
 import { BoardView } from "./BoardView.tsx";
 import { BoardDice } from "./dice/BoardDice.tsx";
@@ -83,6 +84,10 @@ export function Scene() {
   const turn = relief.isometric ? ISO_AZIMUTH_LIMIT : Infinity;
   // Land hex centers do not depend on the terrain shuffle, so the preview board gives them.
   const landCenters = useMemo(() => boardLayout(beginnerBoard()).tiles.map((t) => t.position), []);
+  const harborCenters = useMemo(
+    () => boardLayout(beginnerBoard()).harbors.map((h) => h.position),
+    [],
+  );
   const tableY = relief.seaLevel - 0.02;
   return (
     <>
@@ -98,7 +103,7 @@ export function Scene() {
         shadow-camera-top={10}
         shadow-camera-bottom={-10}
       />
-      <Water land={landCenters} y={tableY} />
+      <Water land={landCenters} harbors={harborCenters} y={tableY} />
 
       <GameBoard />
 
@@ -109,16 +114,16 @@ export function Scene() {
       <OrbitControls
         makeDefault
         enableZoom={false}
-        mouseButtons={{ LEFT: MOUSE.ROTATE, MIDDLE: MOUSE.DOLLY, RIGHT: MOUSE.PAN }}
-        // One finger pans on the ground without tilting; two fingers are pinch / twist / tilt,
+        enablePan={false}
+        mouseButtons={{ LEFT: MOUSE.ROTATE, MIDDLE: MOUSE.DOLLY, RIGHT: MOUSE.ROTATE }}
+        // One finger orbits the centered board; two fingers are pinch / twist / tilt,
         // handled in useGestures (Google Maps style).
         screenSpacePanning={false}
-        touches={{ ONE: TOUCH.PAN }}
+        touches={{ ONE: TOUCH.ROTATE }}
         onStart={() => setCameraDragging(true)}
         onEnd={() => setCameraDragging(false)}
         onChange={(e) => {
-          // Keep the island in view: pull the orbit target (and the camera with it) back
-          // inside the pan limit.
+          // Always pin the orbit target to the center, including after hot reload or presets.
           const c = e?.target as { target: Vector3; object: Object3D } | undefined;
           if (!c) return;
           const fix = panCorrection(c.target);
@@ -132,7 +137,7 @@ export function Scene() {
         minAzimuthAngle={-turn}
         maxAzimuthAngle={turn}
         minDistance={fit * 0.45}
-        maxDistance={fit * 1.5}
+        maxDistance={(fit * 100) / ZOOM_MIN}
       />
     </>
   );

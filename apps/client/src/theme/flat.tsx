@@ -39,7 +39,7 @@ export const HEX_RADIUS = 1;
 /** Width of the dark outline drawn just inside every terrain tile's edge. */
 export const HEX_OUTLINE_WIDTH = 0.025;
 /** Radius of the number-token disc. */
-export const TOKEN_RADIUS = 0.3;
+export const TOKEN_RADIUS = 0.22;
 /** Side of the square, rounded harbor badge (centered on its origin). */
 export const HARBOR_BADGE_SIZE = 0.42;
 /** Corner radius of the harbor badge. */
