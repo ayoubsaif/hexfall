@@ -110,7 +110,10 @@ export function Scene() {
         makeDefault
         enableZoom={false}
         mouseButtons={{ LEFT: MOUSE.ROTATE, MIDDLE: MOUSE.DOLLY, RIGHT: MOUSE.PAN }}
-        touches={{ ONE: TOUCH.ROTATE, TWO: TOUCH.DOLLY_PAN }}
+        // One finger pans on the ground without tilting; two fingers are pinch / twist / tilt,
+        // handled in useGestures (Google Maps style).
+        screenSpacePanning={false}
+        touches={{ ONE: TOUCH.PAN }}
         onStart={() => setCameraDragging(true)}
         onEnd={() => setCameraDragging(false)}
         onChange={(e) => {

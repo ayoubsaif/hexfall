@@ -4,14 +4,24 @@
 // multi-touch so a two-finger release never counts as a pick.
 import { useThree } from "@react-three/fiber";
 import { useEffect } from "react";
-import { Vector3 } from "three";
+import { Spherical, Vector3 } from "three";
 import { usePrefsStore } from "../store/prefs.ts";
-import { classifyWheel, zoomFactor } from "./gestures.ts";
+import {
+  type Pair,
+  applyTwoFinger,
+  classifyWheel,
+  twoFingerDelta,
+  zoomFactor,
+} from "./gestures.ts";
 
 interface Controls {
   target: Vector3;
   minDistance: number;
   maxDistance: number;
+  minPolarAngle: number;
+  maxPolarAngle: number;
+  minAzimuthAngle: number;
+  maxAzimuthAngle: number;
   update: () => void;
 }
 
@@ -64,10 +74,44 @@ export function useGestures(): void {
       }
       controls.update();
     };
-    const pointers = new Set<number>();
+    // Touch: one finger pans on the ground (OrbitControls, ONE: PAN). Two fingers are handled
+    // here: pinch zooms, twist turns the map, dragging both up or down tilts the view.
+    const pointers = new Map<number, { x: number; y: number }>();
+    const pair = (): Pair | null => {
+      if (pointers.size !== 2) return null;
+      const [a, b] = [...pointers.values()] as [{ x: number; y: number }, { x: number; y: number }];
+      return { ax: a.x, ay: a.y, bx: b.x, by: b.y };
+    };
     const down = (e: PointerEvent) => {
-      pointers.add(e.pointerId);
+      pointers.set(e.pointerId, { x: e.clientX, y: e.clientY });
       if (pointers.size > 1) lastMultiTouch = performance.now();
+    };
+    const move = (e: PointerEvent) => {
+      const p = pointers.get(e.pointerId);
+      if (!p) return;
+      const before = pair();
+      p.x = e.clientX;
+      p.y = e.clientY;
+      const after = pair();
+      if (!controls || e.pointerType !== "touch" || !before || !after) return;
+      lastMultiTouch = performance.now();
+      const offset = camera.position.clone().sub(controls.target);
+      const s = new Spherical().setFromVector3(offset);
+      const next = applyTwoFinger(
+        { distance: s.radius, polar: s.phi, azimuth: s.theta },
+        twoFingerDelta(before, after),
+        {
+          minDistance: controls.minDistance,
+          maxDistance: controls.maxDistance,
+          minPolar: controls.minPolarAngle,
+          maxPolar: controls.maxPolarAngle,
+          minAzimuth: controls.minAzimuthAngle,
+          maxAzimuth: controls.maxAzimuthAngle,
+        },
+      );
+      s.set(next.distance, next.polar, next.azimuth);
+      camera.position.copy(controls.target).add(offset.setFromSpherical(s));
+      controls.update();
     };
     const up = (e: PointerEvent) => {
       if (pointers.size > 1) lastMultiTouch = performance.now();
@@ -75,11 +119,13 @@ export function useGestures(): void {
     };
     el.addEventListener("wheel", onWheel, { passive: false });
     el.addEventListener("pointerdown", down);
+    el.addEventListener("pointermove", move);
     el.addEventListener("pointerup", up);
     el.addEventListener("pointercancel", up);
     return () => {
       el.removeEventListener("wheel", onWheel);
       el.removeEventListener("pointerdown", down);
+      el.removeEventListener("pointermove", move);
       el.removeEventListener("pointerup", up);
       el.removeEventListener("pointercancel", up);
       el.style.touchAction = "";
