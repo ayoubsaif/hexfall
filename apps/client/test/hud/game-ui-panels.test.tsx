@@ -80,6 +80,57 @@ describe("PlayerPanels", () => {
     expect(panels[1]?.textContent).not.toContain("hidden");
   });
 
+  it("shows four icon chips in order with accessible labels and no abbreviations", () => {
+    seatRoom(0);
+    showGame(playState(), 0);
+    m = mount(<PlayerPanels />);
+    const panel = m.container.querySelector('[data-testid="player-panel"]')!;
+    const stats = [...panel.querySelectorAll("dd[data-stat]")].map((d) =>
+      d.getAttribute("data-stat"),
+    );
+    expect(stats).toEqual(["vp", "cards", "dev", "knights"]);
+    expect(panel.querySelectorAll("dt img")).toHaveLength(4);
+    const dts = [...panel.querySelectorAll("dt")].map((d) => d.textContent);
+    expect(dts).toEqual([
+      "Victory points",
+      "Resource cards",
+      "Development cards",
+      "Knights played",
+    ]);
+    expect(panel.textContent).not.toMatch(/\b(Crd|Kn)\b/);
+  });
+
+  it("shows special cards as medals, not text badges, and only for the holder", () => {
+    const s = playState();
+    s.longestRoad = 2;
+    s.largestArmy = 1;
+    seatRoom(0);
+    showGame(s, 0);
+    m = mount(<PlayerPanels />);
+    const panels = m.container.querySelectorAll('[data-testid="player-panel"]');
+    expect(panels[2]?.querySelectorAll('[data-testid="medal"]')).toHaveLength(1);
+    expect(panels[2]?.querySelector('[data-testid="medal"]')?.getAttribute("title")).toBe(
+      "Longest Road",
+    );
+    expect(panels[1]?.querySelector('[data-testid="medal"]')?.getAttribute("title")).toBe(
+      "Largest Army",
+    );
+    expect(panels[0]?.querySelector('[data-testid="medal"]')).toBeNull();
+    expect(panels[2]?.querySelector('[data-slot="badge"]')).toBeNull();
+  });
+
+  it("shows hidden VP as +n on the viewer's VP chip only", () => {
+    const s = playState();
+    s.players[0]!.devCards = ["victoryPoint", "victoryPoint"];
+    seatRoom(0);
+    showGame(s, 0);
+    m = mount(<PlayerPanels />);
+    const panels = m.container.querySelectorAll('[data-testid="player-panel"]');
+    expect(panels[0]?.querySelector("[title='Only you can see this']")?.textContent).toContain(
+      "+2",
+    );
+    expect(panels[1]?.querySelector("[title='Only you can see this']")).toBeNull();
+  });
 });
 
 describe("status pill and End turn", () => {

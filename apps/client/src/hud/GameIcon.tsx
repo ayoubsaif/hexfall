@@ -10,6 +10,8 @@ export type GameIconName =
   | "devcard"
   | "endturn"
   | "flag"
+  | "hand"
+  | "knight"
   | "log"
   | "pause"
   | "road"
@@ -18,7 +20,8 @@ export type GameIconName =
   | "trade"
   | "view-diagonal"
   | "view-free"
-  | "view-top";
+  | "view-top"
+  | "vp";
 
 const cache = new Map<GameIconName, LucideIcon>();
 

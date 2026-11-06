@@ -1,11 +1,12 @@
-// One panel per seat (specs/game-hud, "Player panels"). Never shows others' hands.
-// Compact rows on mobile and short screens (specs/hud-presentation "Responsive HUD layout").
+// One compact panel per seat (specs/compact-player-panels). Never shows others' hands.
+// Stats are icon + number chips; the words live in sr-only text and tooltips.
 import { useTranslation } from "react-i18next";
 import { Badge } from "@/components/ui/badge.tsx";
 import { seatColor, seatColorName } from "../game/colors.ts";
 import { SeatAvatar } from "./Avatar.tsx";
 import { CountdownText } from "./actions/CountdownText.tsx";
 import { useCountdown } from "./countdown.ts";
+import { type GameIconName, gameIcon } from "./GameIcon.tsx";
 import { useConnected, useNames } from "./names.ts";
 import { useView } from "./state.ts";
 
@@ -20,8 +21,36 @@ export function Swatch({ hex, name }: { hex: string; name: string }) {
   );
 }
 
-// Stats in display order; each has a full label and a short one for compact panels.
-const STATS = ["vp", "cards", "dev", "knights"] as const;
+// Stats in display order, each with its painted icon.
+const STATS = [
+  { stat: "vp", icon: "vp" },
+  { stat: "cards", icon: "hand" },
+  { stat: "dev", icon: "devcard" },
+  { stat: "knights", icon: "knight" },
+] as const satisfies readonly { stat: string; icon: GameIconName }[];
+
+const ICONS = {
+  vp: gameIcon("vp"),
+  hand: gameIcon("hand"),
+  devcard: gameIcon("devcard"),
+  knight: gameIcon("knight"),
+};
+const RoadIcon = gameIcon("road");
+const KnightIcon = gameIcon("knight");
+
+/** Small gold-ringed badge on the avatar corner for a special card. */
+function Medal({ label, children }: { label: string; children: React.ReactNode }) {
+  return (
+    <span
+      data-testid="medal"
+      title={label}
+      className="inline-flex size-[18px] items-center justify-center rounded-full bg-[#3e2616] ring-1 ring-[#c9a04e] max-sm:size-4"
+    >
+      {children}
+      <span className="sr-only">{label}</span>
+    </span>
+  );
+}
 
 /** Mount while a game view is present. */
 export function PlayerPanels() {
@@ -52,6 +81,7 @@ export function PlayerPanels() {
           dev: p.devCardCount,
           knights: p.knights,
         };
+        const hidden = own && p.hiddenVp !== undefined && p.hiddenVp > 0 ? p.hiddenVp : 0;
         return (
           <li
             key={p.seat}
@@ -59,62 +89,85 @@ export function PlayerPanels() {
             data-active={isActive || undefined}
             data-own={own || undefined}
             aria-current={isActive ? "true" : undefined}
-            className="pointer-events-auto min-w-0 max-w-[230px] flex-1 basis-0 overflow-hidden rounded-none border-2 border-leather frame [--corner-size:16px] paper data-[active]:ring-2 data-[active]:ring-wait"
+            className="pointer-events-auto relative flex max-sm:grid max-sm:grid-cols-[auto_minmax(0,1fr)] max-sm:items-center max-sm:gap-y-0.5 short:grid short:grid-cols-[auto_minmax(0,1fr)] short:items-center short:gap-y-0.5 min-w-0 max-w-[260px] flex-1 basis-0 items-center gap-2 overflow-hidden rounded-none border-2 border-leather frame [--corner-size:12px] paper py-1.5 pr-2 pl-3.5 data-[active]:ring-2 data-[active]:ring-wait max-sm:gap-1.5 max-sm:py-1 max-sm:pr-1 max-sm:pl-2.5 short:gap-1.5 short:py-1 short:pr-1 short:pl-2.5"
           >
-            <div
-              className="hud-card-head flex min-w-0 items-center gap-1.5 pr-4 pl-4 py-1 font-semibold max-sm:px-2 max-sm:text-[11px] short:px-2 short:text-[11px]"
-              style={{ boxShadow: `inset 4px 0 0 ${c.hex}` }}
-            >
-              <SeatAvatar seat={p.seat} size="sm" className="max-sm:size-5 short:size-5" />
+            <span
+              aria-hidden="true"
+              className="absolute inset-y-0 left-0 w-1.5"
+              style={{ background: c.hex }}
+            />
+            <div className="relative shrink-0">
+              <SeatAvatar seat={p.seat} size="xl" className="max-sm:size-7 short:size-7" />
               <span className="sr-only">{seatColorName(p.seat, t)}</span>
-              <span className="truncate">{names(p.seat)}</span>
-              {own && <Badge variant="muted">{t("play.panels.you")}</Badge>}
-              {waiting && (
-                <CountdownText
-                  countdown={waiting}
-                  className="ml-auto text-[11px] font-semibold max-sm:text-[10px] short:text-[10px]"
-                />
-              )}
-              {!online && (
-                <Badge variant="muted" className="text-bad" data-testid="offline">
-                  {t("play.panels.offline")}
-                </Badge>
+              {(view.longestRoad === p.seat || view.largestArmy === p.seat) && (
+                <span className="absolute -right-1.5 -bottom-1.5 flex gap-0.5">
+                  {view.longestRoad === p.seat && (
+                    <Medal label={t("play.panels.longestRoad")}>
+                      <RoadIcon className="size-3.5 max-sm:size-3" />
+                    </Medal>
+                  )}
+                  {view.largestArmy === p.seat && (
+                    <Medal label={t("play.panels.largestArmy")}>
+                      <KnightIcon className="size-3.5 max-sm:size-3" />
+                    </Medal>
+                  )}
+                </span>
               )}
             </div>
-            <div className="px-2.5 pt-1.5 pb-4 max-sm:px-1.5 max-sm:pt-1 max-sm:pb-3.5 max-sm:text-[11px] short:px-1.5 short:pt-1 short:pb-3.5 short:text-[11px]">
-              <dl className="mb-0 grid grid-cols-[repeat(4,auto)] gap-x-2.5 gap-y-0.5 max-sm:grid-cols-2 max-sm:gap-x-1.5 short:mt-0.5 short:gap-x-1.5">
-                {STATS.map((stat) => (
-                  <div
-                    key={stat}
-                    className="max-sm:flex max-sm:items-baseline max-sm:gap-1 short:flex short:items-baseline short:gap-1"
-                  >
-                    <dt className="text-[10px] text-muted-foreground max-sm:text-[9px] short:text-[9px]">
-                      <span className="max-sm:sr-only short:sr-only">
-                        {t(`play.panels.stat.${stat}`)}
-                      </span>
-                      <span aria-hidden="true" className="hidden max-sm:inline short:inline">
-                        {t(`play.panels.stat.${stat}Short`)}
-                      </span>
-                    </dt>
-                    <dd className="m-0 tabular-nums" data-stat={stat}>
-                      {values[stat]}
-                    </dd>
-                  </div>
-                ))}
-              </dl>
-              <div className="mt-1 flex h-5 flex-nowrap items-center gap-1 overflow-hidden max-sm:h-4 max-sm:text-[10px] short:h-4">
-                {view.longestRoad === p.seat && (
-                  <Badge variant="accent">{t("play.panels.longestRoad")}</Badge>
+            <div className="min-w-0 flex-1 max-sm:contents short:contents">
+              <div className="flex min-w-0 items-center gap-1.5">
+                <span className="truncate text-[15px] leading-tight font-semibold max-sm:text-xs short:text-xs">
+                  {names(p.seat)}
+                </span>
+                {own && (
+                  <Badge variant="muted" className="max-sm:sr-only">
+                    {t("play.panels.you")}
+                  </Badge>
                 )}
-                {view.largestArmy === p.seat && (
-                  <Badge variant="accent">{t("play.panels.largestArmy")}</Badge>
+                {waiting && (
+                  <CountdownText
+                    countdown={waiting}
+                    className="ml-auto text-[11px] font-semibold max-sm:text-[10px] short:text-[10px]"
+                  />
                 )}
-                {own && p.hiddenVp !== undefined && p.hiddenVp > 0 && (
-                  <span className="text-[11px] text-wait" title={t("play.panels.hiddenTitle")}>
-                    {t("play.panels.hiddenVp", { vp: p.publicVp + p.hiddenVp })}
-                  </span>
+                {!online && (
+                  <Badge variant="muted" className="text-bad" data-testid="offline">
+                    {t("play.panels.offline")}
+                  </Badge>
                 )}
               </div>
+              <dl className="m-0 mt-0.5 grid grid-cols-4 gap-x-2 max-sm:col-span-2 max-sm:mt-0 max-sm:grid-cols-2 max-sm:gap-x-1 max-sm:gap-y-0.5 short:col-span-2 short:mt-0 short:grid-cols-2 short:gap-x-1 short:gap-y-0.5">
+                {STATS.map(({ stat, icon }) => {
+                  const Icon = ICONS[icon];
+                  const label = t(`play.panels.stat.${stat}`);
+                  return (
+                    <div key={stat} title={label} className="flex min-w-0 items-center gap-1">
+                      <dt className="flex shrink-0">
+                        <Icon className="size-6 shrink-0 max-sm:size-[18px] short:size-[18px]" />
+                        <span className="sr-only">{label}</span>
+                      </dt>
+                      <dd
+                        className="m-0 text-[18px] leading-none font-bold tabular-nums max-sm:text-sm short:text-sm"
+                        data-stat={stat}
+                      >
+                        {values[stat]}
+                      </dd>
+                      {stat === "vp" && hidden > 0 && (
+                        <span
+                          className="text-xs font-bold text-wait max-sm:text-[10px]"
+                          title={t("play.panels.hiddenTitle")}
+                        >
+                          +{hidden}
+                          <span className="sr-only">
+                            {" "}
+                            {t("play.panels.hiddenVp", { vp: p.publicVp + hidden })}
+                          </span>
+                        </span>
+                      )}
+                    </div>
+                  );
+                })}
+              </dl>
             </div>
           </li>
         );

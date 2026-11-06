@@ -6,12 +6,13 @@ import { cn } from "@/lib/utils.ts";
 import { seatColor } from "../game/colors.ts";
 import { useAvatars, useNames } from "./names.ts";
 
-export type AvatarSize = "xs" | "sm" | "md" | "lg";
+export type AvatarSize = "xs" | "sm" | "md" | "xl" | "lg";
 
 const SIZE_CLASS: Record<AvatarSize, string> = {
   xs: "size-5 text-[10px]",
   sm: "size-7 text-xs",
   md: "size-10 text-base",
+  xl: "size-11 text-lg",
   lg: "size-16 text-2xl",
 };
 
