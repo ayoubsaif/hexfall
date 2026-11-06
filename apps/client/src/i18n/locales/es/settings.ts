@@ -8,12 +8,28 @@ export const settings: Catalog["settings"] = {
   close: "Cerrar ajustes",
   sectionPicker: "Sección",
   section: {
+    graphics: "Gráficos",
     language: "Idioma",
     sound: "Sonido",
     notifications: "Notificaciones",
     accessibility: "Accesibilidad",
     keyboard: "Teclado",
     about: "Acerca de",
+  },
+  graphics: {
+    mode: "Mar y costa",
+    modeHint:
+      "Realista añade oleaje iluminado, aguas claras y espuma suave. Clásico conserva el aspecto original.",
+    classic: "Clásico",
+    realistic: "Realista",
+    quality: "Calidad gráfica",
+    qualityHint:
+      "Auto reduce el detalle si el juego va lento. Baja reduce la resolución, las olas y las sombras. Los cambios se aplican al instante y se guardan en este dispositivo.",
+    auto: "Auto",
+    low: "Baja",
+    medium: "Media",
+    high: "Alta",
+    active: "Calidad actual: {{quality}}",
   },
   keyboard: {
     hint: "Los atajos funcionan en tu turno cuando el botón está activo. Se desactivan al escribir o con un diálogo abierto.",

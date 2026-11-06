@@ -2,10 +2,12 @@
 // pick targets, the board dice and camera controls.
 import { beginnerBoard } from "@hexfall/engine/geometry";
 import { OrbitControls } from "@react-three/drei";
-import { MOUSE, TOUCH } from "three";
+import { MOUSE, type Object3D, TOUCH, type Vector3 } from "three";
 import { useThree } from "@react-three/fiber";
 import { useEffect, useMemo } from "react";
 import { CameraRig } from "./CameraRig.tsx";
+import { MAX_POLAR, panCorrection } from "./cameraLimits.ts";
+import { QUALITY, useGraphicsQuality } from "./graphicsQuality.ts";
 import { Water } from "./Water.tsx";
 import { boardLayout } from "./layout.ts";
 import { resolveCursor, setCameraDragging, useCursorStore } from "../store/cursor.ts";
@@ -71,6 +73,7 @@ function useCanvasCursor() {
 }
 
 export function Scene() {
+  const quality = QUALITY[useGraphicsQuality()];
   useCanvasCursor();
   useGestures();
   // Isometric tile art is painted for one view: start there and allow only a small turn.
@@ -85,10 +88,11 @@ export function Scene() {
     <>
       <hemisphereLight args={["#fff6e5", "#4a6a7a", 0.8]} />
       <directionalLight
+        key={quality.shadowSize}
         position={[6, 12, 4]}
         intensity={1.6}
-        castShadow
-        shadow-mapSize={[2048, 2048]}
+        castShadow={quality.shadows}
+        shadow-mapSize={[quality.shadowSize, quality.shadowSize]}
         shadow-camera-left={-10}
         shadow-camera-right={10}
         shadow-camera-top={10}
@@ -109,8 +113,19 @@ export function Scene() {
         touches={{ ONE: TOUCH.ROTATE, TWO: TOUCH.DOLLY_PAN }}
         onStart={() => setCameraDragging(true)}
         onEnd={() => setCameraDragging(false)}
+        onChange={(e) => {
+          // Keep the island in view: pull the orbit target (and the camera with it) back
+          // inside the pan limit.
+          const c = e?.target as { target: Vector3; object: Object3D } | undefined;
+          if (!c) return;
+          const fix = panCorrection(c.target);
+          if (fix.lengthSq() > 1e-8) {
+            c.target.add(fix);
+            c.object.position.add(fix);
+          }
+        }}
         target={[0, 0, 0]}
-        maxPolarAngle={Math.PI / 2.05}
+        maxPolarAngle={MAX_POLAR}
         minAzimuthAngle={-turn}
         maxAzimuthAngle={turn}
         minDistance={fit * 0.45}

@@ -6,12 +6,28 @@ export const settings = {
   close: "Close settings",
   sectionPicker: "Section",
   section: {
+    graphics: "Graphics",
     language: "Language",
     sound: "Sound",
     notifications: "Notifications",
     accessibility: "Accessibility",
     keyboard: "Keyboard",
     about: "About",
+  },
+  graphics: {
+    mode: "Sea and coast",
+    modeHint:
+      "Realistic adds sunlit swells, clear shallows and soft surf. Classic keeps the original look.",
+    classic: "Classic",
+    realistic: "Realistic",
+    quality: "Graphics quality",
+    qualityHint:
+      "Auto lowers detail if the game runs slowly. Low reduces resolution, waves and shadows. Changes apply immediately and are remembered on this device.",
+    auto: "Auto",
+    low: "Low",
+    medium: "Medium",
+    high: "High",
+    active: "Current quality: {{quality}}",
   },
   keyboard: {
     hint: "Shortcuts work on your turn when the button is enabled. They are off while typing or while a dialog is open.",

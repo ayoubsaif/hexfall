@@ -111,13 +111,14 @@ describe("Settings dialog layout", () => {
     m = mount(<SettingsDialog />);
   }
 
-  it("lists the six sections in order in the sidebar and the phone picker", () => {
+  it("lists the sections in order in the sidebar and the phone picker", () => {
     render();
     const nav = SECTION_IDS.map((s) => byTestId(`settings-nav-${s}`)?.textContent);
     expect(nav).toEqual([
       "Language",
       "Sound",
       "Notifications",
+      "Graphics",
       "Accessibility",
       "Keyboard",
       "About",
@@ -184,6 +185,30 @@ describe("Settings dialog layout", () => {
     });
     expect(usePrefsStore.getState().volume).toBe(0.55);
     expect(readPrefs()).toMatchObject({ volume: 0.55, motion: "reduce" });
+  });
+
+  it("graphics choices apply immediately and survive reopening", () => {
+    render();
+    act(() => setSettingsSection("graphics"));
+    act(() =>
+      byTestId("settings-graphics-mode")!
+        .querySelector<HTMLButtonElement>('[data-value="classic"]')!
+        .click(),
+    );
+    act(() =>
+      byTestId("settings-graphics-quality")!
+        .querySelector<HTMLButtonElement>('[data-value="low"]')!
+        .click(),
+    );
+    expect(readPrefs()).toMatchObject({ graphicsMode: "classic", graphicsQuality: "low" });
+    act(() => setSettingsOpen(false));
+    act(() => openSettings());
+    expect(
+      byTestId("settings-graphics-mode")!
+        .querySelector('[data-value="classic"]')
+        ?.getAttribute("aria-checked"),
+    ).toBe("true");
+    expect(byTestId("settings-section-graphics")!.textContent).toContain("Current quality: Low");
   });
 
   it("About shows the version and the theme credits", () => {

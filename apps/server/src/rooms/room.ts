@@ -50,8 +50,10 @@ export const MAX_SEATS = 4;
 export const MIN_PLAYERS = 3;
 /** Delay before retrying a timeout whose store write failed. */
 export const TIMEOUT_RETRY_MS = 5_000;
-/** Pause before a bot moves while someone is connected, so humans can follow. */
-export const BOT_DELAY_MS = 800;
+/** Pause before each bot move while someone is connected, so humans can follow. */
+export const BOT_DELAY_MS = 1_200;
+/** Longer pause before a bot starts its turn (its roll), so the previous turn can be read. */
+export const BOT_TURN_DELAY_MS = 2_200;
 /** Pause before a bot moves when nobody is connected. */
 export const BOT_FAST_MS = 25;
 
@@ -759,7 +761,9 @@ export class Room {
     if (!state || this.meta.status !== "playing" || this.frozen()) return;
     if (state.phase.kind === "ended" || this.pendingBots(state).length === 0) return;
     this.botVersion = this.version;
-    const ms = this.connectedCount() === 0 ? BOT_FAST_MS : BOT_DELAY_MS;
+    const newTurn = state.phase.kind === "turn" && !state.turn.rolled;
+    const ms =
+      this.connectedCount() === 0 ? BOT_FAST_MS : newTurn ? BOT_TURN_DELAY_MS : BOT_DELAY_MS;
     this.botHandle = this.deps.setTimer(() => {
       this.botHandle = null;
       return this.botFire();

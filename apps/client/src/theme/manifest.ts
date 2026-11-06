@@ -87,6 +87,20 @@ const creditSchema = z
   })
   .strict();
 
+/**
+ * Seamless textures for the continuous sea surface and coast band (specs/sea-coast-rendering).
+ * These are not asset keys; every field is optional and a missing one uses the procedural look.
+ */
+const waterSchema = z
+  .object({
+    caustics: imagePath.optional(),
+    sand: imagePath.optional(),
+  })
+  .strict();
+
+/** Validated water texture paths, relative to the theme folder. */
+export type WaterEntries = z.infer<typeof waterSchema>;
+
 const manifestSchema = z.object({
   id: z.string().regex(THEME_ID_PATTERN, "must be a lowercase theme id"),
   version: z.literal(1).optional(),
@@ -94,6 +108,7 @@ const manifestSchema = z.object({
   source: required("source"),
   credits: z.array(creditSchema).optional(),
   assets: z.record(z.string(), z.unknown()).optional(),
+  water: z.unknown().optional(),
 });
 
 /** One validated credit entry. */
@@ -145,6 +160,8 @@ export interface ManifestResult {
   credits: Credit[];
   /** Empty when invalid. */
   entries: ResolvedEntries;
+  /** Sea and coast texture paths; empty when none are declared or the manifest is invalid. */
+  water: WaterEntries;
   warnings: string[];
   errors: string[];
 }
@@ -211,6 +228,7 @@ export function parseManifest(json: unknown, themeId: string): ManifestResult {
     valid: false,
     credits: [],
     entries: {},
+    water: {},
     warnings,
     errors: [
       `Theme "${themeId}": invalid manifest (${reason}); all assets use procedural fallbacks.`,
@@ -223,6 +241,13 @@ export function parseManifest(json: unknown, themeId: string): ManifestResult {
 
   if (manifest.id !== themeId) {
     warnings.push(`Theme "${themeId}": manifest declares id "${manifest.id}".`);
+  }
+
+  let water: WaterEntries = {};
+  if (manifest.water !== undefined) {
+    const parsedWater = waterSchema.safeParse(manifest.water);
+    if (!parsedWater.success) return invalid(formatIssues(parsedWater.error, ["water"]));
+    water = parsedWater.data;
   }
 
   const entries: ResolvedEntries = {};
@@ -258,6 +283,7 @@ export function parseManifest(json: unknown, themeId: string): ManifestResult {
     source: manifest.source,
     credits: (manifest.credits ?? []).map((c) => ({ ...c, keys: c.keys as AssetKey[] })),
     entries,
+    water,
     warnings,
     errors: [],
   };

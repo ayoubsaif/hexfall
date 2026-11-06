@@ -3,6 +3,7 @@ import { act } from "react";
 import { afterEach, beforeEach, describe, expect, it } from "vite-plus/test";
 import { Hud } from "../../src/hud/Hud.tsx";
 import { StartScreen } from "../../src/hud/StartScreen.tsx";
+import { dismissWelcome } from "../../src/hud/Welcome.tsx";
 import { i18n } from "../../src/i18n/index.ts";
 import { LANGUAGE_STORAGE_KEY } from "../../src/i18n/language.ts";
 import { LanguageSection as LanguageSwitch } from "../../src/settings/sections/LanguageSection.tsx";
@@ -81,6 +82,7 @@ describe("LanguageSection", () => {
   });
 
   it("is reached from the Settings button on the start screen of the HUD", async () => {
+    dismissWelcome();
     m = mount(<Hud />);
     expect(m.container.querySelectorAll('[data-testid="settings-button"]').length).toBe(1);
     expect(m.container.textContent).toContain("Create room");

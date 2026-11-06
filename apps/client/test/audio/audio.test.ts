@@ -126,6 +126,8 @@ describe("prefs (specs/game-audio 'Mute setting')", () => {
       volume: 0.6,
       motion: "system",
       wheel: "auto",
+      graphicsMode: "realistic",
+      graphicsQuality: "auto",
       avatar: null,
     });
   });
@@ -141,6 +143,8 @@ describe("prefs (specs/game-audio 'Mute setting')", () => {
       volume: 0.6,
       motion: "system",
       wheel: "auto",
+      graphicsMode: "realistic",
+      graphicsQuality: "auto",
       avatar: null,
     });
   });
@@ -153,6 +157,8 @@ describe("prefs (specs/game-audio 'Mute setting')", () => {
       volume: 0.35,
       motion: "reduce",
       wheel: "auto",
+      graphicsMode: "realistic",
+      graphicsQuality: "auto",
       avatar: null,
     });
     expect(readPrefs(record({ volume: "loud", motion: "fast" }))).toEqual(DEFAULT_PREFS);
@@ -173,6 +179,8 @@ describe("prefs (specs/game-audio 'Mute setting')", () => {
       volume: 0.35,
       motion: "full",
       wheel: "auto",
+      graphicsMode: "realistic",
+      graphicsQuality: "auto",
       avatar: "farmer",
     } as const;
     writePrefs(saved, storage);

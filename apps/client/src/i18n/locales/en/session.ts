@@ -18,6 +18,29 @@ export const session = {
     soloOpponentsOption: "{{count}} bots",
     waitingForServer: "Waiting for the server…",
   },
+  welcome: {
+    play: "Play Game",
+    ad: "Advertisement",
+    howTitle: "How to play",
+    steps: {
+      s1: "Roll the dice: hexes with that number pay out resources.",
+      s2: "Trade with players or the bank to get what you need.",
+      s3: "Build roads, settlements and cities. First to 10 points wins.",
+    },
+    cardsTitle: "What things cost",
+    examples: {
+      road: "Road",
+      settlement: "Settlement",
+      city: "City",
+      devCard: "Development card",
+    },
+    tipsTitle: "Tips",
+    tips: {
+      t1: "6 and 8 are rolled most often: settle next to them.",
+      t2: "A harbor makes trading with the bank cheaper.",
+      t3: "A rolled 7 moves the robber and makes big hands discard.",
+    },
+  },
   splash: {
     eyebrow: "Gather · Trade · Build",
     tagline: "A little island. A world of possibilities.",

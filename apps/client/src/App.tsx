@@ -1,3 +1,5 @@
+import { QUALITY, useGraphicsQuality } from "./scene/graphicsQuality.ts";
+import { AdaptiveGraphics } from "./scene/AdaptiveGraphics.tsx";
 import { Canvas } from "@react-three/fiber";
 import { useEffect } from "react";
 import { Hud } from "./hud/Hud.tsx";
@@ -17,6 +19,7 @@ function SplashGate() {
 // every phase or turn change.
 export function App() {
   useConnection();
+  const quality = QUALITY[useGraphicsQuality()];
   useEffect(() => bindUiToGame(), []);
   return (
     <ThemeProvider>
@@ -24,9 +27,11 @@ export function App() {
         <Canvas
           className="canvas"
           camera={{ position: [0, 12, 8], fov: 45 }}
-          shadows
+          shadows={quality.shadows}
+          dpr={[1, quality.dpr]}
           gl={{ alpha: true }}
         >
+          <AdaptiveGraphics />
           <Scene />
         </Canvas>
         <Hud />

@@ -37,6 +37,15 @@ export const play: Catalog["play"] = {
     endTurn: "Terminar turno",
     costs: "Cuesta {{cost}}",
     costItem: "{{count}} de {{resource}}",
+    blocked: {
+      rollFirst: "Tira los dados primero",
+      pieces: "No te quedan piezas de este tipo",
+      cards: "No tienes recursos suficientes",
+      road: "No hay camino libre junto a tus carreteras o edificios",
+      settlement:
+        "No hay sitio libre: necesita una carretera tuya y ningún edificio al lado (regla de distancia)",
+      city: "No tienes ningún poblado que mejorar",
+    },
     left: {
       roads: "Te quedan {{count}} carreteras",
       settlements: "Te quedan {{count}} poblados",

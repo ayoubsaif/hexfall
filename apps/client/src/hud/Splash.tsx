@@ -8,36 +8,18 @@ import { useReducedMotion } from "../store/motion.ts";
 export const TIP_COUNT = 5;
 export const TIP_INTERVAL_MS = 6000;
 
-/** Own illustration: a small cluster of hexes in the resource colours (no borrowed artwork). */
-function HexCluster() {
-  const hexes: [number, number, string][] = [
-    [0, 0, "var(--color-res-grain)"],
-    [1, 0, "var(--color-res-lumber)"],
-    [-1, 0, "var(--color-res-wool)"],
-    [0.5, 1, "var(--color-res-brick)"],
-    [-0.5, 1, "var(--color-res-ore)"],
-    [0.5, -1, "var(--color-res-wool)"],
-    [-0.5, -1, "var(--color-res-lumber)"],
-  ];
-  const r = 30;
-  const pts = (cx: number, cy: number) =>
-    Array.from({ length: 6 }, (_, i) => {
-      const a = (Math.PI / 3) * i + Math.PI / 6;
-      return `${(cx + r * Math.cos(a)).toFixed(1)},${(cy + r * Math.sin(a)).toFixed(1)}`;
-    }).join(" ");
+/** The favicon as the logotype, gently pulsing unless motion is reduced. */
+function Logo() {
   return (
-    <svg viewBox="-110 -90 220 180" className="w-64 max-w-full" aria-hidden="true">
-      {hexes.map(([q, row, c]) => (
-        <polygon
-          key={`${q},${row}`}
-          points={pts(q * r * Math.sqrt(3), row * r * 1.5)}
-          fill={c}
-          stroke="var(--color-paper)"
-          strokeWidth="2.5"
-          strokeLinejoin="round"
-        />
-      ))}
-    </svg>
+    <img
+      src="/icons/icon-192.png"
+      alt=""
+      aria-hidden="true"
+      width={96}
+      height={96}
+      data-testid="splash-logo"
+      className="size-24 rounded-2xl shadow-lg shadow-black/30 motion-safe:animate-pulse"
+    />
   );
 }
 
@@ -68,7 +50,7 @@ export function Splash({ progress }: { progress?: number }) {
       </p>
       <h1 className="font-serif text-6xl font-semibold text-forest max-sm:text-5xl">Hexfall</h1>
       <p className="font-serif text-xl text-ink-muted">{t("session.splash.tagline")}</p>
-      <HexCluster />
+      <Logo />
       <p className="text-sm font-semibold">{t("session.splash.loading")}</p>
       <div
         className="h-1 w-72 max-w-full overflow-hidden rounded-full bg-ink/20"

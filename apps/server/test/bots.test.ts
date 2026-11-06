@@ -1,6 +1,6 @@
 // Bots in the room layer (specs/bots): seats, auto-fill, the driver, pause and recovery.
 import { afterEach, describe, expect, it } from "vite-plus/test";
-import { BOT_DELAY_MS } from "../src/rooms/room.ts";
+import { BOT_DELAY_MS, BOT_TURN_DELAY_MS } from "../src/rooms/room.ts";
 import { createRoomService, type RoomService } from "../src/rooms/service.ts";
 import {
   fakeClock,
@@ -48,11 +48,18 @@ async function play(
       const r = await t.svc.gameAction(req(human), move.action);
       if (!r.ok) throw new Error(`human move refused: ${JSON.stringify(r)}`);
     } else {
-      await t.clock.advance(BOT_DELAY_MS);
+      await t.clock.advance(BOT_TURN_DELAY_MS);
     }
   }
   return max;
 }
+
+describe("bot pacing", () => {
+  it("waits longer before a bot starts its turn than between its moves", () => {
+    expect(BOT_DELAY_MS).toBeGreaterThanOrEqual(1_000);
+    expect(BOT_TURN_DELAY_MS).toBeGreaterThan(BOT_DELAY_MS);
+  });
+});
 
 describe("bot seats", () => {
   it("the host adds and removes bots", async () => {
@@ -142,7 +149,7 @@ describe("auto-fill and the bot driver", () => {
     await t.clock.advance(3 * 60 * 60 * 1000);
     expect(ana.game()?.version).toBe(before);
     expect(await t.svc.resumeGame(req(ana))).toEqual({ ok: true });
-    await t.clock.advance(BOT_DELAY_MS * 3);
+    await t.clock.advance(BOT_TURN_DELAY_MS * 3);
     expect(ana.game()?.version).toBeGreaterThan(before ?? 0);
   });
 

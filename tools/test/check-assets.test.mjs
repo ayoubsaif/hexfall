@@ -111,3 +111,62 @@ describe("check-assets licensing", () => {
     expect(r.out).toMatch(/theme "t": manifest lacks a license\/source/);
   });
 });
+
+describe("check-assets water textures", () => {
+  function checkWater(water, files) {
+    const root = mkdtempSync(join(tmpdir(), "hexfall-themes-"));
+    dirs.push(root);
+    mkdirSync(join(root, "t", "water"), { recursive: true });
+    for (const [name, buf] of Object.entries(files))
+      writeFileSync(join(root, "t", "water", name), buf);
+    writeFileSync(
+      join(root, "t", "theme.json"),
+      JSON.stringify({ id: "t", license: "CC0-1.0", source: "x", assets: {}, water }),
+    );
+    const r = spawnSync(process.execPath, [SCRIPT, "--themes", root], { encoding: "utf8" });
+    return { status: r.status, out: `${r.stdout}${r.stderr}` };
+  }
+
+  // Minimal PNG header carrying a width and height (enough for the size probe).
+  const png = (w, h, pad = 0) => {
+    const b = Buffer.alloc(33 + pad);
+    Buffer.from("89504e470d0a1a0a", "hex").copy(b, 0);
+    b.writeUInt32BE(13, 8);
+    b.write("IHDR", 12, "ascii");
+    b.writeUInt32BE(w, 16);
+    b.writeUInt32BE(h, 20);
+    return b;
+  };
+
+  it("passes square textures within budget", () => {
+    const r = checkWater({ sand: "water/s.png" }, { "s.png": png(512, 512) });
+    expect(r.status).toBe(0);
+  });
+
+  it("fails a missing texture file", () => {
+    const r = checkWater({ sand: "water/s.png" }, {});
+    expect(r.status).toBe(1);
+    expect(r.out).toMatch(/does not exist/);
+  });
+
+  it("fails a non-square texture", () => {
+    const r = checkWater({ sand: "water/s.png" }, { "s.png": png(512, 256) });
+    expect(r.status).toBe(1);
+    expect(r.out).toMatch(/water "sand".*must be square/);
+  });
+
+  it("fails textures over the total budget", () => {
+    const r = checkWater(
+      { sand: "water/s.png", caustics: "water/l.png" },
+      { "s.png": png(512, 512, 200 * 1024), "l.png": png(512, 512, 200 * 1024) },
+    );
+    expect(r.status).toBe(1);
+    expect(r.out).toMatch(/water textures total .*budget/);
+  });
+
+  it("fails an unknown texture slot", () => {
+    const r = checkWater({ foam: "water/s.png" }, { "s.png": png(512, 512) });
+    expect(r.status).toBe(1);
+    expect(r.out).toMatch(/unknown water texture "foam"/);
+  });
+});

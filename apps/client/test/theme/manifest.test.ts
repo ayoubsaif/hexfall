@@ -199,3 +199,35 @@ describe("parseManifest credits", () => {
     expect(r.errors[0]).toContain(field);
   });
 });
+
+describe("water textures block", () => {
+  const base = { id: "diorama", license: "CC0-1.0", source: "original" };
+
+  it("parses declared sea and coast textures", () => {
+    const r = parseManifest(
+      { ...base, water: { caustics: "water/a.webp", sand: "water/s.webp" } },
+      "diorama",
+    );
+    expect(r.valid).toBe(true);
+    expect(r.water).toEqual({ caustics: "water/a.webp", sand: "water/s.webp" });
+  });
+
+  it("defaults to no water textures", () => {
+    const r = parseManifest(base, "diorama");
+    expect(r.valid).toBe(true);
+    expect(r.water).toEqual({});
+  });
+
+  it("rejects unknown slots, non-image files and escaping paths", () => {
+    for (const water of [
+      { foam: "a.webp" },
+      { sand: "a.glb" },
+      { sand: "../a.webp" },
+      { sand: "/a.webp" },
+    ]) {
+      const r = parseManifest({ ...base, water }, "diorama");
+      expect(r.valid).toBe(false);
+      expect(r.water).toEqual({});
+    }
+  });
+});

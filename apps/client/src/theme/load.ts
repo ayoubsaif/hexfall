@@ -92,6 +92,7 @@ export async function loadTheme(
   for (const text of result.warnings) messages.push({ level: "warn", text });
   for (const text of result.errors) messages.push({ level: "error", text });
   theme.entries = result.entries;
+  theme.water = result.water;
   if (result.valid) {
     if (result.license !== undefined) theme.license = result.license;
     if (result.source !== undefined) theme.source = result.source;

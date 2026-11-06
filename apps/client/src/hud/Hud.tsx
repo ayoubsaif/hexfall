@@ -18,6 +18,7 @@ import { type LogTab, setLogTab, useUiStore } from "../store/ui.ts";
 import { useHotkeys } from "../hotkeys/useHotkeys.ts";
 import { SettingsButton, SettingsHost } from "../settings/SettingsButton.tsx";
 import { ViewControls } from "./ViewControls.tsx";
+import { AdGutters, Welcome, dismissWelcome, welcomeDismissed } from "./Welcome.tsx";
 import { GameAlerts } from "./GameAlerts.tsx";
 import {
   ActionButtons,
@@ -253,6 +254,21 @@ function LogTabs() {
   );
 }
 
+/** The welcome screen first; the start screen after Play, or at once for invites and notices. */
+function FirstScreen() {
+  const invited = useRoomStore((s) => s.prefillRoom !== null || s.notice !== null);
+  const [shown, setShown] = useState(() => !welcomeDismissed() && !invited);
+  if (!shown || invited) return <StartScreen />;
+  return (
+    <Welcome
+      onPlay={() => {
+        dismissWelcome();
+        setShown(false);
+      }}
+    />
+  );
+}
+
 /** DOM overlay above the canvas. The container ignores the pointer; interactive children opt in. */
 export function Hud() {
   useHotkeys();
@@ -289,7 +305,8 @@ export function Hud() {
             </div>
             <ConnectionBadge />
           </div>
-          {room === null && <StartScreen />}
+          {room === null && <FirstScreen />}
+          {room === null && <AdGutters />}
           {room !== null && status === "lobby" && <Lobby />}
           {inGame && <GameHud corner={corner} />}
           <div className="absolute top-24 left-1/2 flex w-[min(420px,calc(100%-32px))] -translate-x-1/2 flex-col items-center gap-1.5 max-sm:top-auto max-sm:bottom-[58%] short:top-auto short:bottom-[58%]">

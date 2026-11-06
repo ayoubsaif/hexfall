@@ -174,3 +174,17 @@ describe("player tinting", () => {
     expect(colors(robber)).toEqual({ PlayerColor: "123456", Body: "123456" });
   });
 });
+
+describe("resolveWaterUrls", () => {
+  it("builds urls for declared slots only", async () => {
+    const { resolveWaterUrls } = await import("../../src/theme/resolve.ts");
+    const theme = {
+      id: "diorama",
+      baseUrl: "/themes/diorama/",
+      entries: {},
+      water: { sand: "water/sand.webp" },
+    };
+    expect(resolveWaterUrls(theme)).toEqual({ sand: "/themes/diorama/water/sand.webp" });
+    expect(resolveWaterUrls({ id: theme.id, baseUrl: theme.baseUrl, entries: {} })).toEqual({});
+  });
+});

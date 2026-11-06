@@ -5,7 +5,14 @@
 import { AVATAR_IDS, type AvatarId } from "@hexfall/protocol";
 import { create } from "zustand";
 
+export const GRAPHICS_MODES = ["classic", "realistic"] as const;
+export type GraphicsMode = (typeof GRAPHICS_MODES)[number];
+export const GRAPHICS_QUALITIES = ["auto", "low", "medium", "high"] as const;
+export type GraphicsQuality = (typeof GRAPHICS_QUALITIES)[number];
+
 export interface Prefs {
+  graphicsMode: GraphicsMode;
+  graphicsQuality: GraphicsQuality;
   /** Game sounds on (default) or muted. */
   sound: boolean;
   /** Turn notifications wanted (default off; also needs browser permission). */
@@ -36,6 +43,8 @@ export function normalizeVolume(value: unknown): number | null {
 
 export const PREFS_STORAGE_KEY = "hexfall.prefs";
 export const DEFAULT_PREFS: Prefs = {
+  graphicsMode: "realistic",
+  graphicsQuality: "auto",
   sound: true,
   notify: false,
   volume: 0.6,
@@ -61,6 +70,12 @@ export function readPrefs(storage: PrefsStorage | null = defaultStorage()): Pref
     if (!parsed || typeof parsed !== "object") return { ...DEFAULT_PREFS };
     const p = parsed as Partial<Record<keyof Prefs, unknown>>;
     return {
+      graphicsMode: GRAPHICS_MODES.includes(p.graphicsMode as GraphicsMode)
+        ? (p.graphicsMode as GraphicsMode)
+        : DEFAULT_PREFS.graphicsMode,
+      graphicsQuality: GRAPHICS_QUALITIES.includes(p.graphicsQuality as GraphicsQuality)
+        ? (p.graphicsQuality as GraphicsQuality)
+        : DEFAULT_PREFS.graphicsQuality,
       sound: typeof p.sound === "boolean" ? p.sound : DEFAULT_PREFS.sound,
       notify: typeof p.notify === "boolean" ? p.notify : DEFAULT_PREFS.notify,
       volume: normalizeVolume(p.volume) ?? DEFAULT_PREFS.volume,

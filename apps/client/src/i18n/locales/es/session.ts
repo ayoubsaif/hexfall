@@ -19,6 +19,29 @@ export const session: Catalog["session"] = {
     soloOpponentsOption: "{{count}} bots",
     waitingForServer: "Esperando al servidor…",
   },
+  welcome: {
+    play: "Jugar",
+    ad: "Publicidad",
+    howTitle: "Cómo se juega",
+    steps: {
+      s1: "Tira los dados: las casillas con ese número dan recursos.",
+      s2: "Comercia con jugadores o con el banco para conseguir lo que necesitas.",
+      s3: "Construye carreteras, poblados y ciudades. Gana quien llegue a 10 puntos.",
+    },
+    cardsTitle: "Lo que cuesta cada cosa",
+    examples: {
+      road: "Carretera",
+      settlement: "Poblado",
+      city: "Ciudad",
+      devCard: "Carta de desarrollo",
+    },
+    tipsTitle: "Consejos",
+    tips: {
+      t1: "El 6 y el 8 salen más: construye junto a ellos.",
+      t2: "Un puerto abarata el comercio con el banco.",
+      t3: "Un 7 mueve al ladrón y obliga a descartar con muchas cartas.",
+    },
+  },
   splash: {
     eyebrow: "Recolecta · Comercia · Construye",
     tagline: "Una pequeña isla. Un mundo de posibilidades.",

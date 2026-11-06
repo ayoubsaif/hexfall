@@ -2,7 +2,7 @@
 import { usePrefsStore } from "../store/prefs.ts";
 import { audioOutput } from "./engine.ts";
 
-export type SoundName = "chime" | "dice";
+export type SoundName = "chime" | "dice" | "turnSoft";
 
 /** Rattle length in seconds: a bit under the dice throw (DiceTray THROW_MS = 980). */
 export const RATTLE_S = 0.9;
@@ -27,6 +27,21 @@ function chime(ctx: AudioContext, out: AudioNode): void {
     osc.start(start);
     osc.stop(start + 0.65);
   }
+}
+
+/** One quiet, short note (A4) when the turn passes to someone else: less important than the chime. */
+function turnSoft(ctx: AudioContext, out: AudioNode): void {
+  const start = ctx.currentTime + 0.01;
+  const osc = ctx.createOscillator();
+  const gain = ctx.createGain();
+  osc.type = "sine";
+  osc.frequency.value = 440;
+  gain.gain.setValueAtTime(0.0001, start);
+  gain.gain.exponentialRampToValueAtTime(0.14, start + 0.02);
+  gain.gain.exponentialRampToValueAtTime(0.0001, start + 0.35);
+  osc.connect(gain).connect(out);
+  osc.start(start);
+  osc.stop(start + 0.4);
 }
 
 const noiseBuffers = new WeakMap<AudioContext, AudioBuffer>();
@@ -73,6 +88,7 @@ function diceRattle(ctx: AudioContext, out: AudioNode): void {
 const SOUNDS: Record<SoundName, (ctx: AudioContext, out: AudioNode) => void> = {
   chime,
   dice: diceRattle,
+  turnSoft,
 };
 
 /** Plays a sound now, or does nothing when muted, unsupported or still locked. Never throws. */

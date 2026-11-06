@@ -243,6 +243,47 @@ const HEX_KEYS = new Set([
 ]);
 const ISO_RATIO = 1088 / 1024;
 
+const WATER_SLOTS = ["caustics", "sand"];
+const WATER_BUDGET_BYTES = 300 * 1024;
+
+/** Sea and coast textures (specs/sea-coast-rendering): exist, square, and within the budget. */
+function checkWater(theme, themeDir, water, referenced) {
+  if (water === undefined) return;
+  if (water === null || typeof water !== "object" || Array.isArray(water)) {
+    failures.push(`theme "${theme}": "water" must be an object.`);
+    return;
+  }
+  let total = 0;
+  for (const [slot, file] of Object.entries(water)) {
+    if (!WATER_SLOTS.includes(slot)) {
+      failures.push(
+        `theme "${theme}": unknown water texture "${slot}" (expected ${WATER_SLOTS.join(", ")}).`,
+      );
+      continue;
+    }
+    if (!nonEmpty(file)) {
+      failures.push(`theme "${theme}", water "${slot}": entry has no image file.`);
+      continue;
+    }
+    const before = failures.length;
+    checkFile(theme, themeDir, `water.${slot}`, "image", file, referenced);
+    if (failures.length > before) continue;
+    const target = resolve(themeDir, file.replace(/^\/+/, ""));
+    total += statSync(target).size;
+    const dim = imageSize(readFileSync(target));
+    if (dim && dim.width !== dim.height) {
+      failures.push(
+        `theme "${theme}", water "${slot}": ${file} is ${dim.width}x${dim.height}; it must be square to tile.`,
+      );
+    }
+  }
+  if (total > WATER_BUDGET_BYTES) {
+    failures.push(
+      `theme "${theme}": water textures total ${kb(total)}; the budget is ${kb(WATER_BUDGET_BYTES)}.`,
+    );
+  }
+}
+
 let themeCount = 0;
 let modelCount = 0;
 let imageCount = 0;
@@ -414,6 +455,7 @@ for (const dirent of themeDirs) {
       );
     }
     checkLicenses(theme, manifest);
+    checkWater(theme, themeDir, manifest.water, referenced);
     const assets = manifest.assets ?? {};
     if (assets === null || typeof assets !== "object" || Array.isArray(assets)) {
       failures.push(`theme "${theme}": "assets" must be an object.`);

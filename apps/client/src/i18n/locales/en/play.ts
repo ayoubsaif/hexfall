@@ -36,6 +36,15 @@ export const play = {
     endTurn: "End turn",
     costs: "Costs {{cost}}",
     costItem: "{{count}} {{resource}}",
+    blocked: {
+      rollFirst: "Roll the dice first",
+      pieces: "No pieces of this kind left",
+      cards: "Not enough resources",
+      road: "No free path next to your roads or buildings",
+      settlement:
+        "No free spot: it needs one of your roads and no building next to it (Distance Rule)",
+      city: "You have no settlement to upgrade",
+    },
     left: {
       roads: "{{count}} roads left",
       settlements: "{{count}} settlements left",

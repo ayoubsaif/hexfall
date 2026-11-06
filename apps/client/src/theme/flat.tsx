@@ -52,6 +52,12 @@ export const MARKER_OUTLINE_WIDTH = 0.018;
  * on their layer, so callers put `<Asset>` at y = 0. Overlays drawn by the board view on
  * top of tokens and badges (labels) belong at `label`; harbor link strips at `harborLink`.
  */
+/**
+ * Land tiles are slightly see-through (over the sand the sea shader paints under the island),
+ * which softens the busy tile art so roads, settlements and cities stand out.
+ */
+export const LAND_OPACITY = 0.86;
+
 export const FLAT_LAYER = {
   tile: 0,
   tileOutline: 0.001,
@@ -464,11 +470,14 @@ export function FlatShape({ assetKey, color, map, projection = "top" }: FlatShap
       {!block && (
         <mesh geometry={fill} position={[0, y, 0]} receiveShadow>
           <meshStandardMaterial
-            key={map ? "map" : "color"}
+            key={`${map ? "map" : "color"}${land ? "-land" : ""}`}
             color={map ? "#ffffff" : color}
             map={map ?? null}
             roughness={1}
             metalness={0}
+            transparent={land}
+            opacity={land ? LAND_OPACITY : 1}
+            depthWrite={!land}
             polygonOffset={marker}
             polygonOffsetFactor={marker ? -2 : 0}
             polygonOffsetUnits={marker ? -2 : 0}

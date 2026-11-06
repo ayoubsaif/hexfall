@@ -1,7 +1,7 @@
 // Pure asset resolution: key -> themed image URL, themed model URL (+ overrides), or
 // procedural fallback.
 import type { AssetKey } from "./keys.ts";
-import type { Credit, ResolvedEntries, Transform } from "./manifest.ts";
+import type { Credit, ResolvedEntries, Transform, WaterEntries } from "./manifest.ts";
 import type { Projection } from "./relief.ts";
 
 export interface ResolvedTheme {
@@ -11,6 +11,8 @@ export interface ResolvedTheme {
   baseUrl: string;
   /** Validated key map; empty means every key is procedural. */
   entries: ResolvedEntries;
+  /** Sea and coast texture paths (relative to the theme folder); absent means procedural. */
+  water?: WaterEntries;
   /** Manifest-level license/source; absent until a valid manifest is loaded. */
   license?: string;
   source?: string;
@@ -64,4 +66,16 @@ export function loadFailureMessage(
 ): string {
   const reason = error instanceof Error ? error.message : String(error);
   return `Theme "${themeId}": failed to load ${fileKind} for "${key}" (${url}): ${reason}. Using procedural fallback.`;
+}
+
+/** Water texture URLs by slot; a slot is absent when the theme does not declare it. */
+export type WaterUrls = Partial<Record<keyof WaterEntries, string>>;
+
+export function resolveWaterUrls(theme: ResolvedTheme): WaterUrls {
+  const urls: WaterUrls = {};
+  for (const slot of ["caustics", "sand"] as const) {
+    const path = theme.water?.[slot];
+    if (path) urls[slot] = themeFileUrl(theme.baseUrl, path);
+  }
+  return urls;
 }

@@ -3,7 +3,7 @@
 // Build road / settlement / city, Buy development card, Trade with bank, Trade with players
 // (specs/player-trade "Trade with players button") and End turn, as round
 // icon buttons with no panel. Shown only to the active player after setup.
-import type { Resource, ResourceBundle } from "@hexfall/engine";
+import type { Resource, ResourceBundle, ResourceCounts } from "@hexfall/engine";
 import { COSTS, RESOURCES } from "@hexfall/engine/geometry";
 import type { LucideIcon } from "lucide-react";
 import { useEffect } from "react";
@@ -51,12 +51,37 @@ export function CostCards({ cost }: { cost: ResourceBundle }) {
   );
 }
 
-/** Tooltip body for a build or buy button: the action and its cost as cards. */
-function CostTip({ label, cost }: { label: string; cost: ResourceBundle }) {
+/** Why a paid build is unavailable, as a key under play.actions.blocked (null: it is available). */
+export function blockedReason(
+  kind: BuildChoice,
+  opts: { rolled: boolean; left: number | undefined; hand: ResourceCounts | undefined },
+  cost: ResourceBundle,
+): "rollFirst" | "pieces" | "cards" | BuildChoice | null {
+  if (!opts.rolled) return "rollFirst";
+  if (opts.left !== undefined && opts.left <= 0) return "pieces";
+  if (opts.hand && RESOURCES.some((r) => (opts.hand?.[r] ?? 0) < (cost[r] ?? 0))) return "cards";
+  return kind; // cards and pieces are fine, so no legal spot is left
+}
+
+/** Tooltip body for a build or buy button: the action, its cost as cards and, when it is off, why. */
+function CostTip({
+  label,
+  cost,
+  reason,
+}: {
+  label: string;
+  cost: ResourceBundle;
+  reason?: string | undefined;
+}) {
   return (
-    <span className="flex flex-col items-start gap-1" data-cost-tip>
+    <span className="flex max-w-[260px] flex-col items-start gap-1" data-cost-tip>
       <span className="font-semibold">{label}</span>
       <CostCards cost={cost} />
+      {reason && (
+        <span data-blocked-reason className="text-xs leading-snug text-bad">
+          {reason}
+        </span>
+      )}
     </span>
   );
 }
@@ -148,21 +173,35 @@ export function ActionButtons() {
           const left = own?.pieces[b.piece];
           const cost = t("play.actions.costs", { cost: costText(b.cost, t) });
           const label = t(`play.actions.${b.label}`);
+          const off = !c[b.legal] && !active;
+          const why =
+            off && view.phase.kind === "turn"
+              ? blockedReason(
+                  b.kind,
+                  { rolled: view.turn.rolled, left, hand: own?.resources },
+                  b.cost,
+                )
+              : null;
+          const reason = why ? t(`play.actions.blocked.${why}`) : undefined;
           return (
             <Fab
               key={b.kind}
               icon={b.icon}
               label={label}
-              tooltip={<CostTip label={label} cost={b.cost} />}
+              tooltip={<CostTip label={label} cost={b.cost} reason={reason} />}
               hotkey={b.hotkey}
               badge={left}
-              description={
+              description={[
                 left === undefined
                   ? cost
-                  : `${cost}. ${t(`play.actions.left.${b.piece}`, { count: left })}`
-              }
+                  : `${cost}. ${t(`play.actions.left.${b.piece}`, { count: left })}`,
+                reason,
+              ]
+                .filter(Boolean)
+                .join(". ")}
+              data-blocked={why ?? undefined}
               aria-pressed={active}
-              disabled={!c[b.legal] && !active}
+              disabled={off}
               onClick={() => chooseBuild(active ? null : b.kind)}
             />
           );

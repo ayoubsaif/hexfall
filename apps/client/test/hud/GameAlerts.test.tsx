@@ -89,6 +89,17 @@ describe("GameAlerts (specs/game-audio)", () => {
     expect(played).toEqual(["chime"]);
   });
 
+  it("plays a quiet cue when the turn passes to another player, not on snapshots", () => {
+    showGame(playState({ seat: 2 }), 0);
+    m = mount(<GameAlerts />);
+    update(playState({ seat: 3 }), 0, []);
+    expect(played).toEqual(["turnSoft"]);
+    update(playState({ seat: 3 }), 0, []);
+    expect(played).toEqual(["turnSoft"]);
+    showGame(playState({ seat: 1 }), 0, { version: 9 });
+    expect(played).toEqual(["turnSoft"]);
+  });
+
   it("plays the dice sound for any seat's live roll, once", () => {
     showGame(playState({ seat: 3, rolled: false }), 0);
     m = mount(<GameAlerts />);

@@ -6,6 +6,7 @@ export const SECTION_IDS = [
   "language",
   "sound",
   "notifications",
+  "graphics",
   "accessibility",
   "keyboard",
   "about",
