@@ -111,7 +111,7 @@ describe("Settings dialog layout", () => {
     m = mount(<SettingsDialog />);
   }
 
-  it("lists the sections in order in the sidebar and the phone picker", () => {
+  it("lists the sections in order in the sidebar and the phone list", () => {
     render();
     const nav = SECTION_IDS.map((s) => byTestId(`settings-nav-${s}`)?.textContent);
     expect(nav).toEqual([
@@ -123,10 +123,9 @@ describe("Settings dialog layout", () => {
       "Keyboard",
       "About",
     ]);
-    const options = [...document.querySelectorAll('[data-testid="settings-picker"] option')].map(
-      (o) => o.textContent,
-    );
-    expect(options).toEqual(nav);
+    const menu = SECTION_IDS.map((s) => byTestId(`settings-menu-${s}`)?.textContent);
+    expect(menu).toEqual(nav);
+    expect(document.querySelector("select")).toBeNull();
   });
 
   it("selecting Sound marks it active, updates the breadcrumb and shows the sound settings", () => {
@@ -139,14 +138,23 @@ describe("Settings dialog layout", () => {
     expect(byTestId("settings-section-sound")).not.toBeNull();
   });
 
-  it("the phone picker switches sections", () => {
+  it("the phone list opens a section, and Back returns to the list", () => {
     render();
-    const select = byTestId<HTMLSelectElement>("settings-picker")!;
-    act(() => {
-      select.value = "about";
-      select.dispatchEvent(new Event("change", { bubbles: true }));
-    });
+    expect(byTestId("settings-menu")).not.toBeNull();
+    expect(byTestId("settings-back")).toBeNull();
+    act(() => click(byTestId("settings-menu-about")!));
     expect(byTestId("settings-section-about")).not.toBeNull();
+    expect(byTestId("settings-menu")).toBeNull();
+    expect(byTestId("settings-back")?.textContent).toBe("About");
+    act(() => click(byTestId("settings-back")!));
+    expect(byTestId("settings-menu")).not.toBeNull();
+  });
+
+  it("opening on a given section skips the list", () => {
+    openSettings("keyboard");
+    m = mount(<SettingsDialog />);
+    expect(byTestId("settings-menu")).toBeNull();
+    expect(byTestId("settings-back")?.textContent).toBe("Keyboard");
   });
 
   it("remembers the last section for the page session", () => {

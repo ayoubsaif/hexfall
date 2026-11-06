@@ -5,6 +5,7 @@ export const settings = {
   description: "Language, sound, notifications, accessibility and credits.",
   close: "Close settings",
   sectionPicker: "Section",
+  back: "Back to settings",
   section: {
     graphics: "Graphics",
     language: "Language",

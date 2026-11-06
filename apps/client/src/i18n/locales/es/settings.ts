@@ -7,6 +7,7 @@ export const settings: Catalog["settings"] = {
   description: "Idioma, sonido, notificaciones, accesibilidad y créditos.",
   close: "Cerrar ajustes",
   sectionPicker: "Sección",
+  back: "Volver a ajustes",
   section: {
     graphics: "Gráficos",
     language: "Idioma",

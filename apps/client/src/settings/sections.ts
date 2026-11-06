@@ -20,23 +20,35 @@ export function isSectionId(v: string): v is SectionId {
 interface SettingsState {
   open: boolean;
   section: SectionId;
+  /** Below md only: show the section list instead of a section (md+ always shows both). */
+  list: boolean;
 }
 
 export const useSettingsStore = create<SettingsState>()(() => ({
   open: false,
   section: "language",
+  list: true,
 }));
 
+/** Opens Settings: on the section list (phones), or straight on `section` when one is given. */
 export function openSettings(section?: SectionId): void {
-  useSettingsStore.setState(section ? { open: true, section } : { open: true });
+  useSettingsStore.setState(
+    section ? { open: true, section, list: false } : { open: true, list: true },
+  );
 }
 
 export function setSettingsOpen(open: boolean): void {
   useSettingsStore.setState({ open });
 }
 
+/** Picks a section (and leaves the phone list for it). */
 export function setSettingsSection(section: SectionId): void {
-  useSettingsStore.setState({ section });
+  useSettingsStore.setState({ section, list: false });
+}
+
+/** Phones: back from a section to the section list. */
+export function showSettingsList(): void {
+  useSettingsStore.setState({ list: true });
 }
 
 let trigger: HTMLElement | null = null;
