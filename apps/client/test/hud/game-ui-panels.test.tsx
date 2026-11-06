@@ -52,6 +52,18 @@ describe("PlayerPanels", () => {
     expect(panels[0]?.getAttribute("data-active")).toBe("true");
   });
 
+  it("keeps one non-wrapping row of panels (fixed top container)", () => {
+    const s = playState();
+    s.longestRoad = 2;
+    seatRoom(0);
+    showGame(s, 0);
+    m = mount(<PlayerPanels />);
+    const list = m.container.querySelector("ol")!;
+    expect(list.className).toContain("flex-nowrap");
+    expect(list.className).not.toContain("flex-wrap");
+    expect(m.container.querySelectorAll('[data-testid="player-panel"]')).toHaveLength(4);
+  });
+
   it("marks disconnected seats, the viewer, and special cards", () => {
     const s = playState();
     s.longestRoad = 2;
@@ -67,6 +79,7 @@ describe("PlayerPanels", () => {
     expect(panels[0]?.textContent).toContain("2 VP with hidden cards");
     expect(panels[1]?.textContent).not.toContain("hidden");
   });
+
 });
 
 describe("status pill and End turn", () => {

@@ -22,7 +22,7 @@ function Entry({ game, busy }: { game: SavedGame; busy: boolean }) {
   const canEnd = game.seat === game.host && (game.status === "playing" || game.status === "paused");
   return (
     <li
-      className="flex items-start gap-2 rounded-lg bg-ink/10 p-2.5"
+      className="flex items-start gap-2 rounded-none bg-ink/10 p-2.5"
       data-testid="saved-game"
       data-room={game.room}
     >
@@ -42,6 +42,7 @@ function Entry({ game, busy }: { game: SavedGame; busy: boolean }) {
               {seat > 0 && ", "}
               <span className={seat === game.seat ? "font-semibold text-hud-fg" : undefined}>
                 {name}
+                {game.bots[seat] && ` (${t("session.lobby.bot")})`}
                 {seat === game.seat && ` (${t("session.saved.you")})`}
               </span>
             </span>

@@ -13,7 +13,7 @@ export function ReplacedNotice() {
     <div
       role="alert"
       data-interactive
-      className="pointer-events-auto absolute top-14 left-1/2 flex max-w-[calc(100%-32px)] -translate-x-1/2 items-center gap-3.5 rounded-xl border border-accent paper px-4 py-2.5 text-sm backdrop-blur-sm max-sm:flex-wrap"
+      className="pointer-events-auto absolute top-1/2 left-1/2 z-50 flex w-max max-w-[calc(100%-32px)] -translate-x-1/2 -translate-y-1/2 items-center gap-3.5 shadow-lg shadow-black/40 rounded-none border border-accent paper px-4 py-2.5 text-sm backdrop-blur-sm max-sm:flex-wrap"
     >
       <span>{t("session.replaced.text")}</span>
       <Button variant="secondary" onClick={() => playHere()}>

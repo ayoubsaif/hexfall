@@ -210,7 +210,7 @@ body,
     radial-gradient(ellipse at 50% 50%, transparent 55%, rgb(12 22 20 / 70%) 100%);
 }
 
-/* Paper surface and corner brackets (design decisions 3 and 4): CSS only, no images. */
+/* Paper surface (design decision 3): CSS only. Corner ornaments are images, see `.frame`. */
 .paper {
   background-color: var(--color-hud);
   background-image:
@@ -245,7 +245,7 @@ body,
   color: var(--color-cream);
   position: relative;
   border: 2px solid #2a160b;
-  border-radius: 8px;
+  border-radius: 0;
   padding-inline: 22px;
   background:
     radial-gradient(circle at 50% 50%, #f3d58a 0 1.5px, #b98a3c 2.5px 4.5px, #5a3a14 5.5px, transparent 6px) 5px 50% / 14px 14px no-repeat,
@@ -333,29 +333,46 @@ body,
 .paper-solid {
   background-color: var(--color-paper);
 }
+/* Illustrated corner ornaments (openspec illustrated-hud-ornaments): one image per corner, in
+   four ready-made orientations, so no transforms are needed. `.frame` = small carved stone
+   (cards, tiles, buttons); `.frame-brass` = large brass filigree (dialogs, drawers). */
 .frame {
-  --frame-c: var(--color-leather);
-  --frame-s: 14px;
-}
+  --corner-size: 18px;
+  }
+.frame-brass {
+  --corner-size: 44px;
+  }
 .frame:where(:not(.absolute, .fixed)) {
   position: relative;
 }
-/* Pseudo-element so the brackets never replace a surface's own background. */
+/* Pseudo-element so the corners never replace a surface's own background. */
 .frame::before {
   content: "";
   position: absolute;
-  inset: 3px;
+  inset: 0;
   pointer-events: none;
-  background:
-    linear-gradient(var(--frame-c), var(--frame-c)) 0 0 / var(--frame-s) 2px,
-    linear-gradient(var(--frame-c), var(--frame-c)) 0 0 / 2px var(--frame-s),
-    linear-gradient(var(--frame-c), var(--frame-c)) 100% 0 / var(--frame-s) 2px,
-    linear-gradient(var(--frame-c), var(--frame-c)) 100% 0 / 2px var(--frame-s),
-    linear-gradient(var(--frame-c), var(--frame-c)) 0 100% / var(--frame-s) 2px,
-    linear-gradient(var(--frame-c), var(--frame-c)) 0 100% / 2px var(--frame-s),
-    linear-gradient(var(--frame-c), var(--frame-c)) 100% 100% / var(--frame-s) 2px,
-    linear-gradient(var(--frame-c), var(--frame-c)) 100% 100% / 2px var(--frame-s);
+  z-index: 1;
   background-repeat: no-repeat;
+  background-size: var(--corner-size) var(--corner-size);
+  background-position:
+    0 0,
+    100% 0,
+    0 100%,
+    100% 100%;
+  background-image:
+    var(--corner-tl, url("/ui/corners/stone-tl.webp")), var(--corner-tr, url("/ui/corners/stone-tr.webp")),
+    var(--corner-bl, url("/ui/corners/stone-bl.webp")), var(--corner-br, url("/ui/corners/stone-br.webp"));
+}
+.frame-brass {
+  --corner-tl: url("/ui/corners/brass-tl.webp");
+  --corner-tr: url("/ui/corners/brass-tr.webp");
+  --corner-bl: url("/ui/corners/brass-bl.webp");
+  --corner-br: url("/ui/corners/brass-br.webp");
+}
+@media (max-width: 640px) {
+  .frame-brass {
+    --corner-size: 34px;
+  }
 }
 
 /* HUD: DOM overlay over the canvas. The container ignores the pointer so the board

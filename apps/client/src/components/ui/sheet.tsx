@@ -35,7 +35,7 @@ export function SheetContent({
           "pointer-events-auto fixed z-50 flex flex-col gap-2 paper p-3 text-foreground outline-none",
           side === "right"
             ? "inset-y-0 right-0 w-[min(340px,88vw)] data-[state=open]:animate-sheet-in-right"
-            : "inset-x-0 bottom-0 max-h-[70vh] rounded-t-xl data-[state=open]:animate-sheet-in-bottom",
+            : "inset-x-0 bottom-0 max-h-[70vh] data-[state=open]:animate-sheet-in-bottom",
           className,
         )}
         {...props}

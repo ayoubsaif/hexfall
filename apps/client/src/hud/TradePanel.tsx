@@ -9,12 +9,12 @@ import { Button } from "@/components/ui/button.tsx";
 import { Dialog, DialogContent, DialogFooter } from "@/components/ui/dialog.tsx";
 import { cn } from "@/lib/utils.ts";
 import { MAX_ASK, compact, formatBundle, isValidOffer, total } from "../game/cards.ts";
-import { seatColor } from "../game/colors.ts";
 import { resourceLabel } from "../i18n/labels.ts";
 import { act } from "../net/actions.ts";
 import { type TradeDraft, openDialog, useUiStore } from "../store/ui.ts";
 import { GameCard } from "./cards/GameCard.tsx";
 import { Counter } from "./cards/Stepper.tsx";
+import { SeatAvatar } from "./Avatar.tsx";
 import { useNames } from "./names.ts";
 import { useInFlight, useLegal, useOwn, useView } from "./state.ts";
 
@@ -131,11 +131,7 @@ function Composer({
                     on ? "bg-ink/15" : "opacity-60",
                   )}
                 >
-                  <span
-                    aria-hidden="true"
-                    className="size-2.5 rounded-sm"
-                    style={{ background: seatColor(seat).hex }}
-                  />
+                  <SeatAvatar seat={seat} size="sm" />
                   {names(seat)}
                 </button>
               );

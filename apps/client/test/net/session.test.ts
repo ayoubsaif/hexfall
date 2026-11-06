@@ -1,5 +1,11 @@
 import type { GameEvent } from "@hexfall/engine";
-import { CloseCode, PROTOCOL_VERSION, type EarlyResult } from "@hexfall/protocol";
+import {
+  AVATAR_IDS,
+  CloseCode,
+  PROTOCOL_VERSION,
+  type AvatarId,
+  type EarlyResult,
+} from "@hexfall/protocol";
 import { afterEach, beforeEach, describe, expect, it } from "vite-plus/test";
 import { act, createRoom, setSessionApi } from "../../src/net/actions.ts";
 import { createAddress, type AddressEnv } from "../../src/net/address.ts";
@@ -106,7 +112,15 @@ function sent(s = FakeSocket.last()) {
 }
 
 const seatsInfo = (n: number) =>
-  ["Ana", "Ben", "Cy", "Di"].slice(0, n).map((name, seat) => ({ seat, name, connected: true }));
+  ["Ana", "Ben", "Cy", "Di"]
+    .slice(0, n)
+    .map((name, seat) => ({
+      seat,
+      name,
+      connected: true,
+      bot: false,
+      avatar: AVATAR_IDS[seat] as AvatarId,
+    }));
 
 function roomState(
   status: "lobby" | "playing" | "paused" | "ended" = "lobby",
@@ -206,11 +220,39 @@ describe("start screen", () => {
       status: "lobby",
       pending: null,
     });
-    expect(useRoomStore.getState().seats[0]).toEqual({ seat: 0, name: "Ana", connected: true });
+    expect(useRoomStore.getState().seats[0]).toEqual({
+      seat: 0,
+      name: "Ana",
+      connected: true,
+      bot: false,
+      avatar: "villager-beard",
+    });
     expect(seats.token("K7QX2M")).toBe("secret");
     expect(seats.lastRoom()).toBe("K7QX2M");
     expect(env.location.search).toBe("?room=K7QX2M");
     expect(session.inviteLink()).toBe("https://hexfall.test/?room=K7QX2M");
+  });
+
+  it("plays solo: seats the bots and starts once the room is ours", () => {
+    boot();
+    welcome();
+    expect(session.playSolo("Ana", 2)).toBe(true);
+    expect(sent()).toMatchObject([{ type: "createRoom", payload: { name: "Ana" } }]);
+    send("roomJoined", { room: "K7QX2M", seat: 0, token: "secret" });
+    expect(sent().map((m) => m.type)).toEqual(["createRoom", "addBot", "addBot", "startGame"]);
+    expect(sent().at(-1)).toMatchObject({ payload: { mode: "variable", turnTimer: "off" } });
+    // A later room (e.g. a rejoin) does not start by itself.
+    send("roomJoined", { room: "ZZZZZZ", seat: 1, token: "t2" });
+    expect(sent()).toHaveLength(4);
+  });
+
+  it("a failed solo create does not start a game on the next room", () => {
+    boot();
+    welcome();
+    session.playSolo("Ana", 3);
+    send("error", { code: "unavailable", message: "busy" });
+    send("roomJoined", { room: "K7QX2M", seat: 0, token: "secret" });
+    expect(sent().map((m) => m.type)).toEqual(["createRoom"]);
   });
 
   it("refuses a name that is too long (spec: Name too long)", () => {
@@ -593,6 +635,7 @@ describe("saved games (saved-games)", () => {
     seat,
     host: 0,
     names: ["Ana", "Ben", "Cy"],
+    bots: [false, false, false],
     turn: null,
     pausedAt: status === "paused" ? 1 : null,
     expiresAt: 2,

@@ -7,7 +7,7 @@ export function Card({ className, ...props }: ComponentProps<"section">) {
     <section
       data-slot="card"
       className={cn(
-        "pointer-events-auto paper rounded-xl text-foreground backdrop-blur-sm",
+        "pointer-events-auto frame [--corner-size:14px] paper rounded-none text-foreground backdrop-blur-sm",
         className,
       )}
       {...props}

@@ -12,6 +12,7 @@ import { seatColor } from "../game/colors.ts";
 import { act } from "../net/actions.ts";
 import { openTrade } from "../store/ui.ts";
 import { GameCard } from "./cards/GameCard.tsx";
+import { SeatAvatar } from "./Avatar.tsx";
 import { useNames } from "./names.ts";
 import { useInFlight, useLegal, useOwn, useView } from "./state.ts";
 
@@ -68,16 +69,6 @@ function Side({ label, bundle }: { label: string; bundle: ResourceBundle }) {
         ))}
       </span>
     </div>
-  );
-}
-
-function Swatch({ seat }: { seat: Seat }) {
-  return (
-    <span
-      aria-hidden="true"
-      className="size-2.5 shrink-0 rounded-sm"
-      style={{ background: seatColor(seat).hex }}
-    />
   );
 }
 
@@ -166,7 +157,7 @@ export function OffersTray() {
               style={{ borderLeftColor: seatColor(o.from).hex }}
             >
               <div className="flex items-center gap-1.5 text-sm font-semibold">
-                <Swatch seat={o.from} />
+                <SeatAvatar seat={o.from} size="sm" />
                 {mine ? t("play.offers.yours") : t("play.offers.from", { name: names(o.from) })}
               </div>
               <Side label={t("play.offers.youGive")} bundle={sides.give} />
@@ -178,7 +169,7 @@ export function OffersTray() {
                 <ul className="m-0 flex list-none flex-wrap gap-x-3 p-0 text-xs text-muted-foreground">
                   {o.to.map((seat) => (
                     <li key={seat} data-recipient={seat} className="flex items-center gap-1">
-                      <Swatch seat={seat} />
+                      <SeatAvatar seat={seat} size="xs" />
                       {t("play.offers.recipient", {
                         name: names(seat),
                         state: o.rejectedBy.includes(seat)

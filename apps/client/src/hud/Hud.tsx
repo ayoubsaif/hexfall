@@ -108,7 +108,7 @@ export function ReloadBanner() {
 }
 
 /** Layout CSS variables published on the root element by `useHudLayout`. */
-const LAYOUT_VARS = ["--hand-h", "--pill-bottom", "--pill-side", "--corner-h"] as const;
+const LAYOUT_VARS = ["--hand-h", "--pill-bottom", "--pill-side", "--corner-h", "--fab-h"] as const;
 
 /**
  * Measures the HUD and publishes (store/dock.ts `hudLayout`):
@@ -117,6 +117,7 @@ const LAYOUT_VARS = ["--hand-h", "--pill-bottom", "--pill-side", "--corner-h"] a
  * - `--pill-bottom` / `--pill-side`: the status pill's place above the hand;
  * - `--corner-h`: height of the corner controls when they stand above the hand (else 0), so the
  *   offers tray sits above them;
+ * - `--fab-h`: height of the floating action buttons, so the toast stack stands above them;
  * - the dice dock: left of the buttons, above the hand.
  * The board is a full-screen background and is not resized around any of this.
  */
@@ -137,6 +138,7 @@ function useHudLayout(corner: HTMLElement | null) {
       // The corner controls only stand above the hand when they sit in the lower half.
       const cornerHeight = k && k.top > height / 2 ? k.height : 0;
       root.style.setProperty("--corner-h", `${Math.ceil(cornerHeight)}px`);
+      root.style.setProperty("--fab-h", `${Math.ceil(c.height)}px`);
       const layout = hudLayout({
         width,
         height,
@@ -200,9 +202,12 @@ function GameHud({ corner }: { corner: HTMLElement | null }) {
   const { setHand, setCluster } = useHudLayout(corner);
   return (
     <>
-      <div className="absolute top-3 right-3 left-3 flex flex-col items-start gap-2 desktop:right-[400px] max-sm:top-2 max-sm:right-2 max-sm:left-2 short:top-2 short:right-2 short:left-2">
-        <ViewControls />
+      <div
+        data-testid="top-bar"
+        className="absolute top-3 right-3 left-3 flex flex-col items-start gap-1 desktop:right-[400px] max-sm:top-2 max-sm:right-2 max-sm:left-2 short:top-2 short:right-2 short:left-2"
+      >
         <PlayerPanels />
+        <ViewControls />
       </div>
       <Hand ref={setHand} />
       <StatusPill />
@@ -286,8 +291,13 @@ export function Hud() {
           {room !== null && status === "lobby" && <Lobby />}
           {inGame && <GameHud corner={corner} />}
           <div className="absolute top-24 left-1/2 flex w-[min(420px,calc(100%-32px))] -translate-x-1/2 flex-col items-center gap-1.5 max-sm:top-auto max-sm:bottom-[58%] short:top-auto short:bottom-[58%]">
-            <Toasts />
             <Rejection />
+          </div>
+          <div
+            data-testid="toast-anchor"
+            className="pointer-events-none absolute right-3 bottom-[calc(var(--hand-h,0px)_+_var(--fab-h,0px)_+_20px)] flex w-[min(360px,calc(100%-24px))] flex-col items-end max-sm:right-2 short:right-2"
+          >
+            <Toasts />
           </div>
           <DiscardDialog />
           <YearOfPlentyDialog />

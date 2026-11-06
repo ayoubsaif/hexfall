@@ -1,6 +1,6 @@
 // Component test helpers: render into happy-dom, record session intents, seed stores.
 import type { GameState, Seat } from "@hexfall/engine";
-import type { ClientAction } from "@hexfall/protocol";
+import { AVATAR_IDS, type AvatarId, type ClientAction } from "@hexfall/protocol";
 import { act, type ReactNode } from "react";
 import { createRoot, type Root } from "react-dom/client";
 import { setSessionApi, type SessionApi } from "../../src/net/actions.ts";
@@ -49,8 +49,12 @@ export function recordSession(): Call[] {
     act: rec("act") as (a: ClientAction) => boolean,
     createRoom: rec("createRoom") as SessionApi["createRoom"],
     joinRoom: rec("joinRoom") as SessionApi["joinRoom"],
+    setAvatar: rec("setAvatar") as SessionApi["setAvatar"],
     leaveRoom: rec("leaveRoom") as SessionApi["leaveRoom"],
     startGame: rec("startGame") as SessionApi["startGame"],
+    addBot: rec("addBot") as SessionApi["addBot"],
+    removeBot: rec("removeBot") as SessionApi["removeBot"],
+    playSolo: rec("playSolo") as SessionApi["playSolo"],
     playHere: rec("playHere") as SessionApi["playHere"],
     backToStart: rec("backToStart") as SessionApi["backToStart"],
     pauseGame: rec("pauseGame") as SessionApi["pauseGame"],
@@ -81,6 +85,8 @@ export function seatRoom(seat: Seat, players = 4, connected: boolean[] = []): vo
       seat: i,
       name,
       connected: connected[i] ?? true,
+      bot: false,
+      avatar: AVATAR_IDS[i] as AvatarId,
     })),
   });
 }

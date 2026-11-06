@@ -48,6 +48,27 @@ function nameKey(name: string): string {
   return name.normalize("NFC").toLocaleLowerCase("en");
 }
 
+/** Display names for bot seats (all pass `validateName`). */
+export const BOT_NAMES: readonly string[] = [
+  "Atlas",
+  "Bramble",
+  "Cinder",
+  "Dune",
+  "Ember",
+  "Flint",
+  "Gale",
+  "Harbor",
+];
+
+/** The first bot name not in `taken` (ignoring case), or "Bot N" if the pool is used up. */
+export function botName(taken: readonly string[]): string {
+  for (const n of BOT_NAMES) if (validateName(n, taken).ok) return n;
+  for (let i = taken.length + 1; ; i++) {
+    const n = `Bot ${i}`;
+    if (validateName(n, taken).ok) return n;
+  }
+}
+
 /** A secret seat token: 32 random bytes, base64url. */
 export function generateToken(): string {
   return randomBytes(32).toString("base64url");

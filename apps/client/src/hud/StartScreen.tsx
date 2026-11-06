@@ -1,11 +1,14 @@
 // Start screen (specs/client-session, "Start screen", "Invite links", "Server errors").
+import { AVATAR_IDS } from "@hexfall/protocol";
 import { useEffect, useState } from "react";
 import { useTranslation } from "react-i18next";
 import { Button } from "@/components/ui/button.tsx";
-import { createRoom, joinRoom } from "../net/actions.ts";
+import { createRoom, joinRoom, playSolo } from "../net/actions.ts";
 import { SEAT_LOST_NOTICE } from "../net/session.ts";
 import { useConnectionStore } from "../store/connection.ts";
+import { setPref, usePrefsStore } from "../store/prefs.ts";
 import { useRoomStore } from "../store/room.ts";
+import { AvatarPicker } from "./AvatarPicker.tsx";
 import { roomErrorText } from "./errors.ts";
 import { SavedGames } from "./SavedGames.tsx";
 
@@ -13,9 +16,9 @@ export const NAME_MAX = 20;
 
 /** Shared looks for the start screen and lobby (both centered HUD cards). */
 export const panelClass =
-  "pointer-events-auto absolute top-1/2 left-1/2 flex max-h-[calc(100%-32px)] w-[min(440px,calc(100%-32px))] -translate-x-1/2 -translate-y-1/2 flex-col gap-1.5 overflow-auto frame paper rounded-xl p-6 text-sm backdrop-blur-sm";
+  "pointer-events-auto absolute top-1/2 left-1/2 flex max-h-[calc(100%-32px)] w-[min(440px,calc(100%-32px))] -translate-x-1/2 -translate-y-1/2 flex-col gap-1.5 overflow-auto frame frame-brass paper rounded-none p-7 text-sm backdrop-blur-sm";
 export const inputClass =
-  "min-h-9 w-full min-w-0 rounded-md border border-ink/30 bg-cream/70 px-2 py-1.5 text-hud-fg outline-none focus-visible:ring-2 focus-visible:ring-ring max-sm:min-h-10";
+  "min-h-9 w-full min-w-0 rounded-none border border-ink/30 bg-cream/70 px-2 py-1.5 text-hud-fg outline-none focus-visible:ring-2 focus-visible:ring-ring max-sm:min-h-10";
 export const fieldClass = "my-1.5 flex flex-col gap-1";
 export const hintClass = "my-1 text-muted-foreground data-[bad]:text-bad";
 export const errorClass = "my-1.5 text-bad";
@@ -36,6 +39,8 @@ export function StartScreen() {
   const notice = useRoomStore((s) => s.notice);
   const [name, setName] = useState("");
   const [code, setCode] = useState(prefill ?? "");
+  const avatar = usePrefsStore((s) => s.avatar) ?? AVATAR_IDS[0];
+  const [opponents, setOpponents] = useState<2 | 3>(2);
   // An invite code can arrive after mount (read from the address by the session).
   useEffect(() => {
     if (prefill) setCode((c) => (c === "" ? prefill : c));
@@ -83,11 +88,39 @@ export function StartScreen() {
           ? t("session.start.nameTooLong", { max: NAME_MAX })
           : t("session.start.nameHint", { max: NAME_MAX })}
       </p>
+      <AvatarPicker value={avatar} onChange={(id) => setPref("avatar", id)} />
 
       {!invited && (
-        <Button disabled={!canCreate} onClick={() => valid && createRoom(valid)}>
+        <Button disabled={!canCreate} onClick={() => valid && createRoom(valid, avatar)}>
           {t("session.start.createRoom")}
         </Button>
+      )}
+
+      {!invited && (
+        <div className="flex items-end gap-2">
+          <label className={`${fieldClass} flex-1`}>
+            <span>{t("session.start.soloOpponents")}</span>
+            <select
+              className={inputClass}
+              value={opponents}
+              onChange={(e) => setOpponents(e.target.value === "3" ? 3 : 2)}
+            >
+              {([2, 3] as const).map((n) => (
+                <option key={n} value={n}>
+                  {t("session.start.soloOpponentsOption", { count: n })}
+                </option>
+              ))}
+            </select>
+          </label>
+          <Button
+            className="mb-1.5"
+            variant="secondary"
+            disabled={!canCreate}
+            onClick={() => valid && playSolo(valid, opponents, avatar)}
+          >
+            {t("session.start.playSolo")}
+          </Button>
+        </div>
       )}
 
       <div className="flex items-end gap-2">
@@ -106,7 +139,7 @@ export function StartScreen() {
           className="mb-1.5"
           variant={invited ? "default" : "secondary"}
           disabled={!canJoin}
-          onClick={() => valid && joinRoom(code.trim(), valid)}
+          onClick={() => valid && joinRoom(code.trim(), valid, avatar)}
         >
           {t("session.start.joinRoom")}
         </Button>
@@ -116,7 +149,7 @@ export function StartScreen() {
           variant="link"
           className="min-h-0 self-start"
           disabled={!canCreate}
-          onClick={() => valid && createRoom(valid)}
+          onClick={() => valid && createRoom(valid, avatar)}
         >
           {t("session.start.createInstead")}
         </Button>

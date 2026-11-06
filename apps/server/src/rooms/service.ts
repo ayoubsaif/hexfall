@@ -8,6 +8,7 @@ import {
   type PushSubscriptionJSON,
   type ErrorCode,
   type PayloadOf,
+  type AvatarId,
   type SeatInfoEntry,
   type ServerMessage,
   type ServerMessageType,
@@ -16,6 +17,7 @@ import {
 import type { TurnNotifier } from "../push/notify.ts";
 import type { PushStore } from "../push/store.ts";
 import { StoreUnavailableError, type RoomMeta, type RoomStore } from "../store/types.ts";
+import { firstFreeAvatar } from "./avatars.ts";
 import {
   generateCode,
   generateToken,
@@ -84,11 +86,15 @@ export interface RoomServiceOptions {
 }
 
 export interface RoomService {
-  createRoom(req: Request, name: string): Promise<ServiceResult>;
-  joinRoom(req: Request, room: string, name: string): Promise<ServiceResult>;
+  createRoom(req: Request, name: string, avatar?: AvatarId): Promise<ServiceResult>;
+  joinRoom(req: Request, room: string, name: string, avatar?: AvatarId): Promise<ServiceResult>;
+  setAvatar(req: Request, avatar: AvatarId): Promise<ServiceResult>;
   resumeRoom(req: Request, room: string, token: string): Promise<ServiceResult>;
   leaveRoom(req: Request): Promise<ServiceResult>;
   startGame(req: Request, opts: StartOptions): Promise<ServiceResult>;
+  /** Host only, lobby only: seat a bot / remove the bot in `seat`. */
+  addBot(req: Request): Promise<ServiceResult>;
+  removeBot(req: Request, seat: number): Promise<ServiceResult>;
   gameAction(req: Request, action: ClientAction): Promise<ServiceResult>;
   /** Host only: pause / resume / end the game early (pause-and-resume-games). */
   pauseGame(req: Request): Promise<ServiceResult>;
@@ -308,6 +314,7 @@ export function createRoomService(opts: RoomServiceOptions): RoomService {
       seat,
       host: meta.host,
       names: meta.seats.map((s) => s.name),
+      bots: meta.seats.map((s) => s.bot === true),
       turn: live?.state && meta.status !== "lobby" ? live.state.turn.number : null,
       pausedAt: meta.status === "paused" ? (meta.pausedAt ?? null) : null,
       expiresAt: now() + ttlMs,
@@ -327,7 +334,7 @@ export function createRoomService(opts: RoomServiceOptions): RoomService {
   }
 
   return {
-    createRoom(req, rawName) {
+    createRoom(req, rawName, avatar) {
       return claim("createRoom", req.conn, async () => {
         const name = validateName(rawName);
         if (!name.ok) return fail("bad_name", name.message);
@@ -341,7 +348,13 @@ export function createRoomService(opts: RoomServiceOptions): RoomService {
             status: "lobby",
             createdAt: now(),
             host: 0,
-            seats: [{ name: name.name, tokenHash: hashToken(token) }],
+            seats: [
+              {
+                name: name.name,
+                tokenHash: hashToken(token),
+                avatar: avatar ?? firstFreeAvatar([]),
+              },
+            ],
             config: null,
           };
           const w = await store.createMeta(meta);
@@ -361,13 +374,13 @@ export function createRoomService(opts: RoomServiceOptions): RoomService {
       });
     },
 
-    joinRoom(req, rawCode, name) {
+    joinRoom(req, rawCode, name, avatar) {
       return claim("joinRoom", req.conn, async () => {
         const code = normalizeCode(rawCode);
         if (!code) return fail("room_not_found", "no room with that code");
         const room = await getRoom(code);
         if (!room) return fail("room_not_found", "no room with that code");
-        return room.join(req, name);
+        return room.join(req, name, avatar);
       });
     },
 
@@ -392,6 +405,18 @@ export function createRoomService(opts: RoomServiceOptions): RoomService {
 
     startGame(req, startOpts) {
       return seated("startGame", req.conn, (room) => room.start(req, startOpts));
+    },
+
+    setAvatar(req, avatar) {
+      return seated("setAvatar", req.conn, (room) => room.setAvatar(req, avatar));
+    },
+
+    addBot(req) {
+      return seated("addBot", req.conn, (room) => room.addBot(req));
+    },
+
+    removeBot(req, seat) {
+      return seated("removeBot", req.conn, (room) => room.removeBot(req, seat));
     },
 
     gameAction(req, action) {

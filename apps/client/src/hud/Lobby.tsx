@@ -1,13 +1,23 @@
 // Lobby (specs/client-session, "Lobby", "Invite links"; game-hud "Turn countdown").
-import type { TurnTimerPreset } from "@hexfall/protocol";
+import type { AvatarId, TurnTimerPreset } from "@hexfall/protocol";
 import { useState } from "react";
 import { useTranslation } from "react-i18next";
 import { Badge } from "@/components/ui/badge.tsx";
 import { Button } from "@/components/ui/button.tsx";
 import { seatColor, seatColorName } from "../game/colors.ts";
-import { leaveRoom, startGame, type BoardModeChoice } from "../net/actions.ts";
+import {
+  addBot,
+  leaveRoom,
+  removeBot,
+  setAvatar,
+  startGame,
+  type BoardModeChoice,
+} from "../net/actions.ts";
+import { setPref } from "../store/prefs.ts";
 import { useConnectionStore } from "../store/connection.ts";
 import { useRoomStore } from "../store/room.ts";
+import { Avatar } from "./Avatar.tsx";
+import { AvatarPicker } from "./AvatarPicker.tsx";
 import { roomErrorText } from "./errors.ts";
 import { Swatch } from "./PlayerPanels.tsx";
 import { errorClass, fieldClass, hintClass, inputClass, panelClass } from "./StartScreen.tsx";
@@ -67,7 +77,12 @@ export function Lobby({ inviteLink }: { inviteLink?: string }) {
   if (room === null) return null;
   const link = inviteLink ?? inviteLinkFor(room);
   const isHost = seat !== null && seat === host;
-  const enough = seats.length >= 3 && seats.length <= 4;
+  const mine = seats.find((s) => s.seat === seat);
+  const takenAvatars = new Map<AvatarId, string>(
+    seats.filter((s) => s.seat !== seat).map((s) => [s.avatar, s.name]),
+  );
+  // Bots fill empty seats up to 3 on start, so the host can start alone.
+  const enough = seats.length >= 1 && seats.length <= 4;
   const busy = pending !== null || !online;
   const lobbyError =
     error && (error.request === "start" || error.request === "leave") ? error : null;
@@ -101,6 +116,18 @@ export function Lobby({ inviteLink }: { inviteLink?: string }) {
         </Button>
       </div>
 
+      {mine && (
+        <AvatarPicker
+          value={mine.avatar}
+          seat={mine.seat}
+          taken={takenAvatars}
+          onChange={(id) => {
+            setPref("avatar", id);
+            setAvatar(id);
+          }}
+        />
+      )}
+
       <ul className="my-2 list-none p-0" aria-label={t("session.lobby.players")}>
         {seats.map((s) => {
           const c = seatColor(s.seat);
@@ -112,9 +139,22 @@ export function Lobby({ inviteLink }: { inviteLink?: string }) {
               className="flex items-center gap-1.5 py-1"
             >
               <Swatch hex={c.hex} name={seatColorName(s.seat, t)} />
+              <Avatar id={s.avatar} seat={s.seat} name={s.name} size="sm" eager />
               <span className={s.connected ? "" : "opacity-60"}>{s.name}</span>
               {s.seat === seat && <Badge variant="muted">{t("session.lobby.you")}</Badge>}
               {s.seat === host && <Badge variant="muted">{t("session.lobby.host")}</Badge>}
+              {s.bot && <Badge variant="muted">{t("session.lobby.bot")}</Badge>}
+              {isHost && s.bot && (
+                <Button
+                  variant="link"
+                  className="ml-auto min-h-0 p-0"
+                  disabled={busy}
+                  aria-label={t("session.lobby.removeBotNamed", { name: s.name })}
+                  onClick={() => removeBot(s.seat)}
+                >
+                  {t("session.lobby.removeBot")}
+                </Button>
+              )}
               {!s.connected && (
                 <Badge variant="muted" className="text-bad">
                   {t("session.lobby.offline")}
@@ -177,7 +217,12 @@ export function Lobby({ inviteLink }: { inviteLink?: string }) {
               ))}
             </select>
           </label>
-          {!enough && <p className={hintClass}>{t("session.lobby.needPlayers")}</p>}
+          {seats.length < 4 && (
+            <Button variant="secondary" disabled={busy} onClick={() => addBot()}>
+              {t("session.lobby.addBot")}
+            </Button>
+          )}
+          {seats.length < 3 && <p className={hintClass}>{t("session.lobby.botsWillFill")}</p>}
           <Button
             disabled={!enough || busy}
             onClick={() => startGame(mode, starter === "" ? undefined : Number(starter), timer)}

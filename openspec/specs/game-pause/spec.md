@@ -18,7 +18,7 @@ The host SHALL be able to pause a game whose room status is `playing`, at any po
 - **THEN** it receives `not_host` and the room stays `playing`
 
 ### Requirement: Nothing happens while paused
-While a room is `paused`, the server SHALL refuse every game action with `game_paused` without applying it, SHALL NOT run or fire the turn timer, SHALL NOT apply timeouts, and SHALL NOT send turn alerts or pushes. Game snapshots and updates sent while paused SHALL carry a null countdown. Players SHALL still be able to resume their seat, receive the room state and their full game view, and disconnect.
+While a room is `paused`, the server SHALL refuse every game action with `game_paused` without applying it, SHALL NOT run or fire the turn timer, SHALL NOT apply timeouts, SHALL NOT make bot moves, and SHALL NOT send turn alerts or pushes. Game snapshots and updates sent while paused SHALL carry a null countdown. Players SHALL still be able to resume their seat, receive the room state and their full game view, and disconnect.
 
 #### Scenario: Action while paused
 - **WHEN** the room is paused and the active player sends `rollDice`
@@ -31,6 +31,10 @@ While a room is `paused`, the server SHALL refuse every game action with `game_p
 #### Scenario: Look at a paused game
 - **WHEN** a player resumes their seat in a paused room
 - **THEN** they receive the room state with status `paused` and their full game view
+
+#### Scenario: Bot waits while paused
+- **WHEN** the room is paused on a bot's turn and 3 hours pass
+- **THEN** the bot makes no move
 
 ### Requirement: Host resumes
 Only the host SHALL be able to resume a paused room, by sending `resumeGame`; other seats SHALL get `not_host`, and a room that is not paused SHALL answer `not_paused`. The host SHALL be able to resume whether or not other players are connected. On resume the server SHALL persist status `playing`, then send the room state and a game snapshot to every connected seat. The countdown SHALL continue with the time that was left when the game was paused. The game state SHALL equal the state at the moment of the pause.

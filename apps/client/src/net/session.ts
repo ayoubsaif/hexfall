@@ -4,6 +4,7 @@
 // fakes in tests.
 import {
   MAX_LOOKUP_SEATS,
+  type AvatarId,
   type ClientAction,
   type ErrorCode,
   type RoomStatus,
@@ -70,6 +71,8 @@ export class SessionController implements SessionApi {
   private resuming: string | null = null;
   /** Host request (pause, resume, end) waiting for the room state it leads to. */
   private roomRequest: RoomRequest | null = null;
+  /** Bots to seat (then start) as soon as the room created for "Play solo" is joined. */
+  private soloOpponents: 2 | 3 | null = null;
   /** A `lookupSeats` was sent and not answered. */
   private lookingUp = false;
   /** Room of an `endSavedGame` sent and not answered. */
@@ -132,6 +135,7 @@ export class SessionController implements SessionApi {
     this.endInFlight();
     this.resuming = null;
     this.roomRequest = null;
+    this.soloOpponents = null;
     if (this.ending !== null) {
       this.ending = null;
       useSavedGamesStore.setState({ ending: null });
@@ -160,6 +164,14 @@ export class SessionController implements SessionApi {
           prefillRoom: null,
         });
         this.onSeated?.();
+        // "Play solo": the room is ours, so seat the bots and start at once. The server
+        // handles these in order, so no reply is awaited in between.
+        if (this.soloOpponents !== null && token) {
+          const n = this.soloOpponents;
+          this.soloOpponents = null;
+          for (let i = 0; i < n; i++) this.conn.send("addBot", {});
+          this.startGame("variable", undefined, "off");
+        }
         break;
       }
       case "roomState": {
@@ -240,6 +252,7 @@ export class SessionController implements SessionApi {
   }
 
   private onError(code: ErrorCode, message: string): void {
+    this.soloOpponents = null;
     if (this.ending !== null) {
       const room = this.ending;
       this.ending = null;
@@ -346,17 +359,49 @@ export class SessionController implements SessionApi {
     return true;
   }
 
-  createRoom(name: string): boolean {
+  createRoom(name: string, avatar?: AvatarId): boolean {
     const n = cleanName(name);
     if (!n) return false;
-    return this.request("create", () => this.conn.send("createRoom", { name: n }));
+    return this.request("create", () =>
+      this.conn.send("createRoom", avatar ? { name: n, avatar } : { name: n }),
+    );
   }
 
-  joinRoom(room: string, name: string): boolean {
+  playSolo(name: string, opponents: 2 | 3, avatar?: AvatarId): boolean {
+    const n = cleanName(name);
+    if (!n) return false;
+    const sent = this.request("create", () =>
+      this.conn.send("createRoom", avatar ? { name: n, avatar } : { name: n }),
+    );
+    if (sent) this.soloOpponents = opponents;
+    return sent;
+  }
+
+  addBot(): boolean {
+    if (useRoomStore.getState().room === null || this.conn.status !== "open") return false;
+    return this.conn.send("addBot", {});
+  }
+
+  removeBot(seat: number): boolean {
+    if (useRoomStore.getState().room === null || this.conn.status !== "open") return false;
+    return this.conn.send("removeBot", { seat });
+  }
+
+  joinRoom(room: string, name: string, avatar?: AvatarId): boolean {
     const n = cleanName(name);
     const code = normalizeRoom(room);
     if (!n || code.length === 0) return false;
-    return this.request("join", () => this.conn.send("joinRoom", { room: code, name: n }));
+    return this.request("join", () =>
+      this.conn.send(
+        "joinRoom",
+        avatar ? { room: code, name: n, avatar } : { room: code, name: n },
+      ),
+    );
+  }
+
+  setAvatar(avatar: AvatarId): boolean {
+    if (useRoomStore.getState().room === null || this.conn.status !== "open") return false;
+    return this.conn.send("setAvatar", { avatar });
   }
 
   leaveRoom(): boolean {

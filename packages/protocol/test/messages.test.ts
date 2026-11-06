@@ -18,9 +18,20 @@ const frame = (obj: unknown) => JSON.stringify(obj);
 type Assignable<A, B> = [A] extends [B] ? true : false;
 
 describe("protocol v3", () => {
-  it("is version 3 and has the Replaced close code", () => {
-    expect(PROTOCOL_VERSION).toBe(5);
+  it("is version 7 and has the Replaced close code", () => {
+    expect(PROTOCOL_VERSION).toBe(7);
     expect(CloseCode.Replaced).toBe(4001);
+  });
+
+  it("accepts avatars on create, join and setAvatar and rejects unknown ids", () => {
+    const ok = [
+      encodeClient("createRoom", { name: "Ana", avatar: "farmer" }, 1),
+      encodeClient("joinRoom", { room: "abc234", name: "Ben", avatar: "baker" }, 2),
+      encodeClient("setAvatar", { avatar: "fisher" }, 3),
+    ];
+    for (const f of ok) expect(decodeClientMessage(f).ok).toBe(true);
+    const bad = encodeClient("setAvatar", { avatar: "king" as never }, 4);
+    expect(decodeClientMessage(bad).ok).toBe(false);
   });
 
   it("round-trips every new client message", () => {
@@ -29,6 +40,8 @@ describe("protocol v3", () => {
       encodeClient("joinRoom", { room: "abc234", name: "Ben" }, 2),
       encodeClient("resumeRoom", { room: "ABC234", token: "t0k" }, 3),
       encodeClient("leaveRoom", {}, 4),
+      encodeClient("addBot", {}, 40),
+      encodeClient("removeBot", { seat: 2 }, 41),
       encodeClient("startGame", { mode: "variable" }, 5),
       encodeClient("startGame", { mode: "beginner", startingPlayer: 2 }, 6),
       encodeClient("startGame", { mode: "variable", turnTimer: "relaxed" }, 7),
@@ -60,7 +73,7 @@ describe("protocol v3", () => {
           room: "ABC234",
           status: "lobby",
           host: 0,
-          seats: [{ seat: 0, name: "Ana", connected: true }],
+          seats: [{ seat: 0, name: "Ana", connected: true, bot: false, avatar: "villager-beard" }],
           pausedAt: null,
           result: null,
         },
@@ -263,7 +276,11 @@ describe("pause, end and saved games (protocol v5)", () => {
   });
 
   it("round-trips paused and ended room states and seatsInfo", () => {
-    const base = { room: "ABC234", host: 0, seats: [{ seat: 0, name: "Ana", connected: true }] };
+    const base = {
+      room: "ABC234",
+      host: 0,
+      seats: [{ seat: 0, name: "Ana", connected: true, bot: false, avatar: "villager-beard" }],
+    };
     const cases = [
       encodeServer("roomState", { ...base, status: "paused", pausedAt: 123, result: null }, 1),
       encodeServer(
@@ -295,6 +312,7 @@ describe("pause, end and saved games (protocol v5)", () => {
               seat: 1,
               host: 0,
               names: ["Ana", "Ben", "Cy"],
+              bots: [false, false, false],
               turn: null,
               pausedAt: 10,
               expiresAt: 20,

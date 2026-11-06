@@ -1,3 +1,4 @@
+import { AVATAR_IDS, type AvatarId } from "@hexfall/protocol";
 // Turn-timer picker in the lobby (task 4.3; game-hud "Turn countdown", "Host picks a timer").
 import { act } from "react";
 import { afterEach, beforeEach, describe, expect, it, vi } from "vite-plus/test";
@@ -26,7 +27,13 @@ beforeEach(() => {
       seat: 0,
       host: 0,
       status: "lobby",
-      seats: ["Ana", "Ben", "Cy"].map((name, i) => ({ seat: i, name, connected: true })),
+      seats: ["Ana", "Ben", "Cy"].map((name, i) => ({
+        seat: i,
+        name,
+        connected: true,
+        bot: false,
+        avatar: AVATAR_IDS[i] as AvatarId,
+      })),
     }),
   );
 });

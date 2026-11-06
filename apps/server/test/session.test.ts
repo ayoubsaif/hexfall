@@ -35,6 +35,9 @@ function fakeService() {
     resumeRoom: record("resumeRoom"),
     leaveRoom: record("leaveRoom"),
     startGame: record("startGame"),
+    setAvatar: record("setAvatar"),
+    addBot: record("addBot"),
+    removeBot: record("removeBot"),
     gameAction: record("gameAction"),
     pauseGame: record("pauseGame"),
     resumeGame: record("resumeGame"),
@@ -171,8 +174,8 @@ describe("routing", () => {
       encodeClient("startGame", { mode: "variable", turnTimer: "relaxed" }, 17),
     );
     expect(s.calls.map(({ method, seq, args }) => ({ method, seq, args }))).toEqual([
-      { method: "createRoom", seq: 10, args: ["Ann"] },
-      { method: "joinRoom", seq: 11, args: ["abcdef", "Bo"] },
+      { method: "createRoom", seq: 10, args: ["Ann", undefined] },
+      { method: "joinRoom", seq: 11, args: ["abcdef", "Bo", undefined] },
       { method: "resumeRoom", seq: 12, args: ["ABCDEF", "tok"] },
       { method: "leaveRoom", seq: 13, args: [] },
       { method: "startGame", seq: 14, args: [{ mode: "variable" }] },

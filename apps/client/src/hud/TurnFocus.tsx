@@ -109,7 +109,7 @@ export function TurnFocus() {
             <button
               type="button"
               onClick={dismiss}
-              className="pointer-events-auto rounded-md px-3 py-1.5 text-base text-white underline underline-offset-4 outline-none hover:text-white/80 focus-visible:ring-2 focus-visible:ring-ring"
+              className="pointer-events-auto rounded-none px-3 py-1.5 text-base text-white underline underline-offset-4 outline-none hover:text-white/80 focus-visible:ring-2 focus-visible:ring-ring"
             >
               {t("play.focus.notYet")}
             </button>

@@ -67,7 +67,7 @@ export function SettingsDialog() {
         description={t("settings.description")}
         hideHeader
         data-testid="settings-dialog"
-        className="flex h-[min(560px,calc(100dvh-32px))] w-[min(800px,calc(100%-32px))] overflow-hidden p-0"
+        className="flex h-[min(560px,calc(100dvh-32px))] w-[min(800px,calc(100%-32px))] overflow-hidden p-0 [--corner-size:32px]"
         onCloseAutoFocus={(e) => {
           const el = settingsTrigger();
           if (!el?.isConnected) return;
@@ -83,7 +83,7 @@ export function SettingsDialog() {
             collapsible="none"
             className="hidden border-r border-sidebar-border bg-ink/10 md:flex"
           >
-            <SidebarContent>
+            <SidebarContent className="pt-6">
               <SidebarGroup>
                 <SidebarGroupContent>
                   <SidebarMenu>
@@ -127,7 +127,7 @@ export function SettingsDialog() {
                   id={`${id}-section`}
                   data-testid="settings-picker"
                   value={section}
-                  className="min-h-10 w-full min-w-0 cursor-pointer rounded-md border border-border bg-ink/10 px-2 text-sm font-semibold text-foreground outline-none focus-visible:ring-2 focus-visible:ring-ring"
+                  className="min-h-10 w-full min-w-0 cursor-pointer rounded-none border border-border bg-ink/10 px-2 text-sm font-semibold text-foreground outline-none focus-visible:ring-2 focus-visible:ring-ring"
                   onChange={(e) => {
                     if (isSectionId(e.target.value)) setSettingsSection(e.target.value);
                   }}

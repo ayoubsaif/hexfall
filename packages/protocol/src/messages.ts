@@ -11,6 +11,27 @@ const RoomCode = z.string().min(1).max(16);
 const Seat = z.number().int().min(0).max(3);
 const Name = z.string().max(64);
 
+/**
+ * Avatar catalog (player-avatars). Ids map to `/avatars/<id>.webp` on the client; the server
+ * only validates membership. Order matters: the first free id is assigned by default.
+ */
+export const AVATAR_IDS = [
+  "villager-beard",
+  "herbalist",
+  "farmer",
+  "weaver",
+  "shepherd",
+  "baker",
+  "woodcutter",
+  "shepherdess",
+  "blacksmith",
+  "innkeeper",
+  "fisher",
+  "water-carrier",
+] as const;
+export const AvatarId = z.enum(AVATAR_IDS);
+export type AvatarId = z.infer<typeof AvatarId>;
+
 /** Turn timer presets (game-server "Turn timer"). The host picks one at start; fixed after. */
 export const TurnTimerPreset = z.enum(["off", "standard", "relaxed"]);
 export type TurnTimerPreset = z.infer<typeof TurnTimerPreset>;
@@ -42,8 +63,16 @@ export type TimerInfo = z.infer<typeof TimerInfo>;
 // ---- client -> server
 export const HelloMessage = msg("hello", z.object({ clientVersion: z.string().min(1) }));
 export const PingMessage = msg("ping", z.object({ t: z.number() }));
-export const CreateRoomMessage = msg("createRoom", z.object({ name: Name }));
-export const JoinRoomMessage = msg("joinRoom", z.object({ room: RoomCode, name: Name }));
+export const CreateRoomMessage = msg(
+  "createRoom",
+  z.object({ name: Name, avatar: AvatarId.optional() }),
+);
+export const JoinRoomMessage = msg(
+  "joinRoom",
+  z.object({ room: RoomCode, name: Name, avatar: AvatarId.optional() }),
+);
+/** Lobby only: change the sender's avatar. */
+export const SetAvatarMessage = msg("setAvatar", z.object({ avatar: AvatarId }));
 export const ResumeRoomMessage = msg(
   "resumeRoom",
   z.object({ room: RoomCode, token: z.string().min(1).max(128) }),
@@ -58,6 +87,10 @@ export const StartGameMessage = msg(
     turnTimer: TurnTimerPreset.optional(),
   }),
 );
+/** Host only, lobby only: seat a bot in the next free seat. */
+export const AddBotMessage = msg("addBot", z.object({}));
+/** Host only, lobby only: remove the bot in `seat`; later seats close up. */
+export const RemoveBotMessage = msg("removeBot", z.object({ seat: Seat }));
 export const GameActionMessage = msg("gameAction", z.object({ action: ClientActionSchema }));
 
 /** A browser Web Push subscription (PushSubscription.toJSON()), size-limited. */
@@ -116,6 +149,9 @@ export const ClientMessage = z.discriminatedUnion("type", [
   ResumeRoomMessage,
   LeaveRoomMessage,
   StartGameMessage,
+  AddBotMessage,
+  RemoveBotMessage,
+  SetAvatarMessage,
   GameActionMessage,
   PushSubscribeMessage,
   PushUnsubscribeMessage,
@@ -149,6 +185,9 @@ export const ErrorCode = z.enum([
   "game_started",
   "not_host",
   "not_enough_players",
+  "not_a_bot",
+  "bad_avatar",
+  "avatar_taken",
   "bad_token",
   "no_seat",
   "already_in_room",
@@ -163,7 +202,15 @@ export const ErrorMessage = msg("error", z.object({ code: ErrorCode, message: z.
 
 export const RoomStatus = z.enum(["lobby", "playing", "paused", "ended"]);
 export type RoomStatus = z.infer<typeof RoomStatus>;
-export const SeatInfo = z.object({ seat: Seat, name: z.string(), connected: z.boolean() });
+export const SeatInfo = z.object({
+  seat: Seat,
+  name: z.string(),
+  connected: z.boolean(),
+  /** Bot seats are driven by the server and always report connected. */
+  bot: z.boolean(),
+  /** Catalog id; unique per room. */
+  avatar: AvatarId,
+});
 export type SeatInfo = z.infer<typeof SeatInfo>;
 
 /** `token` is present only on create and join (never on resume). */
@@ -214,6 +261,8 @@ export const SeatInfoEntry = z.union([
     host: Seat,
     /** Index = seat. */
     names: z.array(z.string()),
+    /** Index = seat: true for bot seats. */
+    bots: z.array(z.boolean()),
     /** Turn number, only when the server holds the game in memory. */
     turn: z.number().int().nonnegative().nullable(),
     pausedAt: z.number().nullable(),

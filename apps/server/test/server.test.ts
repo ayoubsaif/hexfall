@@ -20,6 +20,7 @@ function fakeService() {
   const events: string[] = [];
   const ok = async () => ({ ok: true }) as const;
   const service: RoomService = {
+    setAvatar: ok,
     async createRoom(req: Request, name: string) {
       events.push(`createRoom:${name}:${req.seq}`);
       req.conn.send({
@@ -33,7 +34,7 @@ function fakeService() {
           room: "ABCDEF",
           status: "lobby",
           host: 0,
-          seats: [{ seat: 0, name, connected: true }],
+          seats: [{ seat: 0, name, connected: true, bot: false, avatar: "villager-beard" }],
           pausedAt: null,
           result: null,
         },
@@ -50,6 +51,8 @@ function fakeService() {
     setVisibility: () => {},
     leaveRoom: ok,
     startGame: ok,
+    addBot: ok,
+    removeBot: ok,
     pauseGame: ok,
     resumeGame: ok,
     endGame: ok,
@@ -292,7 +295,11 @@ describe("real room service", () => {
       expect(await next()).toMatchObject({
         type: "roomState",
         re: 1,
-        payload: { status: "lobby", host: 0, seats: [{ seat: 0, name: "Ann", connected: true }] },
+        payload: {
+          status: "lobby",
+          host: 0,
+          seats: [{ seat: 0, name: "Ann", connected: true, bot: false, avatar: "villager-beard" }],
+        },
       });
       const health = (await (await fetch(`http://${base}/healthz`)).json()) as { rooms: number };
       expect(health.rooms).toBe(1);

@@ -2,6 +2,7 @@
 // "Notification opt-in", specs/client-settings "Preferences storage"). Each field is validated
 // on its own, so older records keep their values. Storage errors never break the settings: the
 // choice then lasts for this page session only.
+import { AVATAR_IDS, type AvatarId } from "@hexfall/protocol";
 import { create } from "zustand";
 
 export interface Prefs {
@@ -15,6 +16,8 @@ export interface Prefs {
   motion: MotionPref;
   /** Plain wheel events over the board: "auto" detects touchpads (pan), "zoom" always zooms. */
   wheel: WheelPref;
+  /** Last avatar picked (player-avatars); sent when creating or joining a room. */
+  avatar: AvatarId | null;
 }
 
 export type WheelPref = "auto" | "zoom";
@@ -38,6 +41,7 @@ export const DEFAULT_PREFS: Prefs = {
   volume: 0.6,
   motion: "system",
   wheel: "auto",
+  avatar: null,
 };
 
 export type PrefsStorage = Pick<Storage, "getItem" | "setItem">;
@@ -66,6 +70,7 @@ export function readPrefs(storage: PrefsStorage | null = defaultStorage()): Pref
       wheel: WHEEL_PREFS.includes(p.wheel as WheelPref)
         ? (p.wheel as WheelPref)
         : DEFAULT_PREFS.wheel,
+      avatar: AVATAR_IDS.includes(p.avatar as AvatarId) ? (p.avatar as AvatarId) : null,
     };
   } catch {
     return { ...DEFAULT_PREFS };

@@ -1,3 +1,4 @@
+import { AVATAR_IDS, type AvatarId } from "@hexfall/protocol";
 // Player trading in the HUD (openspec player-trading; specs/player-trade): the composer, the
 // Trade with players button, the open offers tray and the new-offer toast.
 import type { GameState } from "@hexfall/engine";
@@ -98,6 +99,16 @@ describe("offer composer", () => {
     for (const seat of [1, 2, 3]) click(recipient(seat));
     expect(send().disabled).toBe(true);
     expect(doc().textContent).toContain("Pick at least one player.");
+  });
+
+  it("shows each player's avatar next to their name in the recipient choices", () => {
+    openComposer(table(), 0, [1, 2, 3]);
+    const shown = [1, 2, 3].map((seat) =>
+      document
+        .querySelector(`[role="checkbox"][data-seat="${seat}"] [data-testid="avatar"]`)
+        ?.getAttribute("data-avatar"),
+    );
+    expect(shown).toEqual(AVATAR_IDS.slice(1, 4));
   });
 
   it("never puts a resource on both sides", () => {
@@ -325,7 +336,13 @@ describe("open offers tray", () => {
 describe("new offer toast", () => {
   const tEn = fixedT("en");
   const names = namesFrom(
-    ["Ana", "Ben", "Cy"].map((name, seat) => ({ seat, name, connected: true })),
+    ["Ana", "Ben", "Cy"].map((name, seat) => ({
+      seat,
+      name,
+      connected: true,
+      bot: false,
+      avatar: AVATAR_IDS[seat] as AvatarId,
+    })),
     tEn,
   );
   const offered = {
@@ -337,6 +354,7 @@ describe("new offer toast", () => {
     expect(toastFor(offered, 1, names, tEn)).toEqual({
       text: "Ana made you a trade offer",
       tone: "info",
+      seat: 0,
     });
     expect(toastFor(offered, 0, names, tEn)).toBeNull();
     expect(toastFor(offered, 2, names, tEn)).toBeNull();

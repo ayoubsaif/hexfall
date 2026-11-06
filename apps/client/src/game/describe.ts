@@ -224,10 +224,49 @@ export type ToastTone = "info" | "good" | "bad";
 export interface ToastSpec {
   text: string;
   tone: ToastTone;
+  /** The player the toast is about; its avatar is shown beside the text. */
+  seat?: Seat;
+}
+
+/** The seat a toast is about, from the viewer's point of view (player-avatars). */
+function toastSeat(event: GameEvent, viewer: Seat | null): Seat | null {
+  switch (event.type) {
+    case "timedOut":
+      return event.seats[0] ?? null;
+    case "tradeOffered":
+      return event.offer.from;
+    case "stole":
+      return viewer !== null && event.victim === viewer ? event.thief : event.victim;
+    case "turnStarted":
+    case "produced":
+    case "startingResources":
+    case "monopoly":
+    case "discarded":
+    case "yearOfPlenty":
+      return event.seat;
+    case "longestRoad":
+    case "largestArmy":
+      return event.to;
+    default:
+      return null;
+  }
 }
 
 /** A toast for a key event, from the viewer's point of view; null for the rest. */
 export function toastFor(
+  event: GameEvent,
+  viewer: Seat | null,
+  names: Names,
+  t: T,
+  next?: GameEvent,
+): ToastSpec | null {
+  const spec = toastText(event, viewer, names, t, next);
+  if (!spec) return null;
+  const seat = toastSeat(event, viewer);
+  return seat === null ? spec : { ...spec, seat };
+}
+
+function toastText(
   event: GameEvent,
   viewer: Seat | null,
   names: Names,

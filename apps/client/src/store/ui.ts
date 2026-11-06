@@ -23,6 +23,8 @@ export interface Toast {
   id: number;
   text: string;
   tone: ToastTone;
+  /** Seat whose avatar is shown beside the text. */
+  seat?: number;
 }
 
 /** Your-turn focus (game-hud "Your-turn focus"): closed, open, or dismissed for this wait. */
@@ -102,12 +104,18 @@ export function openTrade(draft: Omit<TradeDraft, "id">): void {
 
 let toastId = 0;
 export const TOAST_MS = 4000;
-const MAX_TOASTS = 5;
+const MAX_TOASTS = 3;
 
 /** Adds a toast; it closes on its own after `TOAST_MS`. Returns its id. */
-export function pushToast(text: string, tone: ToastTone = "info", ms = TOAST_MS): number {
+export function pushToast(
+  text: string,
+  tone: ToastTone = "info",
+  ms = TOAST_MS,
+  seat?: number,
+): number {
   const id = ++toastId;
-  useUiStore.setState((s) => ({ toasts: [...s.toasts, { id, text, tone }].slice(-MAX_TOASTS) }));
+  const toast: Toast = seat === undefined ? { id, text, tone } : { id, text, tone, seat };
+  useUiStore.setState((s) => ({ toasts: [...s.toasts, toast].slice(-MAX_TOASTS) }));
   if (ms > 0) setTimeout(() => dismissToast(id), ms);
   return id;
 }

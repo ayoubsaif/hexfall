@@ -1,3 +1,4 @@
+import { AVATAR_IDS, type AvatarId } from "@hexfall/protocol";
 import { act } from "react";
 import { afterEach, beforeEach, describe, expect, it } from "vite-plus/test";
 import { Lobby, inviteLinkFor } from "../../src/hud/Lobby.tsx";
@@ -39,7 +40,7 @@ describe("StartScreen", () => {
     type(m.container.querySelector("input"), "  Ana ");
     expect(create.disabled).toBe(false);
     click(create);
-    expect(roomCalls()).toEqual([{ fn: "createRoom", args: ["Ana"] }]);
+    expect(roomCalls()).toEqual([{ fn: "createRoom", args: ["Ana", "villager-beard"] }]);
   });
 
   it("a name over 20 characters keeps Create and Join disabled with a hint", () => {
@@ -62,7 +63,7 @@ describe("StartScreen", () => {
     type(name, "Ben");
     type(code, "k7qx2m");
     click(byText(m.container, "button", "Join room"));
-    expect(roomCalls()).toEqual([{ fn: "joinRoom", args: ["k7qx2m", "Ben"] }]);
+    expect(roomCalls()).toEqual([{ fn: "joinRoom", args: ["k7qx2m", "Ben", "villager-beard"] }]);
   });
 
   it("is disabled while offline", () => {
@@ -80,7 +81,7 @@ describe("StartScreen", () => {
     expect(byText(m.container, "button", "Create room")).toBeUndefined();
     type(inputs[0], "Cy");
     click(byText(m.container, "button", "Join room"));
-    expect(roomCalls()).toEqual([{ fn: "joinRoom", args: ["K7QX2M", "Cy"] }]);
+    expect(roomCalls()).toEqual([{ fn: "joinRoom", args: ["K7QX2M", "Cy", "villager-beard"] }]);
   });
 
   it("shows server errors inline and keeps the inputs", () => {
@@ -120,6 +121,8 @@ function lobby(seat: number, players: number) {
         seat: i,
         name,
         connected: i !== 2,
+        bot: false,
+        avatar: AVATAR_IDS[i] as AvatarId,
       })),
     }),
   );
@@ -155,11 +158,11 @@ describe("Lobby", () => {
     expect(calls).toEqual([{ fn: "startGame", args: ["beginner", undefined, "standard"] }]);
   });
 
-  it("start needs 3 or 4 players", () => {
+  it("start with 2 players is allowed: a bot fills the third seat", () => {
     lobby(0, 2);
     m = mount(<Lobby inviteLink="l" />);
-    expect(byText(m.container, "button", "Start game")!.disabled).toBe(true);
-    expect(m.container.textContent).toContain("3 or 4 players are needed");
+    expect(byText(m.container, "button", "Start game")!.disabled).toBe(false);
+    expect(m.container.textContent).toContain("Bots will fill empty seats");
   });
 
   it("start controls follow a host change", () => {

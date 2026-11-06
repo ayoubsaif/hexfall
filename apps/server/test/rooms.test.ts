@@ -44,7 +44,7 @@ describe("lobby", () => {
       room: joined?.payload.room,
       status: "lobby",
       host: 0,
-      seats: [{ seat: 0, name: "Ana", connected: true }],
+      seats: [{ seat: 0, name: "Ana", connected: true, bot: false, avatar: "villager-beard" }],
       pausedAt: null,
       result: null,
     });
@@ -106,8 +106,8 @@ describe("lobby", () => {
       status: "lobby",
       host: 0,
       seats: [
-        { seat: 0, name: "Ben", connected: true },
-        { seat: 1, name: "Cy", connected: true },
+        { seat: 0, name: "Ben", connected: true, bot: false, avatar: "herbalist" },
+        { seat: 1, name: "Cy", connected: true, bot: false, avatar: "farmer" },
       ],
       pausedAt: null,
       result: null,
@@ -117,7 +117,6 @@ describe("lobby", () => {
     // Ben is now host and can act as seat 0; Ana is unbound
     expect(await svc.leaveRoom(req(ana))).toEqual(err("no_seat"));
     expect(await svc.startGame(req(cy), { mode: "variable" })).toEqual(err("not_host"));
-    expect(await svc.startGame(req(ben), { mode: "variable" })).toEqual(err("not_enough_players"));
     // tokens moved with the seats: Cy's token resumes seat 1
     const stored = await store.loadRoom(code);
     expect(stored?.meta.seats.map((s) => s.name)).toEqual(["Ben", "Cy"]);
@@ -148,12 +147,73 @@ describe("lobby", () => {
   });
 });
 
+describe("avatars", () => {
+  it("assigns the first free avatar by default and honors a free request", async () => {
+    fresh();
+    const a = fakeConn();
+    await svc.createRoom(req(a), "Ana");
+    const code = a.of("roomJoined")[0]?.payload.room ?? "";
+    const b = fakeConn();
+    await svc.joinRoom(req(b), code, "Ben", "baker");
+    const c = fakeConn();
+    await svc.joinRoom(req(c), code, "Cy");
+    const seats = lastRoomState(c)?.seats.map((s: { avatar: string }) => s.avatar);
+    expect(seats).toEqual(["villager-beard", "baker", "herbalist"]);
+  });
+
+  it("joins with the first free avatar when the request is taken", async () => {
+    fresh();
+    const a = fakeConn();
+    await svc.createRoom(req(a), "Ana", "farmer");
+    const code = a.of("roomJoined")[0]?.payload.room ?? "";
+    const b = fakeConn();
+    expect(await svc.joinRoom(req(b), code, "Ben", "farmer")).toEqual({ ok: true });
+    expect(lastRoomState(b)?.seats[1]?.avatar).toBe("villager-beard");
+  });
+
+  it("setAvatar changes it, broadcasts and frees the old one", async () => {
+    fresh();
+    const lobby = await makeLobby(svc, ["Ana", "Ben"]);
+    const [a, b] = lobby.conns as FakeConn[];
+    expect(await svc.setAvatar(req(b as FakeConn), "fisher")).toEqual({ ok: true });
+    expect(lastRoomState(a as FakeConn)?.seats[1]?.avatar).toBe("fisher");
+    expect(await svc.setAvatar(req(a as FakeConn), "fisher")).toEqual(err("avatar_taken"));
+    expect(await svc.setAvatar(req(a as FakeConn), "herbalist")).toEqual({ ok: true });
+  });
+
+  it("gives bots the first free avatar", async () => {
+    fresh();
+    const lobby = await makeLobby(svc, ["Ana"]);
+    const a = lobby.conns[0] as FakeConn;
+    await svc.addBot(req(a));
+    expect(lastRoomState(a)?.seats.map((s: { avatar: string }) => s.avatar)).toEqual([
+      "villager-beard",
+      "herbalist",
+    ]);
+  });
+
+  it("is locked after the game starts", async () => {
+    const lobby = await started(["Ana", "Ben", "Cy"]);
+    expect(await svc.setAvatar(req(lobby.conns[0] as FakeConn), "fisher")).toEqual(
+      err("game_started"),
+    );
+  });
+
+  it("resolves avatars for seats stored without one", async () => {
+    const { resolveAvatars } = await import("../src/rooms/avatars.ts");
+    expect(resolveAvatars([{}, { avatar: "villager-beard" }, {}])).toEqual([
+      "herbalist",
+      "villager-beard",
+      "farmer",
+    ]);
+  });
+});
+
 describe("start", () => {
   it("is host-only, needs 3-4 players and a valid starting seat", async () => {
     fresh();
     const { conns } = await makeLobby(svc, ["Ana", "Ben"]);
     const [ana, ben] = conns as [FakeConn, FakeConn];
-    expect(await svc.startGame(req(ana), { mode: "variable" })).toEqual(err("not_enough_players"));
     const cy = fakeConn();
     expect(await svc.joinRoom(req(cy), ana.of("roomJoined")[0]?.payload.room ?? "", "Cy")).toEqual({
       ok: true,

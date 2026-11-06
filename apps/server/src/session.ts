@@ -109,10 +109,15 @@ export function createSession(opts: SessionOptions): Session {
         sendOut({ type: "pong", payload: { t: msg.payload.t }, re: msg.seq });
         return;
       case "createRoom":
-        result = await service.createRoom(req, msg.payload.name);
+        result = await service.createRoom(req, msg.payload.name, msg.payload.avatar);
         break;
       case "joinRoom":
-        result = await service.joinRoom(req, msg.payload.room, msg.payload.name);
+        result = await service.joinRoom(
+          req,
+          msg.payload.room,
+          msg.payload.name,
+          msg.payload.avatar,
+        );
         break;
       case "resumeRoom":
         result = await service.resumeRoom(req, msg.payload.room, msg.payload.token);
@@ -129,6 +134,15 @@ export function createSession(opts: SessionOptions): Session {
         });
         break;
       }
+      case "setAvatar":
+        result = await service.setAvatar(req, msg.payload.avatar);
+        break;
+      case "addBot":
+        result = await service.addBot(req);
+        break;
+      case "removeBot":
+        result = await service.removeBot(req, msg.payload.seat);
+        break;
       case "gameAction":
         result = await service.gameAction(req, msg.payload.action);
         break;

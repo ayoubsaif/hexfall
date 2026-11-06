@@ -3,6 +3,7 @@
 import { useTranslation } from "react-i18next";
 import { Badge } from "@/components/ui/badge.tsx";
 import { seatColor, seatColorName } from "../game/colors.ts";
+import { SeatAvatar } from "./Avatar.tsx";
 import { CountdownText } from "./actions/CountdownText.tsx";
 import { useCountdown } from "./countdown.ts";
 import { useConnected, useNames } from "./names.ts";
@@ -34,7 +35,7 @@ export function PlayerPanels() {
   return (
     <ol
       aria-label={t("play.panels.players")}
-      className="m-0 flex list-none flex-wrap gap-2 p-0 max-sm:flex-nowrap max-sm:gap-1 short:flex-nowrap short:gap-1"
+      className="m-0 flex w-full list-none flex-nowrap gap-2 p-0 max-sm:gap-1 short:gap-1"
     >
       {view.players.map((p) => {
         const c = seatColor(p.seat);
@@ -58,13 +59,14 @@ export function PlayerPanels() {
             data-active={isActive || undefined}
             data-own={own || undefined}
             aria-current={isActive ? "true" : undefined}
-            className="pointer-events-auto min-w-[150px] overflow-hidden rounded-md border-2 border-leather paper data-[active]:ring-2 data-[active]:ring-wait max-sm:min-w-0 max-sm:flex-1 short:min-w-0 short:flex-1"
+            className="pointer-events-auto min-w-0 max-w-[230px] flex-1 basis-0 overflow-hidden rounded-none border-2 border-leather frame [--corner-size:16px] paper data-[active]:ring-2 data-[active]:ring-wait"
           >
             <div
-              className="hud-card-head flex min-w-0 items-center gap-1.5 px-2.5 py-1 font-semibold max-sm:px-1.5 max-sm:text-[11px] short:px-1.5 short:text-[11px]"
+              className="hud-card-head flex min-w-0 items-center gap-1.5 pr-4 pl-4 py-1 font-semibold max-sm:px-2 max-sm:text-[11px] short:px-2 short:text-[11px]"
               style={{ boxShadow: `inset 4px 0 0 ${c.hex}` }}
             >
-              <Swatch hex={c.hex} name={seatColorName(p.seat, t)} />
+              <SeatAvatar seat={p.seat} size="sm" className="max-sm:size-5 short:size-5" />
+              <span className="sr-only">{seatColorName(p.seat, t)}</span>
               <span className="truncate">{names(p.seat)}</span>
               {own && <Badge variant="muted">{t("play.panels.you")}</Badge>}
               {waiting && (
@@ -79,7 +81,7 @@ export function PlayerPanels() {
                 </Badge>
               )}
             </div>
-            <div className="px-2.5 py-1.5 max-sm:px-1.5 max-sm:py-1 max-sm:text-[11px] short:px-1.5 short:py-1 short:text-[11px]">
+            <div className="px-2.5 pt-1.5 pb-4 max-sm:px-1.5 max-sm:pt-1 max-sm:pb-3.5 max-sm:text-[11px] short:px-1.5 short:pt-1 short:pb-3.5 short:text-[11px]">
               <dl className="mb-0 grid grid-cols-[repeat(4,auto)] gap-x-2.5 gap-y-0.5 max-sm:grid-cols-2 max-sm:gap-x-1.5 short:mt-0.5 short:gap-x-1.5">
                 {STATS.map((stat) => (
                   <div
@@ -100,7 +102,7 @@ export function PlayerPanels() {
                   </div>
                 ))}
               </dl>
-              <div className="mt-1 flex flex-wrap gap-1 empty:hidden max-sm:text-[10px]">
+              <div className="mt-1 flex h-5 flex-nowrap items-center gap-1 overflow-hidden max-sm:h-4 max-sm:text-[10px] short:h-4">
                 {view.longestRoad === p.seat && (
                   <Badge variant="accent">{t("play.panels.longestRoad")}</Badge>
                 )}

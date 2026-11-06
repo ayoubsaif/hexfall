@@ -45,10 +45,12 @@ suite("timedOut toast", () => {
     expect(toastFor(timedOut("turn"), 0, names, tEn, rolled)).toEqual({
       text: "Time ran out: dice rolled automatically",
       tone: "bad",
+      seat: 0,
     });
     expect(toastFor(timedOut("discard", [0, 2]), 2, names, tEn)).toEqual({
       text: "Time ran out for you and Ana: cards discarded",
       tone: "bad",
+      seat: 0,
     });
   });
 
@@ -56,6 +58,7 @@ suite("timedOut toast", () => {
     expect(toastFor(timedOut("turn"), 1, names, tEn, ended)).toEqual({
       text: "Time ran out for Ana: turn ended",
       tone: "info",
+      seat: 0,
     });
     expect(toastFor(timedOut("moveRobber"), null, names, tEn)?.tone).toBe("info");
   });

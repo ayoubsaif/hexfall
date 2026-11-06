@@ -10,8 +10,11 @@ import {
   type GameConfig,
   type GameState,
 } from "@hexfall/engine";
+import { BotRng, chooseAction } from "@hexfall/bots";
+import { chooseAvatar, resolveAvatars } from "./avatars.ts";
 import {
   CloseCode,
+  type AvatarId,
   type ClientAction,
   type RoomStatus,
   type TimerInfo,
@@ -31,15 +34,26 @@ import {
   type Snapshot,
   type WriteResult,
 } from "../store/types.ts";
-import { generateSeed, generateToken, hashToken, tokenMatches, validateName } from "./codes.ts";
+import {
+  botName,
+  generateSeed,
+  generateToken,
+  hashToken,
+  tokenMatches,
+  validateName,
+} from "./codes.ts";
 import type { Conn, Outgoing, Request, ServiceResult, StartOptions } from "./service.ts";
 import { earlyResult } from "./result.ts";
-import { deadlineOf, nextAnchor, timerInfo } from "./timer.ts";
+import { deadlineOf, nextAnchor, timerInfo, waitingSeats } from "./timer.ts";
 
 export const MAX_SEATS = 4;
 export const MIN_PLAYERS = 3;
 /** Delay before retrying a timeout whose store write failed. */
 export const TIMEOUT_RETRY_MS = 5_000;
+/** Pause before a bot moves while someone is connected, so humans can follow. */
+export const BOT_DELAY_MS = 800;
+/** Pause before a bot moves when nobody is connected. */
+export const BOT_FAST_MS = 25;
 
 /** A stored room could not be rebuilt (bad snapshot or an action the engine refuses). */
 export class ReplayError extends Error {
@@ -171,6 +185,10 @@ export class Room {
   private timerHandle: unknown = null;
   /** `version` when the pending timer was armed; a fire at any other version is dropped. */
   private armedVersion = -1;
+  /** Pending bot move timer, if any. */
+  private botHandle: unknown = null;
+  /** `version` when the bot timer was armed; a fire at any other version is dropped. */
+  private botVersion = -1;
 
   constructor(
     deps: RoomDeps,
@@ -221,12 +239,24 @@ export class Room {
   /** Server-clock deadline of the current wait, or null (timer off, lobby, paused, game over). */
   deadline(): number | null {
     if (!this.state || this.meta.status === "lobby" || this.frozen()) return null;
+    if (this.botsOnly(this.state)) return null;
     return deadlineOf(this.state, this.anchor, this.preset());
+  }
+
+  isBot(seat: number): boolean {
+    return this.meta.seats[seat]?.bot === true;
+  }
+
+  /** The game waits only for bot seats (they never need the turn timer). */
+  private botsOnly(state: GameState): boolean {
+    const waits = waitingSeats(state);
+    return waits.length > 0 && waits.every((s) => this.isBot(s));
   }
 
   /** The countdown for a message built now. */
   timer(): TimerInfo {
     if (!this.state || this.meta.status === "lobby" || this.frozen()) return null;
+    if (this.botsOnly(this.state)) return null;
     return timerInfo(this.state, this.anchor, this.preset(), this.deps.now());
   }
 
@@ -269,7 +299,7 @@ export class Room {
     this.broadcastRoomState(req);
   }
 
-  join(req: Request, rawName: string): Promise<ServiceResult> {
+  join(req: Request, rawName: string, avatar?: AvatarId): Promise<ServiceResult> {
     return this.run(async () => {
       if (this.status() !== "lobby") return fail("game_started", "the game has already started");
       if (this.meta.seats.length >= MAX_SEATS) return fail("room_full", "the room is full");
@@ -283,7 +313,14 @@ export class Room {
       const next: RoomMeta = {
         ...this.meta,
         rev: this.meta.rev + 1,
-        seats: [...this.meta.seats, { name: name.name, tokenHash: hashToken(token) }],
+        seats: [
+          ...this.meta.seats,
+          {
+            name: name.name,
+            tokenHash: hashToken(token),
+            avatar: chooseAvatar(avatar, resolveAvatars(this.meta.seats)),
+          },
+        ],
       };
       const w = await this.saveMeta(next);
       if (w) return w;
@@ -327,7 +364,7 @@ export class Room {
       if (seat < 0) return fail("no_seat", "this connection holds no seat");
       if (this.status() !== "lobby") return fail("game_started", "cannot leave after the start");
       const conn = req.conn;
-      if (this.meta.seats.length === 1) {
+      if (this.meta.seats.every((s, i) => i === seat || s.bot)) {
         const w = await this.deps.store.deleteRoom(this.code);
         if (!w.ok) return this.writeFailed(w);
         this.conns = [];
@@ -340,11 +377,21 @@ export class Room {
       }
       const host = this.meta.host;
       const leaver = this.meta.seats[seat]?.tokenHash;
+      const seats = this.meta.seats.filter((_, i) => i !== seat);
       const next: RoomMeta = {
         ...this.meta,
         rev: this.meta.rev + 1,
-        seats: this.meta.seats.filter((_, i) => i !== seat),
-        host: host === seat ? 0 : host > seat ? host - 1 : host,
+        seats,
+        // The first remaining human takes over when the host leaves.
+        host:
+          host === seat
+            ? Math.max(
+                0,
+                seats.findIndex((s) => !s.bot),
+              )
+            : host > seat
+              ? host - 1
+              : host,
       };
       const w = await this.saveMeta(next);
       if (w) return w;
@@ -357,19 +404,93 @@ export class Room {
     });
   }
 
+  private newBotSeat(seats: RoomMeta["seats"]): RoomMeta["seats"][number] {
+    return {
+      avatar: chooseAvatar(undefined, resolveAvatars(seats)),
+      name: botName(seats.map((s) => s.name)),
+      // Nobody holds this token, so the seat can never be resumed or listed.
+      tokenHash: hashToken(generateToken()),
+      bot: true,
+    };
+  }
+
+  /** Lobby only: changes the avatar of the sender's seat. */
+  setAvatar(req: Request, avatar: AvatarId): Promise<ServiceResult> {
+    return this.run(async () => {
+      if (this.status() !== "lobby") return fail("game_started", "the game has already started");
+      const seat = this.seatOf(req.conn);
+      if (seat < 0) return fail("no_seat", "you do not hold a seat");
+      const current = resolveAvatars(this.meta.seats);
+      if (current.some((a, i) => i !== seat && a === avatar))
+        return fail("avatar_taken", "another player already has that avatar");
+      const next: RoomMeta = {
+        ...this.meta,
+        rev: this.meta.rev + 1,
+        seats: this.meta.seats.map((s, i) => ({
+          ...s,
+          avatar: i === seat ? avatar : (current[i] as string),
+        })),
+      };
+      const w = await this.saveMeta(next);
+      if (w) return w;
+      this.broadcastRoomState(req);
+      return OK;
+    });
+  }
+
+  /** Host only, lobby only: seats a bot in the next free seat. */
+  addBot(req: Request): Promise<ServiceResult> {
+    return this.run(async () => {
+      const denied = this.hostOnly(req, "add a bot to");
+      if (denied) return denied;
+      if (this.status() !== "lobby") return fail("game_started", "the game has already started");
+      if (this.meta.seats.length >= MAX_SEATS) return fail("room_full", "the room is full");
+      const next: RoomMeta = {
+        ...this.meta,
+        rev: this.meta.rev + 1,
+        seats: [...this.meta.seats, this.newBotSeat(this.meta.seats)],
+      };
+      const w = await this.saveMeta(next);
+      if (w) return w;
+      this.conns.push(null);
+      this.broadcastRoomState(req);
+      return OK;
+    });
+  }
+
+  /** Host only, lobby only: removes the bot in `botSeat`; later seats close up. */
+  removeBot(req: Request, botSeat: number): Promise<ServiceResult> {
+    return this.run(async () => {
+      const denied = this.hostOnly(req, "remove a bot from");
+      if (denied) return denied;
+      if (this.status() !== "lobby") return fail("game_started", "the game has already started");
+      if (this.meta.seats[botSeat]?.bot !== true)
+        return fail("not_a_bot", "that seat is not a bot");
+      const host = this.meta.host;
+      const next: RoomMeta = {
+        ...this.meta,
+        rev: this.meta.rev + 1,
+        seats: this.meta.seats.filter((_, i) => i !== botSeat),
+        host: host > botSeat ? host - 1 : host,
+      };
+      const w = await this.saveMeta(next);
+      if (w) return w;
+      this.conns.splice(botSeat, 1);
+      this.broadcastRoomState(req);
+      return OK;
+    });
+  }
+
   start(req: Request, opts: StartOptions): Promise<ServiceResult> {
     return this.run(async () => {
       const seat = this.seatOf(req.conn);
       if (seat < 0) return fail("no_seat", "this connection holds no seat");
       if (this.status() !== "lobby") return fail("game_started", "the game has already started");
       if (seat !== this.meta.host) return fail("not_host", "only the host can start the game");
-      const count = this.meta.seats.length;
-      if (count < MIN_PLAYERS || count > MAX_SEATS) {
-        return fail(
-          "not_enough_players",
-          `need ${MIN_PLAYERS}-${MAX_SEATS} players, have ${count}`,
-        );
-      }
+      // Fewer than 3 seats: bots fill the rest (bots specs "Auto-fill on start").
+      let seats = this.meta.seats;
+      while (seats.length < MIN_PLAYERS) seats = [...seats, this.newBotSeat(seats)];
+      const count = seats.length;
       const sp = opts.startingPlayer;
       if (sp !== undefined && (!Number.isInteger(sp) || sp < 0 || sp >= count)) {
         return fail("bad_frame", `startingPlayer must be a seat below ${count}`);
@@ -385,6 +506,7 @@ export class Room {
       const next: RoomMeta = {
         ...this.meta,
         rev: this.meta.rev + 1,
+        seats,
         status: "playing",
         config,
         turnTimer: opts.turnTimer ?? "off",
@@ -395,6 +517,7 @@ export class Room {
       this.state = state;
       this.version = 0;
       this.anchor = startedAt;
+      while (this.conns.length < seats.length) this.conns.push(null);
       this.broadcastRoomState(req);
       for (const [s, c] of this.conns.entries()) {
         if (c) this.sendSnapshot(s, c.id === req.conn.id ? req : undefined);
@@ -599,6 +722,7 @@ export class Room {
   arm(): void {
     this.disarm();
     if (this.deleted) return;
+    this.armBots();
     const deadline = this.deadline();
     if (deadline === null) return;
     this.schedule(Math.max(0, deadline - this.deps.now()));
@@ -610,6 +734,75 @@ export class Room {
       this.deps.clearTimer(this.timerHandle);
       this.timerHandle = null;
     }
+    if (this.botHandle !== null) {
+      this.deps.clearTimer(this.botHandle);
+      this.botHandle = null;
+    }
+  }
+
+  // ---- bots (specs/bots "Bots act for themselves")
+
+  /** Bot seats that must act now: awaited by the game, or holding an offer to turn down. */
+  private pendingBots(state: GameState): number[] {
+    const waits = new Set(waitingSeats(state));
+    const out: number[] = [];
+    for (const [seat, s] of this.meta.seats.entries()) {
+      if (!s.bot) continue;
+      if (waits.has(seat) || legalActions(state, seat).rejectTrade.length > 0) out.push(seat);
+    }
+    return out;
+  }
+
+  /** Schedules the next bot move, if any bot has one; nothing while paused or ended. */
+  private armBots(): void {
+    const state = this.state;
+    if (!state || this.meta.status !== "playing" || this.frozen()) return;
+    if (state.phase.kind === "ended" || this.pendingBots(state).length === 0) return;
+    this.botVersion = this.version;
+    const ms = this.connectedCount() === 0 ? BOT_FAST_MS : BOT_DELAY_MS;
+    this.botHandle = this.deps.setTimer(() => {
+      this.botHandle = null;
+      return this.botFire();
+    }, ms);
+  }
+
+  /** One bot move through the normal commit path; a successful commit re-arms the next. */
+  private botFire(): Promise<ServiceResult> {
+    const armed = this.botVersion;
+    return this.run(async () => {
+      const state = this.state;
+      if (this.version !== armed || !state || this.meta.status !== "playing" || this.frozen()) {
+        return OK;
+      }
+      const seed = `${this.meta.config?.seed ?? this.code}:bot:${this.version}`;
+      for (const seat of this.pendingBots(state)) {
+        const action = chooseAction(
+          playerView(state, seat),
+          legalActions(state, seat),
+          new BotRng(`${seed}:${seat}`),
+        );
+        if (!action) continue;
+        const r = await this.commit(action, this.deps.now());
+        if (!r.ok) {
+          this.deps.log(`room ${this.code}: bot move refused: ${JSON.stringify(r)}`);
+          if ("rejected" in r) return this.botFallback(state);
+        }
+        return r;
+      }
+      return this.botFallback(state);
+    }).catch((e: unknown) => {
+      this.deps.log(
+        `room ${this.code}: bot failed: ${e instanceof Error ? (e.stack ?? e.message) : String(e)}`,
+      );
+      return fail("internal", "bot failed");
+    });
+  }
+
+  /** A bot had no usable move: let the engine resolve the wait, but only if no human is awaited. */
+  private async botFallback(state: GameState): Promise<ServiceResult> {
+    if (!this.botsOnly(state)) return OK;
+    this.deps.log(`room ${this.code}: bot stalled in ${state.phase.kind}; using timeout`);
+    return this.commit({ type: "timeout" }, this.deps.now());
   }
 
   private schedule(ms: number): void {
@@ -673,6 +866,7 @@ export class Room {
   // ---- messages
 
   roomState(): Outgoing {
+    const avatars = resolveAvatars(this.meta.seats);
     return {
       type: "roomState",
       payload: {
@@ -682,7 +876,9 @@ export class Room {
         seats: this.meta.seats.map((s, seat) => ({
           seat,
           name: s.name,
-          connected: this.conns[seat] != null,
+          avatar: avatars[seat] as AvatarId,
+          connected: s.bot === true || this.conns[seat] != null,
+          bot: s.bot === true,
         })),
         pausedAt: this.meta.status === "paused" ? (this.meta.pausedAt ?? null) : null,
         result: this.meta.result ?? null,

@@ -1,5 +1,5 @@
 // Seat display names from the room store (fallback "Seat N").
-import type { SeatInfo } from "@hexfall/protocol";
+import type { AvatarId, SeatInfo } from "@hexfall/protocol";
 import { useMemo } from "react";
 import { useTranslation } from "react-i18next";
 import type { Names } from "../game/describe.ts";
@@ -23,5 +23,14 @@ export function useConnected(): (seat: number) => boolean {
   return useMemo(() => {
     const m = new Map(seats.map((s) => [s.seat, s.connected]));
     return (seat: number) => m.get(seat) ?? true;
+  }, [seats]);
+}
+
+/** A seat's avatar id from the room store (undefined when the seat is not listed). */
+export function useAvatars(): (seat: number) => AvatarId | undefined {
+  const seats = useRoomStore((s) => s.seats);
+  return useMemo(() => {
+    const m = new Map(seats.map((s) => [s.seat, s.avatar]));
+    return (seat: number) => m.get(seat);
   }, [seats]);
 }

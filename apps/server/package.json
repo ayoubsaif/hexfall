@@ -10,6 +10,7 @@
     "test": "vp test run"
   },
   "dependencies": {
+    "@hexfall/bots": "workspace:*",
     "@hexfall/engine": "workspace:*",
     "@hexfall/protocol": "workspace:*",
     "ioredis": "^5",

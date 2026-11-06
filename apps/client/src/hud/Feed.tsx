@@ -2,6 +2,7 @@
 import { useEffect, useLayoutEffect, useRef, useState } from "react";
 import { useTranslation } from "react-i18next";
 import { Button } from "@/components/ui/button.tsx";
+import { SeatAvatar } from "./Avatar.tsx";
 import { Card } from "@/components/ui/card.tsx";
 import { Dialog, DialogContent } from "@/components/ui/dialog.tsx";
 import { seatColor, seatColorName } from "../game/colors.ts";
@@ -33,7 +34,7 @@ export function EventLog() {
   }, [log]);
 
   return (
-    <Card aria-label={t("dialogs.feed.log")} className="flex max-h-full min-h-0 flex-col p-1.5">
+    <Card aria-label={t("dialogs.feed.log")} className="flex max-h-full min-h-0 flex-col p-3.5">
       <ol
         ref={ref}
         className="m-0 max-h-full min-h-0 flex-1 list-none overflow-y-auto px-1 py-0"
@@ -82,7 +83,7 @@ export function useEventToasts(): void {
         const names = namesFrom(useRoomStore.getState().seats, t);
         s.lastEvents.forEach((e, i) => {
           const toast = toastFor(e, viewer, names, t, s.lastEvents[i + 1]);
-          if (toast) pushToast(toast.text, toast.tone);
+          if (toast) pushToast(toast.text, toast.tone, undefined, toast.seat);
         });
       }),
     [],
@@ -94,14 +95,15 @@ export function Toasts() {
   useEventToasts();
   const toasts = useUiStore((s) => s.toasts);
   return (
-    <div className="flex flex-col items-center gap-1.5" aria-live="polite" role="status">
+    <div className="flex flex-col items-end gap-1.5" aria-live="polite" role="status">
       {toasts.map((t) => (
         <div
           key={t.id}
           data-testid="toast"
           data-tone={t.tone}
-          className="pointer-events-auto flex animate-fade-in items-center gap-2 rounded-xl border-l-4 border-transparent paper px-3 py-2 backdrop-blur-sm data-[tone=bad]:border-bad data-[tone=good]:border-ok data-[tone=info]:border-wait"
+          className="pointer-events-auto flex animate-fade-in items-center gap-2 rounded-none border-l-4 border-transparent paper px-3 py-2 backdrop-blur-sm data-[tone=bad]:border-bad data-[tone=good]:border-ok data-[tone=info]:border-wait"
         >
+          {t.seat !== undefined && <SeatAvatar seat={t.seat} size="sm" />}
           <span>{t.text}</span>
           <DismissButton onClick={() => dismissToast(t.id)} />
         </div>
@@ -143,7 +145,7 @@ export function Rejection() {
     <div
       role="alert"
       data-interactive
-      className="pointer-events-auto flex animate-fade-in items-center gap-2 rounded-xl border border-bad paper px-3 py-2 backdrop-blur-sm"
+      className="pointer-events-auto flex animate-fade-in items-center gap-2 rounded-none border border-bad paper px-3 py-2 backdrop-blur-sm"
     >
       <span>{ruleErrorText(rejection.code, rejection.message, t)}</span>
       <code className="text-[11px] text-muted-foreground">{rejection.code}</code>

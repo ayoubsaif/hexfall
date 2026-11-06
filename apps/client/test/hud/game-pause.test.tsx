@@ -174,6 +174,7 @@ describe("saved games list", () => {
     seat: 1,
     host: 0,
     names: ["Ana", "Ben", "Cy"],
+    bots: [false, false, false],
     turn: status === "lobby" ? null : 12,
     pausedAt: status === "paused" ? 1 : null,
     expiresAt: status === "paused" ? 2_000_000 : 9,

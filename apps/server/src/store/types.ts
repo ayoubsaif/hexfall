@@ -16,6 +16,10 @@ export interface StoredSeat {
   name: string;
   /** SHA-256 hex of the seat token. The token itself is never stored. */
   tokenHash: string;
+  /** A bot seat: driven by the server, its tokenHash matches no real token. */
+  bot?: true;
+  /** Avatar catalog id; absent in games saved before avatars (resolved by index on load). */
+  avatar?: string;
 }
 
 export interface GameConfigRecord {

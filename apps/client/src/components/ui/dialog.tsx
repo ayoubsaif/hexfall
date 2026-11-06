@@ -33,7 +33,7 @@ export function DialogContent({
       <DialogPrimitive.Content
         data-interactive
         className={cn(
-          "pointer-events-auto fixed top-1/2 left-1/2 z-50 max-h-[calc(100%-32px)] w-[min(380px,calc(100%-32px))] -translate-x-1/2 -translate-y-1/2 frame paper overflow-auto rounded-xl p-5 text-foreground outline-none data-[state=open]:animate-dialog-in",
+          "pointer-events-auto fixed top-1/2 left-1/2 z-50 max-h-[calc(100%-32px)] w-[min(380px,calc(100%-32px))] -translate-x-1/2 -translate-y-1/2 frame frame-brass paper overflow-auto rounded-none p-6 text-foreground outline-none data-[state=open]:animate-dialog-in",
           className,
         )}
         {...(description === undefined ? { "aria-describedby": undefined } : {})}

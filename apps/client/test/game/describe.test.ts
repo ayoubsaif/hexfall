@@ -97,6 +97,7 @@ suite("toastFor", () => {
     expect(toastFor(SAMPLES.turnStarted, 1, names, tEn)).toEqual({
       text: "Your turn",
       tone: "good",
+      seat: 1,
     });
     expect(toastFor(SAMPLES.turnStarted, 0, names, tEn)).toBeNull();
   });
@@ -107,6 +108,7 @@ suite("toastFor", () => {
     expect(toastFor({ ...SAMPLES.stole, resource: "brick" }, 1, names, tEn)).toEqual({
       text: "Ana stole 1 brick from you",
       tone: "bad",
+      seat: 0,
     });
     expect(toastFor({ ...SAMPLES.stole, resource: "brick" }, 0, names, tEn)?.tone).toBe("good");
     expect(toastFor(SAMPLES.stole, 2, names, tEn)).toBeNull();

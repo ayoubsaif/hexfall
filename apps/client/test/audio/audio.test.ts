@@ -120,7 +120,14 @@ describe("audio engine (specs/game-audio)", () => {
 
 describe("prefs (specs/game-audio 'Mute setting')", () => {
   it("defaults to sound on, notifications off, 60 % volume, system motion", () => {
-    expect(readPrefs(null)).toEqual({ sound: true, notify: false, volume: 0.6, motion: "system", wheel: "auto" });
+    expect(readPrefs(null)).toEqual({
+      sound: true,
+      notify: false,
+      volume: 0.6,
+      motion: "system",
+      wheel: "auto",
+      avatar: null,
+    });
   });
 
   it("keeps sound and notify from an old record and defaults the new fields", () => {
@@ -134,6 +141,7 @@ describe("prefs (specs/game-audio 'Mute setting')", () => {
       volume: 0.6,
       motion: "system",
       wheel: "auto",
+      avatar: null,
     });
   });
 
@@ -145,6 +153,7 @@ describe("prefs (specs/game-audio 'Mute setting')", () => {
       volume: 0.35,
       motion: "reduce",
       wheel: "auto",
+      avatar: null,
     });
     expect(readPrefs(record({ volume: "loud", motion: "fast" }))).toEqual(DEFAULT_PREFS);
     expect(readPrefs(record({ volume: 7 })).volume).toBe(1);
@@ -158,7 +167,14 @@ describe("prefs (specs/game-audio 'Mute setting')", () => {
       getItem: (k: string) => data.get(k) ?? null,
       setItem: (k: string, v: string) => void data.set(k, v),
     };
-    const saved = { sound: false, notify: true, volume: 0.35, motion: "full", wheel: "auto" } as const;
+    const saved = {
+      sound: false,
+      notify: true,
+      volume: 0.35,
+      motion: "full",
+      wheel: "auto",
+      avatar: "farmer",
+    } as const;
     writePrefs(saved, storage);
     expect(readPrefs(storage)).toEqual(saved);
     data.set(PREFS_STORAGE_KEY, "{bad json");

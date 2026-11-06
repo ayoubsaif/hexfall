@@ -12,7 +12,7 @@ import {
   type GameState,
   type Seat,
 } from "@hexfall/engine";
-import { PROTOCOL_VERSION } from "@hexfall/protocol";
+import { AVATAR_IDS, PROTOCOL_VERSION, type AvatarId } from "@hexfall/protocol";
 import { act, createElement, Fragment } from "react";
 import { afterEach, beforeEach, describe, expect, it } from "vite-plus/test";
 import { currentPick } from "../../src/game/pick.ts";
@@ -97,7 +97,13 @@ class FakeServer {
       room: ROOM,
       status: "playing",
       host: 0,
-      seats: ["Ana", "Ben", "Cy"].map((name, seat) => ({ seat, name, connected: true })),
+      seats: ["Ana", "Ben", "Cy"].map((name, seat) => ({
+        seat,
+        name,
+        connected: true,
+        bot: false,
+        avatar: AVATAR_IDS[seat] as AvatarId,
+      })),
       pausedAt: null,
       result: null,
     });
