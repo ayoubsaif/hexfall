@@ -14,6 +14,7 @@ import { DEFAULT_DOCK, hudLayout, setDiceDock } from "../store/dock.ts";
 import { useRoomStore } from "../store/room.ts";
 import { type LogTab, setLogTab, useUiStore } from "../store/ui.ts";
 import { SettingsButton, SettingsHost } from "../settings/SettingsButton.tsx";
+import { ViewControls } from "./ViewControls.tsx";
 import { GameAlerts } from "./GameAlerts.tsx";
 import {
   ActionButtons,
@@ -51,7 +52,7 @@ const DOT: Record<ConnectionStatus, string> = {
   replaced: "bg-wait",
 };
 
-/** Small pill, top right. Static dot: no HUD element animates continuously. */
+/** Small pill in the bottom control cluster. Static dot: no HUD element animates continuously. */
 function ConnectionBadge() {
   const { t } = useTranslation();
   const status = useConnectionStore((s) => s.status);
@@ -60,7 +61,7 @@ function ConnectionBadge() {
   const showPing = status === "open" && latencyMs !== null;
   return (
     <div
-      className="absolute top-3 right-3 flex items-center gap-2 rounded-full bg-hud px-3 py-1.5 text-xs shadow-lg shadow-black/25 backdrop-blur-md max-sm:top-2 max-sm:right-2 short:top-2 short:right-2"
+      className="pointer-events-auto flex items-center gap-2 rounded-full paper px-3 py-1.5 text-xs backdrop-blur-sm"
       data-status={status}
       role="status"
       aria-live="polite"
@@ -68,7 +69,7 @@ function ConnectionBadge() {
       <span className={cn("size-2 rounded-full", DOT[status])} aria-hidden="true" />
       <span data-testid="connection-status">{t(`session.hud.connection.${status}`)}</span>
       {showPing && (
-        <span data-testid="connection-ping" className="text-muted-foreground tabular-nums">
+        <span data-testid="connection-ping" className="text-muted-foreground tabular-nums max-sm:hidden">
           {Math.round(latencyMs)} ms
         </span>
       )}
@@ -87,7 +88,7 @@ export function ReloadBanner() {
   if (!mismatch) return null;
   return (
     <div
-      className="pointer-events-auto absolute top-14 left-1/2 z-30 flex max-w-[calc(100%-32px)] -translate-x-1/2 items-center gap-3.5 rounded-xl border border-primary bg-hud px-4 py-2.5 text-sm backdrop-blur-md"
+      className="pointer-events-auto absolute top-14 left-1/2 z-30 flex max-w-[calc(100%-32px)] -translate-x-1/2 items-center gap-3.5 rounded-xl border border-primary paper px-4 py-2.5 text-sm backdrop-blur-md"
       role="alert"
     >
       <span>{t("session.hud.newVersion")}</span>
@@ -151,38 +152,45 @@ function useHudLayout(corner: HTMLElement | null) {
   return { setHand, setCluster };
 }
 
+/** The "Log" button (top-left) and its drawer (Log and Dice tabs). */
+function LogDrawer() {
+  const { t } = useTranslation();
+  return (
+    <Sheet>
+      <SheetTrigger asChild>
+        <Button
+          size="sm"
+          variant="secondary"
+          className="absolute top-3 left-3 z-20 paper backdrop-blur-md max-sm:top-2 max-sm:left-2 short:top-2 short:left-2"
+        >
+          <ScrollText aria-hidden="true" />
+          {t("session.hud.log")}
+        </Button>
+      </SheetTrigger>
+      <SheetContent title={t("session.hud.eventLog")} side="right">
+        <LogTabs />
+      </SheetContent>
+    </Sheet>
+  );
+}
+
 /**
  * In-game HUD (specs/hud-presentation "Responsive HUD layout"; design decisions 6, 7 and 9):
  * - the hand peeks from the bottom edge at the center, with no panel;
  * - the floating action buttons sit at the bottom-right, above the raised hand;
  * - the status pill floats above the hand;
- * - the event log opens as a drawer from the "Log" toggle in every layout, with Log and Dice
- *   tabs (game-hud "Log drawer tabs");
+ * - the event log opens as a drawer from the "Log" button at the top-left, with Log and Dice
+ *   tabs (game-hud "Log drawer tabs"); every other control sits in the bottom-left cluster;
  * - tablet, mobile and short screens get compact panels.
  */
 function GameHud({ corner }: { corner: HTMLElement | null }) {
-  const { t } = useTranslation();
   const { setHand, setCluster } = useHudLayout(corner);
   return (
     <>
-      <div className="absolute top-3 right-[170px] left-3 pt-11 desktop:right-[400px] max-lg:right-[150px] max-sm:top-2 max-sm:right-2 max-sm:left-2 short:top-2 short:right-2 short:left-2 landscape:right-[150px]! landscape:left-[88px]! landscape:pt-0!">
+      <LogDrawer />
+      <div className="absolute top-3 right-3 left-3 pt-11 desktop:right-[400px] max-sm:top-2 max-sm:right-2 max-sm:left-2 short:top-2 short:right-2 short:left-2 landscape:right-3! landscape:left-[88px]! landscape:pt-0!">
         <PlayerPanels />
       </div>
-      <Sheet>
-        <SheetTrigger asChild>
-          <Button
-            size="sm"
-            variant="secondary"
-            className="absolute top-3 left-3 z-20 bg-hud backdrop-blur-md max-sm:top-2 max-sm:left-2 short:top-2 short:left-2"
-          >
-            <ScrollText aria-hidden="true" />
-            {t("session.hud.log")}
-          </Button>
-        </SheetTrigger>
-        <SheetContent title={t("session.hud.eventLog")} side="right">
-          <LogTabs />
-        </SheetContent>
-      </Sheet>
       <Hand ref={setHand} />
       <StatusPill />
       <div
@@ -242,21 +250,22 @@ export function Hud() {
           className="hud absolute inset-0 z-10 overflow-clip text-[13px] text-hud-fg"
           ref={setRoot}
         >
-          <ConnectionBadge />
           <ReloadBanner />
           <div
             ref={setCorner}
             className={cn(
               "absolute left-3 flex gap-2 max-sm:left-2 short:left-2",
               inGame
-                ? // In a game: on desktop the controls join the top bar (left of the connection
-                  // badge); elsewhere they stack at the left, just above the raised hand.
-                  "bottom-[calc(var(--hand-h,72px)_+_12px)] flex-col items-start desktop:top-3 desktop:right-[170px] desktop:bottom-auto desktop:left-auto desktop:flex-row desktop:items-center"
-                : "bottom-[max(12px,env(safe-area-inset-bottom))] items-center max-sm:bottom-2 short:bottom-2",
+                ? // In a game the controls (all but Log) sit in the bottom-left corner beside the
+                  // hand; portrait phones stack them in a column above the raised hand.
+                  "bottom-[max(12px,env(safe-area-inset-bottom))] max-w-[calc(100%-200px)] flex-wrap items-center max-sm:bottom-[calc(var(--hand-h,72px)_+_12px)] max-sm:flex-col max-sm:items-start portrait:bottom-[calc(var(--hand-h,72px)_+_12px)] portrait:flex-col portrait:items-start desktop:bottom-[max(12px,env(safe-area-inset-bottom))] desktop:flex-row desktop:items-center"
+                : "bottom-[max(12px,env(safe-area-inset-bottom))] flex-wrap items-center max-sm:bottom-2 short:bottom-2",
             )}
           >
             <SettingsButton />
+            {inGame && <ViewControls />}
             {inGame && <HostGameMenu />}
+            <ConnectionBadge />
           </div>
           {room === null && <StartScreen />}
           {room !== null && status === "lobby" && <Lobby />}

@@ -26,13 +26,13 @@ export function SheetContent({
     <DialogPrimitive.Portal container={container}>
       <DialogPrimitive.Overlay
         data-interactive
-        className="pointer-events-auto fixed inset-0 z-40 bg-black/30 data-[state=open]:animate-fade-in"
+        className="pointer-events-auto fixed inset-0 z-40 bg-black/45 data-[state=open]:animate-fade-in"
       />
       <DialogPrimitive.Content
         data-interactive
         aria-describedby={undefined}
         className={cn(
-          "pointer-events-auto fixed z-50 flex flex-col gap-2 bg-hud-solid/95 p-3 text-foreground shadow-xl shadow-black/40 backdrop-blur-md outline-none",
+          "pointer-events-auto fixed z-50 flex flex-col gap-2 paper p-3 text-foreground outline-none",
           side === "right"
             ? "inset-y-0 right-0 w-[min(340px,88vw)] data-[state=open]:animate-sheet-in-right"
             : "inset-x-0 bottom-0 max-h-[70vh] rounded-t-xl data-[state=open]:animate-sheet-in-bottom",
@@ -41,10 +41,12 @@ export function SheetContent({
         {...props}
       >
         <div className="flex items-center justify-between gap-2">
-          <DialogPrimitive.Title className="text-sm font-semibold">{title}</DialogPrimitive.Title>
+          <DialogPrimitive.Title className="font-serif text-lg font-semibold">
+            {title}
+          </DialogPrimitive.Title>
           <DialogPrimitive.Close
             aria-label={t("session.ui.close")}
-            className="inline-flex size-10 shrink-0 items-center justify-center rounded-md text-muted-foreground outline-none hover:bg-white/10 hover:text-foreground focus-visible:ring-2 focus-visible:ring-ring"
+            className="inline-flex size-10 shrink-0 cursor-pointer items-center justify-center rounded-md text-muted-foreground outline-none hover:bg-ink/10 hover:text-foreground focus-visible:ring-2 focus-visible:ring-ring"
           >
             <X className="size-4" aria-hidden="true" />
           </DialogPrimitive.Close>

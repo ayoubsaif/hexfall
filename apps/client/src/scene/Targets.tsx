@@ -1,11 +1,12 @@
 // Legal-move highlights and hit areas for the current pick (specs/board-interaction,
 // "Legal target highlights", "Picking sends one action", "Robber move and victim choice").
 // Only legal targets get meshes, so illegal spots can never react to the pointer.
-import { type ThreeEvent, useThree } from "@react-three/fiber";
+import type { ThreeEvent } from "@react-three/fiber";
 import { useEffect, useMemo, useState } from "react";
 import { currentPick } from "../game/pick.ts";
 import { act } from "../net/actions.ts";
 import { useConnectionStore } from "../store/connection.ts";
+import { setOverTarget } from "../store/cursor.ts";
 import { useGameStore } from "../store/game.ts";
 import { chooseBuild, setVictimHex, useUiStore } from "../store/ui.ts";
 import { useLandRelief } from "../theme/index.ts";
@@ -83,7 +84,6 @@ export function Targets() {
   const build = useUiStore((s) => s.build);
   const victimHex = useUiStore((s) => s.victimHex);
   const relief = useLandRelief();
-  const gl = useThree((s) => s.gl);
 
   const pick = useMemo(
     () => currentPick({ view, legal, build, inFlight, victimHex }),
@@ -92,15 +92,12 @@ export function Targets() {
   const items = useMemo(() => targetLayout(pick, relief), [pick, relief]);
   const [hovered, setHovered] = useState<number | null>(null);
 
-  // Forget a hover whose target went away, and show the pointer cursor while hovering.
+  // Forget a hover whose target went away, and tell the canvas cursor owner (store/cursor.ts).
   const hoverLive = hovered !== null && items.some((i) => i.id === hovered);
   useEffect(() => {
-    const el = gl.domElement;
-    el.style.cursor = hoverLive ? "pointer" : "";
-    return () => {
-      el.style.cursor = "";
-    };
-  }, [hoverLive, gl]);
+    setOverTarget(hoverLive);
+    return () => setOverTarget(false);
+  }, [hoverLive]);
 
   if (!pick) return null;
 

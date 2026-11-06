@@ -2,7 +2,12 @@
 // pick targets, the board dice and camera controls.
 import { beginnerBoard } from "@hexfall/engine/geometry";
 import { OrbitControls } from "@react-three/drei";
-import { useMemo } from "react";
+import { useThree } from "@react-three/fiber";
+import { useEffect, useMemo } from "react";
+import { CameraRig } from "./CameraRig.tsx";
+import { Water } from "./Water.tsx";
+import { boardLayout } from "./layout.ts";
+import { resolveCursor, setCameraDragging, useCursorStore } from "../store/cursor.ts";
 import { useGameStore } from "../store/game.ts";
 import { ISO_ELEVATION_DEG, useLandRelief } from "../theme/index.ts";
 import { BoardView } from "./BoardView.tsx";
@@ -13,7 +18,7 @@ import { Targets } from "./Targets.tsx";
 import { useFitCamera } from "./useFitCamera.ts";
 
 /** The live game when the server delivered one, else the beginner preview (board-view "Preview board"). */
-function GameBoard({ tableY }: { tableY: number }) {
+function GameBoard() {
   // Preview until the server delivers a game. Built inside the component so that merely
   // importing Scene never runs board code.
   const previewBoard = useMemo(() => beginnerBoard(), []);
@@ -37,21 +42,42 @@ function GameBoard({ tableY }: { tableY: number }) {
       />
       <Pieces view={view} />
       <Targets />
-      <BoardDice floorY={tableY} />
+      {/* Land tops are at y = 0 in flat and raised relief (raised lowers the sea). */}
+      <BoardDice floorY={0} />
     </>
   );
 }
 
-const SEA_COLOR = "#2f6f8f";
 /** Max camera turn left/right from the art's view when tiles are isometric (radians). */
-const ISO_AZIMUTH_LIMIT = (25 * Math.PI) / 180;
+const ISO_AZIMUTH_LIMIT = (50 * Math.PI) / 180;
+
+/** Owns the canvas cursor: grab / grabbing / pointer (store/cursor.ts). */
+function useCanvasCursor() {
+  const el = useThree((s) => s.gl.domElement);
+  const cursor = useCursorStore(resolveCursor);
+  useEffect(() => {
+    el.style.cursor = cursor;
+  }, [el, cursor]);
+  useEffect(
+    () => () => {
+      el.style.cursor = "";
+      setCameraDragging(false);
+    },
+    [el],
+  );
+}
 
 export function Scene() {
+  useCanvasCursor();
   // Isometric tile art is painted for one view: start there and allow only a small turn.
   const relief = useLandRelief();
-  const fit = useFitCamera(relief.raised ? (ISO_ELEVATION_DEG * Math.PI) / 180 : undefined);
-  const turn = relief.raised ? ISO_AZIMUTH_LIMIT : Infinity;
-  // The sea plane doubles as the table the dice land on.
+  const fit = useFitCamera(relief.isometric ? (ISO_ELEVATION_DEG * Math.PI) / 180 : undefined);
+  const turn = relief.isometric ? ISO_AZIMUTH_LIMIT : Infinity;
+  // Land hex centers do not depend on the terrain shuffle, so the preview board gives them.
+  const landCenters = useMemo(
+    () => boardLayout(beginnerBoard()).tiles.map((t) => t.position),
+    [],
+  );
   const tableY = relief.seaLevel - 0.02;
   return (
     <>
@@ -66,17 +92,20 @@ export function Scene() {
         shadow-camera-top={10}
         shadow-camera-bottom={-10}
       />
-      <mesh rotation={[-Math.PI / 2, 0, 0]} position={[0, tableY, 0]} receiveShadow>
-        <planeGeometry args={[200, 200]} />
-        <meshStandardMaterial color={SEA_COLOR} roughness={1} />
-      </mesh>
+      <Water land={landCenters} y={tableY} />
 
-      <GameBoard tableY={tableY} />
+      <GameBoard />
 
+      <CameraRig
+        distance={fit}
+        {...(relief.isometric ? { elevation: (ISO_ELEVATION_DEG * Math.PI) / 180 } : {})}
+      />
       <OrbitControls
         makeDefault
+        onStart={() => setCameraDragging(true)}
+        onEnd={() => setCameraDragging(false)}
         target={[0, 0, 0]}
-        maxPolarAngle={Math.PI / 2.2}
+        maxPolarAngle={Math.PI / 2.05}
         minAzimuthAngle={-turn}
         maxAzimuthAngle={turn}
         minDistance={fit * 0.45}

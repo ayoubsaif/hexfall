@@ -5,15 +5,17 @@ import type { ComponentProps } from "react";
 import { cn } from "@/lib/utils.ts";
 
 export const buttonVariants = cva(
-  "pointer-events-auto inline-flex shrink-0 cursor-pointer items-center justify-center gap-1.5 rounded-md font-semibold whitespace-nowrap transition-[filter,background-color,opacity] duration-150 outline-none focus-visible:ring-2 focus-visible:ring-ring disabled:pointer-events-none disabled:opacity-50 [&_svg]:size-4 [&_svg]:shrink-0",
+  "pointer-events-auto inline-flex shrink-0 cursor-pointer items-center justify-center gap-1.5 rounded-md font-semibold whitespace-nowrap transition-[filter,background-color,opacity] duration-150 outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 focus-visible:ring-offset-paper disabled:cursor-not-allowed disabled:opacity-50 [&_svg]:size-4 [&_svg]:shrink-0",
   {
     variants: {
       variant: {
-        default: "bg-primary text-primary-foreground hover:brightness-110",
-        secondary: "bg-white/10 text-foreground hover:bg-white/15",
-        ghost: "bg-transparent text-muted-foreground hover:bg-white/10 hover:text-foreground",
-        link: "bg-transparent p-0 text-primary underline underline-offset-2",
-        destructive: "bg-bad text-accent-fg hover:brightness-110",
+        default:
+          "border border-gold bg-linear-to-b from-[#6b4228] to-leather font-serif text-[1.05em] tracking-wide text-cream shadow-[inset_0_1px_0_rgb(255_235_200/25%),0_2px_0_rgb(0_0_0/30%)] hover:brightness-125",
+        secondary:
+          "frame border border-gold/60 bg-cream/60 text-foreground hover:bg-cream/90 aria-pressed:border-forest aria-pressed:bg-forest aria-pressed:text-cream data-[selected]:border-forest data-[selected]:bg-forest data-[selected]:text-cream",
+        ghost: "bg-transparent text-muted-foreground hover:bg-ink/10 hover:text-foreground",
+        link: "bg-transparent p-0 text-forest underline underline-offset-2",
+        destructive: "bg-bad text-cream hover:brightness-110",
       },
       size: {
         default: "min-h-9 px-3.5 py-1.5 text-sm max-sm:min-h-10 short:min-h-10",

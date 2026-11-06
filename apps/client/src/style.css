@@ -5,27 +5,65 @@
  * utilities (bg-hud, text-hud-fg, bg-res-brick, animate-card-in, ...); `static` emits every
  * token as a CSS variable so plain CSS can use them too.
  */
+
+/* Self-hosted variable fonts (design decision 2): same origin, no third-party request. */
+@font-face {
+  font-family: "Cormorant Garamond Variable";
+  font-style: normal;
+  font-weight: 300 700;
+  font-display: swap;
+  src: url("/fonts/cormorant-garamond-latin-wght-normal.woff2") format("woff2-variations");
+  unicode-range:
+    U+0000-00FF, U+0131, U+0152-0153, U+02BB-02BC, U+02C6, U+02DA, U+02DC, U+2000-206F, U+20AC,
+    U+2122;
+}
+@font-face {
+  font-family: "Cormorant Garamond Variable";
+  font-style: normal;
+  font-weight: 300 700;
+  font-display: swap;
+  src: url("/fonts/cormorant-garamond-latin-ext-wght-normal.woff2") format("woff2-variations");
+  unicode-range:
+    U+0100-02BA, U+02BD-02C5, U+02C7-02CC, U+02CE-02D7, U+02DD-02FF, U+1E00-1EFF, U+2020,
+    U+20A0-20AB, U+20AD-20C0;
+}
+
 @theme static {
-  --font-sans: system-ui, -apple-system, "Segoe UI", Roboto, sans-serif;
+  /* One typeface for the whole app: the same Cormorant Garamond the buttons use. */
+  --font-sans:
+    "Cormorant Garamond Variable", "Cormorant Garamond", Georgia, "Times New Roman", serif;
+  --font-serif:
+    "Cormorant Garamond Variable", "Cormorant Garamond", Georgia, "Times New Roman", serif;
 
-  --color-hud: rgb(10 22 32 / 72%);
-  --color-hud-solid: #0f2230;
-  --color-hud-fg: #e9efe6;
-  --color-hud-muted: #9fb3b8;
-  --color-ok: #6fd08c;
-  --color-wait: #f0c35a;
-  --color-bad: #e8695c;
-  --color-accent: #f2a65a;
-  --color-accent-fg: #1d1408;
+  /* Parchment palette (openspec settlecoast-parchment-ui, design decision 1). */
+  --color-paper: #ecdcbc;
+  --color-paper-deep: #dcc79f;
+  --color-ink: #2b3f38;
+  --color-ink-muted: #46523f;
+  --color-forest: #2f5a43;
+  --color-leather: #4a2c1a;
+  --color-gold: #876235;
+  --color-cream: #f7edd5;
 
-  /* shadcn/ui names, mapped onto the Hexfall palette. */
+  /* Existing HUD names re-pointed at the palette so untouched components follow. */
+  --color-hud: rgb(236 220 188 / 93%);
+  --color-hud-solid: var(--color-paper);
+  --color-hud-fg: var(--color-ink);
+  --color-hud-muted: var(--color-ink-muted);
+  --color-ok: #17593a;
+  --color-wait: #6f4505;
+  --color-bad: #8f2b21;
+  --color-accent: var(--color-leather);
+  --color-accent-fg: var(--color-cream);
+
+  /* shadcn/ui names, mapped onto the parchment palette. */
   --color-background: var(--color-hud-solid);
   --color-foreground: var(--color-hud-fg);
   --color-primary: var(--color-accent);
   --color-primary-foreground: var(--color-accent-fg);
   --color-muted-foreground: var(--color-hud-muted);
-  --color-border: rgb(255 255 255 / 14%);
-  --color-ring: var(--color-hud-fg);
+  --color-border: rgb(135 98 53 / 45%);
+  --color-ring: var(--color-forest);
 
   /* Resource card frames (tuned for 4.5:1 against the card label). */
   --color-res-brick: #a8472a;
@@ -129,13 +167,19 @@
 }
 
 :root {
-  font-family: system-ui, -apple-system, "Segoe UI", Roboto, sans-serif;
+  font-family: var(--font-sans);
+  /* Button weight and tracking everywhere; font-size-adjust keeps small text as legible as a
+     sans (Cormorant has a small x-height). */
+  font-weight: 600;
+  letter-spacing: 0.01em;
+  font-size-adjust: 0.5;
+  color: var(--color-ink);
   /* shadcn sidebar (settings dialog), mapped to the HUD palette. */
   --sidebar: transparent;
   --sidebar-foreground: var(--color-hud-fg);
   --sidebar-primary: var(--color-accent);
   --sidebar-primary-foreground: var(--color-accent-fg);
-  --sidebar-accent: rgb(255 255 255 / 10%);
+  --sidebar-accent: rgb(74 44 26 / 10%);
   --sidebar-accent-foreground: var(--color-hud-fg);
   --sidebar-border: var(--color-border);
   --sidebar-ring: var(--color-ring);
@@ -145,7 +189,7 @@ body,
 #root {
   margin: 0;
   height: 100%;
-  background: #060e14;
+  background: #0c1a1c;
 }
 .app {
   position: relative;
@@ -159,69 +203,51 @@ body,
   inset: 0;
 }
 
-/* Aurora ambient blobs — two pseudo-elements on .app.                    */
-/* Softness from gradient falloff, not filter:blur() — zero repaint cost. */
-/* Transform-only keyframes run on the compositor thread.                  */
-.app::before,
-.app::after {
+/* Static vignette behind the canvas (design decision 8): no filters, no animation. */
+.app {
+  background:
+    radial-gradient(ellipse at 50% 45%, rgb(31 79 88 / 55%) 0%, transparent 70%),
+    radial-gradient(ellipse at 50% 50%, transparent 55%, rgb(12 22 20 / 70%) 100%);
+}
+
+/* Paper surface and corner brackets (design decisions 3 and 4): CSS only, no images. */
+.paper {
+  background-color: var(--color-hud);
+  background-image:
+    url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='120' height='120'%3E%3Cfilter id='n'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='.8' numOctaves='2' stitchTiles='stitch'/%3E%3CfeColorMatrix values='0 0 0 0 .45 0 0 0 0 .33 0 0 0 0 .15 0 0 0 .09 0'/%3E%3C/filter%3E%3Crect width='120' height='120' filter='url(%23n)'/%3E%3C/svg%3E"),
+    radial-gradient(ellipse at 50% 0%, rgb(255 250 235 / 55%), transparent 70%);
+  box-shadow:
+    inset 0 0 0 1px rgb(135 98 53 / 55%),
+    inset 0 0 0 4px rgb(236 220 188 / 90%),
+    inset 0 0 0 5px rgb(135 98 53 / 25%),
+    0 10px 28px rgb(0 0 0 / 35%);
+}
+.paper-solid {
+  background-color: var(--color-paper);
+}
+.frame {
+  --frame-c: var(--color-leather);
+  --frame-s: 14px;
+}
+.frame:where(:not(.absolute, .fixed)) {
+  position: relative;
+}
+/* Pseudo-element so the brackets never replace a surface's own background. */
+.frame::before {
   content: "";
   position: absolute;
-  border-radius: 50%;
+  inset: 3px;
   pointer-events: none;
-}
-/* Top-left: ocean teal + forest green */
-.app::before {
-  width: 75vmin;
-  height: 75vmin;
-  top: -15%;
-  left: -10%;
   background:
-    radial-gradient(
-      ellipse at 38% 42%,
-      color-mix(in srgb, var(--color-hud-muted) 13%, transparent) 0%,
-      transparent 68%
-    ),
-    radial-gradient(
-      ellipse at 62% 28%,
-      color-mix(in srgb, var(--color-ok) 9%, transparent) 0%,
-      transparent 62%
-    );
-  animation: aurora-a 24s ease-in-out infinite alternate;
-}
-/* Bottom-right: grain amber + brick red */
-.app::after {
-  width: 65vmin;
-  height: 65vmin;
-  bottom: -15%;
-  right: -10%;
-  background:
-    radial-gradient(
-      ellipse at 48% 52%,
-      color-mix(in srgb, var(--color-wait) 10%, transparent) 0%,
-      transparent 62%
-    ),
-    radial-gradient(
-      ellipse at 28% 32%,
-      color-mix(in srgb, var(--color-bad) 8%, transparent) 0%,
-      transparent 55%
-    );
-  animation: aurora-b 19s ease-in-out infinite alternate;
-}
-@keyframes aurora-a {
-  from {
-    transform: translate(0, 0);
-  }
-  to {
-    transform: translate(10%, 14%);
-  }
-}
-@keyframes aurora-b {
-  from {
-    transform: translate(0, 0);
-  }
-  to {
-    transform: translate(-12%, -10%);
-  }
+    linear-gradient(var(--frame-c), var(--frame-c)) 0 0 / var(--frame-s) 2px,
+    linear-gradient(var(--frame-c), var(--frame-c)) 0 0 / 2px var(--frame-s),
+    linear-gradient(var(--frame-c), var(--frame-c)) 100% 0 / var(--frame-s) 2px,
+    linear-gradient(var(--frame-c), var(--frame-c)) 100% 0 / 2px var(--frame-s),
+    linear-gradient(var(--frame-c), var(--frame-c)) 0 100% / var(--frame-s) 2px,
+    linear-gradient(var(--frame-c), var(--frame-c)) 0 100% / 2px var(--frame-s),
+    linear-gradient(var(--frame-c), var(--frame-c)) 100% 100% / var(--frame-s) 2px,
+    linear-gradient(var(--frame-c), var(--frame-c)) 100% 100% / 2px var(--frame-s);
+  background-repeat: no-repeat;
 }
 
 /* HUD: DOM overlay over the canvas. The container ignores the pointer so the board
@@ -236,16 +262,10 @@ body,
   pointer-events: auto;
 }
 
-/* Thin, dark scrollbars for HUD scroll areas (the mobile tray, the log). */
+/* Thin scrollbars for HUD scroll areas (the mobile tray, the log). */
 .hud * {
   scrollbar-width: thin;
   scrollbar-color: color-mix(in srgb, var(--color-hud-fg) 30%, transparent) transparent;
-}
-@media (prefers-reduced-motion: reduce) {
-  .app::before,
-  .app::after {
-    animation: none !important;
-  }
 }
 
 /* Edge hand (openspec floating-hud-turn-timer, design decision 7). Slots overlap instead of
@@ -279,7 +299,7 @@ body,
   position: absolute;
   inset: -12px -40px 0;
   pointer-events: none;
-  background: radial-gradient(ellipse 50% 100% at 50% 100%, rgb(0 0 0 / 45%), transparent);
+  background: radial-gradient(ellipse 50% 100% at 50% 100%, rgb(0 0 0 / 40%), transparent);
 }
 @theme inline {
   --color-sidebar: var(--sidebar);
@@ -290,4 +310,18 @@ body,
   --color-sidebar-accent-foreground: var(--sidebar-accent-foreground);
   --color-sidebar-border: var(--sidebar-border);
   --color-sidebar-ring: var(--sidebar-ring);
+}
+
+/*
+ * Pointer affordances (openspec pointer-affordances): a backstop so any enabled native
+ * interactive element in the HUD shows the pointer, and disabled ones show not-allowed.
+ * Explicit component classes win by specificity where they differ (e.g. informational disabled).
+ */
+@layer base {
+  .hud :where(a[href], button:not(:disabled), [role="button"]:not([aria-disabled="true"]), [role="tab"], [role="menuitem"], [role="option"], summary, label[for], select:not(:disabled)) {
+    cursor: pointer;
+  }
+  .hud :where(button:disabled, [aria-disabled="true"], select:disabled) {
+    cursor: not-allowed;
+  }
 }
