@@ -33,29 +33,32 @@ export function DialogContent({
       <DialogPrimitive.Content
         data-interactive
         className={cn(
-          "pointer-events-auto fixed top-1/2 left-1/2 z-50 max-h-[calc(100%-32px)] w-[min(380px,calc(100%-32px))] -translate-x-1/2 -translate-y-1/2 frame frame-brass paper overflow-auto rounded-none p-6 text-foreground outline-none data-[state=open]:animate-dialog-in",
+          "pointer-events-auto fixed top-1/2 left-1/2 z-50 max-h-[calc(100%-32px)] w-[min(380px,calc(100%-32px))] -translate-x-1/2 -translate-y-1/2 flex flex-col overflow-hidden frame frame-brass frame-corners paper rounded-none text-foreground outline-none data-[state=open]:animate-dialog-in",
           className,
         )}
         {...(description === undefined ? { "aria-describedby": undefined } : {})}
         {...props}
       >
-        <DialogPrimitive.Title
-          className={
-            hideHeader
-              ? "sr-only"
-              : "hud-leather hud-title mb-3 text-center font-serif text-xl font-semibold"
-          }
-        >
-          {title}
-        </DialogPrimitive.Title>
-        {description !== undefined && (
-          <DialogPrimitive.Description
-            className={hideHeader ? "sr-only" : "mb-2 text-xs text-muted-foreground"}
+        {/* Corner plates live on this fixed box; the body scrolls inside it. */}
+        <div className={hideHeader ? "contents" : "min-h-0 flex-1 overflow-auto p-6"}>
+          <DialogPrimitive.Title
+            className={
+              hideHeader
+                ? "sr-only"
+                : "mb-4 border-b border-border pb-3 font-serif text-2xl font-semibold text-forest"
+            }
           >
-            {description}
-          </DialogPrimitive.Description>
-        )}
-        {children}
+            {title}
+          </DialogPrimitive.Title>
+          {description !== undefined && (
+            <DialogPrimitive.Description
+              className={hideHeader ? "sr-only" : "mb-2 text-xs text-muted-foreground"}
+            >
+              {description}
+            </DialogPrimitive.Description>
+          )}
+          {children}
+        </div>
       </DialogPrimitive.Content>
     </DialogPrimitive.Portal>
   );

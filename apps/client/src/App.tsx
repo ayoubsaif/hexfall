@@ -1,13 +1,13 @@
-import { QUALITY, useGraphicsQuality } from "./scene/graphicsQuality.ts";
-import { AdaptiveGraphics } from "./scene/AdaptiveGraphics.tsx";
-import { Canvas } from "@react-three/fiber";
-import { useEffect } from "react";
+import { lazy, Suspense, useEffect } from "react";
 import { Hud } from "./hud/Hud.tsx";
+import { MapSketch } from "./hud/MapSketch.tsx";
 import { useConnection } from "./net/useConnection.ts";
-import { Scene } from "./scene/Scene.tsx";
+import { useRoomStore } from "./store/room.ts";
 import { bindUiToGame } from "./store/ui.ts";
 import { Splash } from "./hud/Splash.tsx";
 import { ThemeProvider, useTheme } from "./theme/index.ts";
+
+const BoardCanvas = lazy(() => import("./scene/BoardCanvas.tsx"));
 
 /** Parchment splash until the theme manifest resolves; it never delays a ready app. */
 function SplashGate() {
@@ -19,23 +19,19 @@ function SplashGate() {
 // every phase or turn change.
 export function App() {
   useConnection();
-  const quality = QUALITY[useGraphicsQuality()];
+  const inRoom = useRoomStore((s) => s.room !== null);
   useEffect(() => bindUiToGame(), []);
   return (
     <ThemeProvider>
-      <div className="app">
-        <Canvas
-          className="canvas"
-          camera={{ position: [0, 12, 8], fov: 45 }}
-          shadows={quality.shadows}
-          dpr={[1, quality.dpr]}
-          gl={{ alpha: true }}
-        >
-          <AdaptiveGraphics />
-          <Scene />
-        </Canvas>
+      <div className="app" data-entry={!inRoom || undefined}>
+        {!inRoom && <MapSketch />}
+        {inRoom && (
+          <Suspense fallback={<Splash />}>
+            <BoardCanvas />
+          </Suspense>
+        )}
         <Hud />
-        <SplashGate />
+        {inRoom && <SplashGate />}
       </div>
     </ThemeProvider>
   );

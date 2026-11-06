@@ -47,3 +47,9 @@ Ship behind no flag (pure presentation). Land in order: tokens+fonts → primiti
 
 - Should a dark-parchment variant (reference's `#183d48` palette) follow the OS dark mode, or is one light theme enough for now? Default here: one theme.
 - Keep the orange accent for turn/alert emphasis, or use gold? Default here: gold for emphasis, existing `ok/wait/bad` for status.
+
+## Entry menu refinement (owner request, 2026-11-07)
+
+The latest requested direction supersedes the earlier CSS-only paper and illustrated entry treatment: use the supplied small, locally served parchment photograph for the entry background and shared paper surfaces. Do not show a drawn island or a live 3D board before joining a room. Mount the board canvas on entering a room and release it when leaving.
+
+The welcome menu uses three large leather buttons with existing painted gold HUD icons: host with friends, practice with bots, and join with a room code. Each opens a focused form with the existing validation and server actions. Invite links bypass the menu. A back action returns to mode selection; the optional rules guide remains collapsed initially. Bot play already exists and is exposed here without introducing a new game feature.

@@ -81,3 +81,21 @@ The aurora blobs SHALL be removed. Outside the island the background SHALL be a 
 #### Scenario: No ambient animation
 - **WHEN** the game is shown
 - **THEN** the background has no running animation
+
+### Requirement: Illustrated-icon game mode menu
+
+The entry menu SHALL present three large leather buttons using the existing gold HUD icons for hosting with friends, practicing against bots, and joining a room. It SHALL use a static parchment background without an island illustration or mounted WebGL canvas. The reference guide SHALL be optional. All mode labels and descriptions SHALL be translated.
+
+#### Scenario: Choose a mode
+- **WHEN** a player selects a mode
+- **THEN** the relevant form opens with existing name validation and server actions
+- **AND** a back action returns to the mode menu
+
+#### Scenario: Invited player
+- **WHEN** an invite link contains a room code
+- **THEN** the join form opens directly with that code prefilled
+
+#### Scenario: Board lifecycle
+- **WHEN** a player enters a room
+- **THEN** the board canvas mounts
+- **AND** leaving the room removes the canvas from the entry screen

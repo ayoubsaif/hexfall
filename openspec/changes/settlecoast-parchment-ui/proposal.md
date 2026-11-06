@@ -27,3 +27,7 @@ None. `hud-presentation` and the aurora background are defined in the still-unar
 - `apps/client/src/style.css` (tokens, fonts, remove aurora), `apps/client/index.html` (font preload, theme-color), `apps/client/src/components/ui/*`, `apps/client/src/hud/*` (class changes; StartScreen/Lobby/SavedGames markup), new `apps/client/src/hud/Splash.tsx`, `apps/client/public/fonts/*`.
 - No rules-engine, server or protocol changes. No new runtime dependencies (fonts are static files).
 - Visual/e2e tests with hard-coded dark colours or text need updating; screenshots refreshed.
+
+## Latest owner-requested refinement
+
+The entry now uses the supplied local paper texture, without an island illustration or active board canvas. Large leather buttons with existing painted gold icons open focused host, bot-practice, and join forms. This exposes the bot mode already implemented elsewhere; it does not add a new engine capability. Details and verification are tracked in design and tasks section 9.

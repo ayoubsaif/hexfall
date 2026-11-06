@@ -19,7 +19,29 @@ export const session: Catalog["session"] = {
     soloOpponentsOption: "{{count}} bots",
     waitingForServer: "Esperando al servidor…",
   },
+  modes: {
+    "title": "Elige tu aventura",
+    "back": "← Elegir otro modo de juego",
+    "host": {
+        "title": "Jugar con amigos",
+        "description": "Crea una mesa e invita a los tuyos."
+    },
+    "solo": {
+        "title": "Practicar con bots",
+        "description": "Descubre tu estrategia a tu ritmo."
+    },
+    "join": {
+        "title": "Unirse a una sala",
+        "description": "¿Tienes un código? Tu mesa te espera."
+    }
+},
   welcome: {
+    eyebrow: "Tu próxima noche de juegos empieza aquí",
+    headline: "Una pequeña isla. Una gran rivalidad.",
+    intro:
+      "Reúne a tus amigos, negocia un buen trato y construye tu camino a la victoria. Cada tirada abre nuevas posibilidades.",
+    reassurance: "Juega con amigos o practica contra bots · 3–4 jugadores",
+    guide: "¿Primera vez en la isla? Guía rápida",
     play: "Jugar",
     ad: "Publicidad",
     howTitle: "Cómo se juega",

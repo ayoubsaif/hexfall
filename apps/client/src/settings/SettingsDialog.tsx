@@ -86,7 +86,7 @@ export function SettingsDialog() {
         description={t("settings.description")}
         hideHeader
         data-testid="settings-dialog"
-        className="flex h-[min(560px,calc(100dvh-32px))] w-[min(800px,calc(100%-32px))] overflow-hidden p-0 [--corner-size:32px]"
+        className="flex h-[min(560px,calc(100dvh-32px))] w-[min(800px,calc(100%-32px))] overflow-hidden p-0 [--corner-size:32px] frame-corners"
         onCloseAutoFocus={(e) => {
           const el = settingsTrigger();
           if (!el?.isConnected) return;

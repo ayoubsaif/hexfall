@@ -210,17 +210,137 @@ body,
     radial-gradient(ellipse at 50% 50%, transparent 55%, rgb(12 22 20 / 70%) 100%);
 }
 
-/* Paper surface (design decision 3): CSS only. Corner ornaments are images, see `.frame`. */
+.map-sketch {
+  position: absolute;
+  inset: 0;
+  width: 100%;
+  height: 100%;
+  pointer-events: none;
+  color: #a7c8bb;
+  opacity: 0.19;
+}
+.map-sketch path {
+  fill: none;
+  stroke: currentColor;
+  stroke-width: 1.3;
+  stroke-linecap: round;
+  stroke-linejoin: round;
+  vector-effect: non-scaling-stroke;
+  stroke-dasharray: 1;
+  stroke-dashoffset: 1;
+  animation: map-sketch-draw 16s ease-in-out var(--draw-delay) infinite;
+}
+@keyframes map-sketch-draw {
+  0%, 8% { stroke-dashoffset: 1; }
+  38%, 62% { stroke-dashoffset: 0; }
+  90%, 100% { stroke-dashoffset: -1; }
+}
+.map-sketch[data-still] path {
+  animation: none;
+  stroke-dashoffset: 0;
+}
+
+/* A single cached 35 KB paper image shared by all surfaces. Overscan hides the
+   reference photograph's white margin; gradients keep ink on a quiet centre. */
 .paper {
-  background-color: var(--color-hud);
+  background-color: var(--color-paper);
   background-image:
-    url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='120' height='120'%3E%3Cfilter id='n'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='.8' numOctaves='2' stitchTiles='stitch'/%3E%3CfeColorMatrix values='0 0 0 0 .45 0 0 0 0 .33 0 0 0 0 .15 0 0 0 .09 0'/%3E%3C/filter%3E%3Crect width='120' height='120' filter='url(%23n)'/%3E%3C/svg%3E"),
-    radial-gradient(ellipse at 50% 0%, rgb(255 250 235 / 55%), transparent 70%);
+    linear-gradient(rgb(247 237 213 / 20%), rgb(236 220 188 / 15%)), url("/ui/parchment.jpg");
+  background-size:
+    100% 100%,
+    115% 120%;
+  background-position: center;
   box-shadow:
-    inset 0 0 0 1px rgb(135 98 53 / 55%),
-    inset 0 0 0 4px rgb(236 220 188 / 90%),
-    inset 0 0 0 5px rgb(135 98 53 / 25%),
-    0 10px 28px rgb(0 0 0 / 35%);
+    inset 0 0 22px rgb(135 98 53 / 23%),
+    inset 0 0 0 1px rgb(135 98 53 / 30%),
+    0 12px 32px rgb(28 23 14 / 22%);
+}
+/* Paper surfaces have quiet edges rather than stone or metal corner plates. */
+.paper.frame::before {
+  display: none;
+}
+/* Scrolling panels keep their corner plates: the plates sit on the fixed outer box while an
+   inner element scrolls, so the corners stay on the border instead of scrolling away. */
+.paper.frame.frame-corners::before {
+  display: block;
+}
+.welcome-sheet {
+  position: absolute;
+  inset: 32px 0 80px;
+  margin: auto;
+  width: min(850px, calc(100% - 32px));
+  height: fit-content;
+  max-height: calc(100% - 112px);
+  overflow: auto;
+  padding: clamp(24px, 4vw, 44px);
+}
+.welcome-brand {
+  display: flex;
+  align-items: center;
+  gap: 14px;
+}
+.welcome-hero {
+  display: grid;
+  grid-template-columns: 1fr 1.15fr;
+  align-items: center;
+  gap: 24px;
+  padding-block: 32px;
+}
+.welcome-eyebrow {
+  color: var(--color-gold);
+  font-size: 12px;
+  text-transform: uppercase;
+  letter-spacing: 0.13em;
+  margin-bottom: 12px;
+}
+.welcome-message h2 {
+  font-family: var(--font-serif);
+  color: var(--color-forest);
+  font-size: clamp(32px, 3.5vw, 46px);
+  line-height: 1.04;
+  text-wrap: balance;
+}
+.welcome-intro {
+  font-size: 17px;
+  line-height: 1.5;
+  margin-block: 18px 22px;
+}
+.welcome-reassurance {
+  color: var(--color-ink-muted);
+  font-size: 13px;
+  margin-top: 14px;
+}
+.welcome-guide {
+  border-top: 1px solid var(--color-border);
+}
+.welcome-guide summary {
+  padding-block: 16px;
+  cursor: pointer;
+  font-size: 16px;
+  color: var(--color-forest);
+}
+.welcome-guide summary:focus-visible {
+  outline: 2px solid var(--color-ring);
+  outline-offset: 2px;
+}
+.welcome-guide-content {
+  display: flex;
+  flex-direction: column;
+  gap: 20px;
+  font-size: 15px;
+}
+@media (max-width: 639px) {
+  .welcome-hero {
+    grid-template-columns: 1fr;
+    gap: 16px;
+    padding-block: 24px;
+  }
+  .welcome-map {
+    display: none;
+  }
+  .welcome-message [data-slot="button"] {
+    width: 100%;
+  }
 }
 /* Active player's card (openspec highlight-active-player-card): gold inset ring, warm glow and a
    tinted paper; inset so the card's overflow-hidden never clips it. */
@@ -487,4 +607,71 @@ body,
   .hud :where(button:disabled, [aria-disabled="true"], select:disabled) {
     cursor: not-allowed;
   }
+}
+
+@media (max-height: 599px) and (min-width: 640px) {
+  .welcome-sheet {
+    padding: 20px 28px;
+  }
+  .welcome-brand {
+    display: none;
+  }
+  .welcome-hero {
+    padding-block: 0 12px;
+    grid-template-columns: 1.4fr 1fr;
+  }
+  .welcome-message h2 {
+    font-size: 30px;
+  }
+  .welcome-eyebrow {
+    margin-bottom: 6px;
+  }
+  .welcome-intro {
+    margin-block: 8px 12px;
+    font-size: 15px;
+  }
+  .welcome-reassurance {
+    margin-top: 8px;
+  }
+}
+
+/* Large menu actions reuse the painted gold HUD icons and leather palette. */
+.game-mode-menu { display: flex; flex-direction: column; gap: 12px; min-width: 0; }
+.game-mode-button {
+  width: 100%;
+  min-height: 108px;
+  justify-content: flex-start;
+  gap: 16px;
+  padding: 16px;
+  white-space: normal;
+  text-align: left;
+  color: var(--color-cream);
+  border: 1px solid var(--color-gold);
+  background: linear-gradient(145deg, #6b4228, var(--color-leather));
+  box-shadow: inset 0 0 0 3px var(--color-leather), inset 0 0 0 4px var(--color-gold), 0 3px 6px rgb(74 44 26 / 20%);
+}
+.game-mode-button:hover { filter: brightness(1.12); }
+.game-mode-icon { width: 52px; height: 52px; flex-shrink: 0; object-fit: contain; }
+.game-mode-copy { display: flex; flex: 1; flex-direction: column; gap: 4px; min-width: 0; }
+.game-mode-title { font-family: var(--font-serif); font-size: 20px; line-height: 1.1; }
+.game-mode-hint { font-size: 12px; line-height: 1.35; font-weight: 500; }
+.game-mode-arrow { font-size: 28px; }
+@media (max-width: 639px) {
+  .welcome-sheet { padding: 22px; }
+  .welcome-hero { gap: 18px; padding-block: 20px; }
+  .welcome-eyebrow, .welcome-intro { display: none; }
+  .welcome-message h2 { font-size: 25px; }
+  .welcome-reassurance { margin-top: 8px; font-size: 12px; }
+  .game-mode-button { min-height: 84px; padding: 12px; gap: 12px; }
+  .game-mode-icon { width: 42px; height: 42px; }
+  .game-mode-title { font-size: 18px; }
+}
+@media (max-height: 599px) and (min-width: 640px) {
+  .welcome-hero { grid-template-columns: 1fr 1.2fr; }
+  .welcome-intro { display: none; }
+  .game-mode-menu { gap: 8px; }
+  .game-mode-button { min-height: 68px; padding: 10px; gap: 10px; }
+  .game-mode-icon { width: 36px; height: 36px; }
+  .game-mode-title { font-size: 16px; }
+  .game-mode-hint { font-size: 11px; }
 }

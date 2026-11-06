@@ -9,6 +9,7 @@ export const buttonVariants = cva(
   {
     variants: {
       variant: {
+        menu: "game-mode-button",
         default:
           "border border-gold bg-linear-to-b from-[#6b4228] to-leather font-serif text-[1.05em] tracking-wide text-cream shadow-[inset_0_1px_0_rgb(255_235_200/25%),0_2px_0_rgb(0_0_0/30%)] hover:brightness-125",
         secondary:

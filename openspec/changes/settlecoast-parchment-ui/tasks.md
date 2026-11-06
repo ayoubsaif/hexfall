@@ -17,7 +17,7 @@
 - [x] 3.1 Rebuild `StartScreen` as the parchment card (serif title, description, saved-games tile, name field, create/join) with unchanged behaviour and validation
 - [x] 3.2 Restyle `Lobby`, `SavedGames`, `GamePause`, `ReplacedNotice` to the same card/tile language
 - [x] 3.3 Add i18n strings for new headings and descriptions in all supported languages (`labels.ts`)
-- [ ] 3.4 Check 360x740: no horizontal scroll, card scrolls vertically
+- [x] 3.4 Check 360x740: no horizontal scroll, card scrolls vertically
 
 ## 4. In-game HUD
 
@@ -55,3 +55,10 @@
 - [x] 8.3 Procedural sea (`scene/Water.tsx`): lit swell, Fresnel sky tint, glint, shore-following foam waves; sea tile image and manifest entry removed
 - [x] 8.4 Tests: `test/scene/viewPresets.test.ts`, relief tests updated
 - [x] 8.5 Live game with two bots (setup, roll, 7, robber move, view buttons): dice settle fine on domes; the robber was buried in a dome, now lifted by the dome height. Not checked: ViewControls at 360x740 (the browser window would not resize)
+
+## 9. Entry menu refinement (owner request)
+
+- [x] 9.1 Add the local parchment surface and defer the board canvas until room entry
+- [x] 9.2 Replace the island illustration with large host/solo/join buttons using existing gold icons
+- [x] 9.3 Open focused mode forms, retain invite-link behavior and validation, and add a back action
+- [x] 9.4 Verify mode actions, translations, responsive entry layout and board mount/unmount; build the client

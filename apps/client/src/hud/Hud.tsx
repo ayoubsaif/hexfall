@@ -18,6 +18,7 @@ import { type LogTab, setLogTab, useUiStore } from "../store/ui.ts";
 import { useHotkeys } from "../hotkeys/useHotkeys.ts";
 import { SettingsButton, SettingsHost } from "../settings/SettingsButton.tsx";
 import { ViewControls } from "./ViewControls.tsx";
+import type { GameMode } from "./GameModeButtons.tsx";
 import { AdGutters, Welcome, dismissWelcome, welcomeDismissed } from "./Welcome.tsx";
 import { GameAlerts } from "./GameAlerts.tsx";
 import {
@@ -258,10 +259,12 @@ function LogTabs() {
 function FirstScreen() {
   const invited = useRoomStore((s) => s.prefillRoom !== null || s.notice !== null);
   const [shown, setShown] = useState(() => !welcomeDismissed() && !invited);
-  if (!shown || invited) return <StartScreen />;
+  const [mode, setMode] = useState<GameMode | undefined>(undefined);
+  if (!shown || invited) return <StartScreen mode={invited ? "join" : mode} onBack={() => setShown(true)} />;
   return (
     <Welcome
-      onPlay={() => {
+      onPlay={(selected) => {
+        setMode(selected);
         dismissWelcome();
         setShown(false);
       }}
