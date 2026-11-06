@@ -222,6 +222,30 @@ body,
     inset 0 0 0 5px rgb(135 98 53 / 25%),
     0 10px 28px rgb(0 0 0 / 35%);
 }
+/* Active player's card (openspec highlight-active-player-card): gold inset ring, warm glow and a
+   tinted paper; inset so the card's overflow-hidden never clips it. */
+.player-card[data-active] {
+  background-color: #f6dc98;
+  box-shadow:
+    inset 0 0 0 2px #e8bc4a,
+    inset 0 0 0 4px rgb(135 98 53 / 55%),
+    inset 0 0 16px 2px rgb(232 188 74 / 55%),
+    0 0 10px 1px rgb(232 188 74 / 55%);
+}
+@media (prefers-reduced-motion: no-preference) {
+  .player-card[data-active] {
+    animation: player-card-glow 2.4s ease-in-out infinite;
+  }
+}
+@keyframes player-card-glow {
+  50% {
+    box-shadow:
+      inset 0 0 0 2px #e8bc4a,
+      inset 0 0 0 4px rgb(135 98 53 / 55%),
+      inset 0 0 8px 1px rgb(232 188 74 / 30%),
+      0 0 4px 0 rgb(232 188 74 / 30%);
+  }
+}
 /* Square HUD control (openspec improve-touch-camera-and-hud-layout): 0 radius, brown border. */
 .hud-square {
   border: 2px solid var(--color-leather);
@@ -248,8 +272,22 @@ body,
   border-radius: 0;
   padding-inline: 22px;
   background:
-    radial-gradient(circle at 50% 50%, #f3d58a 0 1.5px, #b98a3c 2.5px 4.5px, #5a3a14 5.5px, transparent 6px) 5px 50% / 14px 14px no-repeat,
-    radial-gradient(circle at 50% 50%, #f3d58a 0 1.5px, #b98a3c 2.5px 4.5px, #5a3a14 5.5px, transparent 6px) calc(100% - 5px) 50% / 14px 14px no-repeat,
+    radial-gradient(
+        circle at 50% 50%,
+        #f3d58a 0 1.5px,
+        #b98a3c 2.5px 4.5px,
+        #5a3a14 5.5px,
+        transparent 6px
+      )
+      5px 50% / 14px 14px no-repeat,
+    radial-gradient(
+        circle at 50% 50%,
+        #f3d58a 0 1.5px,
+        #b98a3c 2.5px 4.5px,
+        #5a3a14 5.5px,
+        transparent 6px
+      )
+      calc(100% - 5px) 50% / 14px 14px no-repeat,
     linear-gradient(180deg, #8a4a2a 0%, #6b3720 45%, #512a18 100%);
   box-shadow:
     inset 0 0 0 1.5px #c9a04e,
@@ -325,10 +363,10 @@ body,
    (cards, tiles, buttons); `.frame-brass` = large brass filigree (dialogs, drawers). */
 .frame {
   --corner-size: 18px;
-  }
+}
 .frame-brass {
   --corner-size: 44px;
-  }
+}
 .frame:where(:not(.absolute, .fixed)) {
   position: relative;
 }
@@ -347,8 +385,10 @@ body,
     0 100%,
     100% 100%;
   background-image:
-    var(--corner-tl, url("/ui/corners/stone-tl.webp")), var(--corner-tr, url("/ui/corners/stone-tr.webp")),
-    var(--corner-bl, url("/ui/corners/stone-bl.webp")), var(--corner-br, url("/ui/corners/stone-br.webp"));
+    var(--corner-tl, url("/ui/corners/stone-tl.webp")),
+    var(--corner-tr, url("/ui/corners/stone-tr.webp")),
+    var(--corner-bl, url("/ui/corners/stone-bl.webp")),
+    var(--corner-br, url("/ui/corners/stone-br.webp"));
 }
 .frame-brass {
   --corner-tl: url("/ui/corners/brass-tl.webp");
@@ -430,7 +470,18 @@ body,
  * Explicit component classes win by specificity where they differ (e.g. informational disabled).
  */
 @layer base {
-  .hud :where(a[href], button:not(:disabled), [role="button"]:not([aria-disabled="true"]), [role="tab"], [role="menuitem"], [role="option"], summary, label[for], select:not(:disabled)) {
+  .hud
+    :where(
+      a[href],
+      button:not(:disabled),
+      [role="button"]:not([aria-disabled="true"]),
+      [role="tab"],
+      [role="menuitem"],
+      [role="option"],
+      summary,
+      label[for],
+      select:not(:disabled)
+    ) {
     cursor: pointer;
   }
   .hud :where(button:disabled, [aria-disabled="true"], select:disabled) {

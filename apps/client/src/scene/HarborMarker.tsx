@@ -24,9 +24,13 @@ export const HARBOR_COLORS: Readonly<Record<HarborType, string>> = {
   ore: "#5f6b78",
   wool: "#7fa046",
 };
-/** Length of the single short pier, and how high the chip floats above the sea. */
+/** Length of the single short pier, and how high each chip floats above the sea. */
 const PIER_LENGTH = 0.42;
+/** Resource harbors ride low, just above the land hexes; the plain 3:1 chip keeps its height. */
 const CHIP_FLOAT = 0.55;
+const SPECIAL_FLOAT = 0.22;
+/** The plain 3:1 chip is a small, icon-free disc showing only the rate. */
+const GENERIC_SCALE = 0.7;
 
 /** Light halo under the ink so the rate reads on dark badge art and on the sea. */
 const HALO = "#f4efe1";
@@ -41,18 +45,21 @@ const cache = new Map<HarborType, CanvasTexture | null>();
 function harborTexture(type: HarborType): CanvasTexture | null {
   if (!cache.has(type)) {
     const { rate } = harborLabel(type);
+    const plain = type === "generic";
+    const size = plain ? 0.42 : RATE_SIZE;
+    const cy = plain ? 0.5 : RATE_CENTER_Y;
     cache.set(
       type,
       makeLabelTexture((ctx, s) => {
         ctx.textAlign = "center";
         ctx.textBaseline = "middle";
-        ctx.font = `bold ${Math.round(s * RATE_SIZE)}px ${SANS}`;
+        ctx.font = `bold ${Math.round(s * size)}px ${SANS}`;
         ctx.lineJoin = "round";
         ctx.lineWidth = s * 0.06;
         ctx.strokeStyle = HALO;
-        ctx.strokeText(rate, s / 2, s * RATE_CENTER_Y);
+        ctx.strokeText(rate, s / 2, s * cy);
         ctx.fillStyle = INK;
-        ctx.fillText(rate, s / 2, s * RATE_CENTER_Y);
+        ctx.fillText(rate, s / 2, s * cy);
       }),
     );
   }
@@ -79,9 +86,7 @@ function HarborChip({
   const reduced = useReducedMotion();
   // Special harbors reuse the resource card icon on a disc in the card's frame color.
   const special = item.type !== "generic";
-  const icon = useTexture(
-    special ? `/ui/resources/${item.type}.webp` : `/textures/harbor/${item.type}.webp`,
-  );
+  const icon = useTexture(special ? `/ui/resources/${item.type}.webp` : "/ui/resources/wool.webp");
   icon.colorSpace = SRGBColorSpace;
   useFrame(({ clock }) => {
     const g = ref.current;
@@ -89,7 +94,7 @@ function HarborChip({
   });
   return (
     <group ref={ref} position={[0, y, 0]}>
-      <group ref={chipRef} name="chip">
+      <group ref={chipRef} name="chip" scale={special ? 1 : GENERIC_SCALE}>
         {special ? (
           <mesh position={[0, CHIP.label / 2 - 0.0005, 0]}>
             <cylinderGeometry args={[0.3, 0.3, CHIP.label - 0.001, 40]} />
@@ -104,9 +109,11 @@ function HarborChip({
             <Asset assetKey="token" />
           </>
         )}
-        <group position={[0, 0, -0.08]}>
-          <LabelQuad texture={icon} size={special ? 0.34 : 0.3} y={CHIP.label + 0.001} />
-        </group>
+        {special && (
+          <group position={[0, 0, -0.08]}>
+            <LabelQuad texture={icon} size={0.34} y={CHIP.label + 0.001} />
+          </group>
+        )}
         {texture && <LabelQuad texture={texture} size={0.5} y={CHIP.label} />}
       </group>
     </group>
@@ -132,7 +139,12 @@ export function HarborMarker({
     <group position={[px, 0, pz]}>
       <HarborDock dx={dx} dz={dz} seaLevel={seaLevel} />
       <group position={[dx / 2, 0, dz / 2]}>
-        <HarborChip item={item} texture={texture} y={seaLevel + CHIP_FLOAT} chipRef={chipRef} />
+        <HarborChip
+          item={item}
+          texture={texture}
+          y={seaLevel + (item.type === "generic" ? CHIP_FLOAT : SPECIAL_FLOAT)}
+          chipRef={chipRef}
+        />
       </group>
     </group>
   );

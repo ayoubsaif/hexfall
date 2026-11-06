@@ -52,6 +52,25 @@ describe("PlayerPanels", () => {
     expect(panels[0]?.getAttribute("data-active")).toBe("true");
   });
 
+  it("highlights only the current seat's card, follows the turn, none when ended", () => {
+    const active = () =>
+      [...m.container.querySelectorAll('[data-testid="player-panel"]')].map(
+        (el) => el.hasAttribute("data-active") && el.getAttribute("aria-current") === "true",
+      );
+    const s = playState();
+    seatRoom(0);
+    showGame(s, 0);
+    m = mount(<PlayerPanels />);
+    expect(active()).toEqual([true, false, false, false]);
+    expect(m.container.querySelector(".player-card")).not.toBeNull();
+    s.turn.seat = 2;
+    showGame(s, 0);
+    expect(active()).toEqual([false, false, true, false]);
+    s.phase = { kind: "ended" };
+    showGame(s, 0);
+    expect(active()).toEqual([false, false, false, false]);
+  });
+
   it("keeps one non-wrapping row of panels (fixed top container)", () => {
     const s = playState();
     s.longestRoad = 2;

@@ -89,7 +89,7 @@ export function PlayerPanels() {
             data-active={isActive || undefined}
             data-own={own || undefined}
             aria-current={isActive ? "true" : undefined}
-            className="pointer-events-auto relative flex max-sm:grid max-sm:grid-cols-[auto_minmax(0,1fr)] max-sm:items-center max-sm:gap-y-0.5 short:grid short:grid-cols-[auto_minmax(0,1fr)] short:items-center short:gap-y-0.5 min-w-0 max-w-[260px] flex-1 basis-0 items-center gap-2 overflow-hidden rounded-none border-2 border-leather frame [--corner-size:12px] paper py-1.5 pr-2 pl-3.5 data-[active]:ring-2 data-[active]:ring-wait max-sm:gap-1.5 max-sm:py-1 max-sm:pr-1 max-sm:pl-2.5 short:gap-1.5 short:py-1 short:pr-1 short:pl-2.5"
+            className="pointer-events-auto relative flex max-sm:grid max-sm:grid-cols-[auto_minmax(0,1fr)] max-sm:items-center max-sm:gap-y-0.5 short:grid short:grid-cols-[auto_minmax(0,1fr)] short:items-center short:gap-y-0.5 min-w-0 max-w-[260px] flex-1 basis-0 items-center gap-2 overflow-hidden player-card rounded-none border-2 border-leather frame [--corner-size:12px] paper py-1.5 pr-2 pl-3.5 max-sm:gap-1.5 max-sm:py-1 max-sm:pr-1 max-sm:pl-2.5 short:gap-1.5 short:py-1 short:pr-1 short:pl-2.5"
           >
             <span
               aria-hidden="true"
