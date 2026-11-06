@@ -23,6 +23,13 @@ export function instantiateModel(
   playerColor: string | undefined,
 ): Object3D {
   const root = source.clone(true);
+  // Themed models cast and receive shadows like the procedural fallbacks.
+  root.traverse((node) => {
+    if (node instanceof Mesh) {
+      node.castShadow = true;
+      node.receiveShadow = true;
+    }
+  });
   if (!isPlayerTinted(key) || playerColor === undefined) return root;
 
   const meshes: Mesh[] = [];

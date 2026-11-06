@@ -1,7 +1,7 @@
 // Settings dialog (specs/client-settings "Settings dialog layout"), built from the shadcn
 // `sidebar-13` block: section sidebar on md+ screens, a native section picker below md, and a
 // "Settings › <section>" breadcrumb. Settings apply at once; there is no Save button.
-import { Accessibility, Bell, Globe, Info, type LucideIcon, Volume2, X } from "lucide-react";
+import { Accessibility, Bell, Globe, Info, type LucideIcon, Volume2 } from "lucide-react";
 import { type CSSProperties, type ReactNode, useId } from "react";
 import { useTranslation } from "react-i18next";
 import {
@@ -11,6 +11,7 @@ import {
   BreadcrumbPage,
   BreadcrumbSeparator,
 } from "@/components/ui/breadcrumb.tsx";
+import { SealIcon } from "@/components/ui/SealIcon.tsx";
 import { Dialog, DialogClose, DialogContent } from "@/components/ui/dialog.tsx";
 import {
   Sidebar,
@@ -80,7 +81,7 @@ export function SettingsDialog() {
         >
           <Sidebar
             collapsible="none"
-            className="hidden border-r border-sidebar-border bg-black/15 md:flex"
+            className="hidden border-r border-sidebar-border bg-ink/10 md:flex"
           >
             <SidebarContent>
               <SidebarGroup>
@@ -126,7 +127,7 @@ export function SettingsDialog() {
                   id={`${id}-section`}
                   data-testid="settings-picker"
                   value={section}
-                  className="min-h-10 w-full min-w-0 cursor-pointer rounded-md border border-border bg-white/10 px-2 text-sm font-semibold text-foreground outline-none focus-visible:ring-2 focus-visible:ring-ring"
+                  className="min-h-10 w-full min-w-0 cursor-pointer rounded-md border border-border bg-ink/10 px-2 text-sm font-semibold text-foreground outline-none focus-visible:ring-2 focus-visible:ring-ring"
                   onChange={(e) => {
                     if (isSectionId(e.target.value)) setSettingsSection(e.target.value);
                   }}
@@ -151,9 +152,9 @@ export function SettingsDialog() {
         <DialogClose
           aria-label={t("settings.close")}
           data-testid="settings-close"
-          className="absolute top-3 right-3 grid size-9 cursor-pointer place-items-center rounded-md text-muted-foreground outline-none hover:bg-white/10 hover:text-foreground focus-visible:ring-2 focus-visible:ring-ring max-sm:size-10"
+          className="absolute top-2 right-2 z-10 grid size-11 cursor-pointer place-items-center outline-none transition-transform hover:scale-110 focus-visible:ring-2 focus-visible:ring-ring max-sm:size-12"
         >
-          <X aria-hidden size={18} />
+          <SealIcon className="size-full drop-shadow-md" />
         </DialogClose>
       </DialogContent>
     </Dialog>

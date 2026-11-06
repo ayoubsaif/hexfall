@@ -1,6 +1,8 @@
 import { useLayoutEffect, useState } from "react";
 import { useTranslation } from "react-i18next";
-import { ScrollText } from "lucide-react";
+import { gameIcon } from "./GameIcon.tsx";
+
+const ScrollText = gameIcon("log");
 import { Button } from "@/components/ui/button.tsx";
 import { HudRootContext } from "@/components/ui/hud-root.ts";
 import { Sheet, SheetContent, SheetTrigger } from "@/components/ui/sheet.tsx";
@@ -59,24 +61,32 @@ function ConnectionBadge() {
   const latencyMs = useConnectionStore((s) => s.latencyMs);
   const attempts = useConnectionStore((s) => s.attempts);
   const showPing = status === "open" && latencyMs !== null;
+  const label = t(`session.hud.connection.${status}`);
+  // Connected: dot and ping only (status text for assistive tech and the tooltip). Any other
+  // state shows its text so it is never conveyed by color alone.
+  const compact = status === "open";
   return (
     <div
-      className="pointer-events-auto flex items-center gap-2 rounded-full paper px-3 py-1.5 text-xs backdrop-blur-sm"
+      className="pointer-events-auto flex h-8 items-center gap-2 px-1 text-sm text-[#f6ecd0] [text-shadow:0_1px_2px_rgb(0_0_0/85%)]"
       data-status={status}
       role="status"
       aria-live="polite"
+      title={label}
     >
-      <span className={cn("size-2 rounded-full", DOT[status])} aria-hidden="true" />
-      <span data-testid="connection-status">{t(`session.hud.connection.${status}`)}</span>
+      <span
+        className={cn("size-2.5 shrink-0 rounded-full ring-1 ring-black/50", DOT[status])}
+        aria-hidden="true"
+      />
+      <span data-testid="connection-status" className={cn(compact && "sr-only")}>
+        {label}
+      </span>
       {showPing && (
-        <span data-testid="connection-ping" className="text-muted-foreground tabular-nums max-sm:hidden">
+        <span data-testid="connection-ping" className="tabular-nums">
           {Math.round(latencyMs)} ms
         </span>
       )}
       {status === "reconnecting" && attempts > 1 && (
-        <span className="text-muted-foreground tabular-nums">
-          {t("session.hud.tryCount", { count: attempts })}
-        </span>
+        <span className="tabular-nums">{t("session.hud.tryCount", { count: attempts })}</span>
       )}
     </div>
   );
@@ -88,7 +98,7 @@ export function ReloadBanner() {
   if (!mismatch) return null;
   return (
     <div
-      className="pointer-events-auto absolute top-14 left-1/2 z-30 flex max-w-[calc(100%-32px)] -translate-x-1/2 items-center gap-3.5 rounded-xl border border-primary paper px-4 py-2.5 text-sm backdrop-blur-md"
+      className="pointer-events-auto absolute top-14 left-1/2 z-30 flex max-w-[calc(100%-32px)] -translate-x-1/2 items-center gap-3.5 border-2 border-leather hud-square px-4 py-2.5 text-sm"
       role="alert"
     >
       <span>{t("session.hud.newVersion")}</span>
@@ -152,20 +162,23 @@ function useHudLayout(corner: HTMLElement | null) {
   return { setHand, setCluster };
 }
 
-/** The "Log" button (top-left) and its drawer (Log and Dice tabs). */
+/** The icon-only "Log" button (bottom control band) and its drawer (Log and Dice tabs). */
 function LogDrawer() {
   const { t } = useTranslation();
+  const label = t("session.hud.log");
   return (
     <Sheet>
       <SheetTrigger asChild>
-        <Button
-          size="sm"
-          variant="secondary"
-          className="absolute top-3 left-3 z-20 paper backdrop-blur-md max-sm:top-2 max-sm:left-2 short:top-2 short:left-2"
+        <button
+          type="button"
+          data-testid="log-button"
+          data-interactive
+          aria-label={label}
+          title={label}
+          className="pointer-events-auto grid size-10 cursor-pointer place-items-center hud-leather-round outline-none transition-[filter] duration-150 focus-visible:ring-2 focus-visible:ring-ring max-sm:size-11 short:size-11 pointer-coarse:size-11 motion-reduce:transition-none"
         >
-          <ScrollText aria-hidden="true" />
-          {t("session.hud.log")}
-        </Button>
+          <ScrollText aria-hidden className="size-6" />
+        </button>
       </SheetTrigger>
       <SheetContent title={t("session.hud.eventLog")} side="right">
         <LogTabs />
@@ -187,8 +200,8 @@ function GameHud({ corner }: { corner: HTMLElement | null }) {
   const { setHand, setCluster } = useHudLayout(corner);
   return (
     <>
-      <LogDrawer />
-      <div className="absolute top-3 right-3 left-3 pt-11 desktop:right-[400px] max-sm:top-2 max-sm:right-2 max-sm:left-2 short:top-2 short:right-2 short:left-2 landscape:right-3! landscape:left-[88px]! landscape:pt-0!">
+      <div className="absolute top-3 right-3 left-3 flex flex-col items-start gap-2 desktop:right-[400px] max-sm:top-2 max-sm:right-2 max-sm:left-2 short:top-2 short:right-2 short:left-2">
+        <ViewControls />
         <PlayerPanels />
       </div>
       <Hand ref={setHand} />
@@ -256,15 +269,17 @@ export function Hud() {
             className={cn(
               "absolute left-3 flex gap-2 max-sm:left-2 short:left-2",
               inGame
-                ? // In a game the controls (all but Log) sit in the bottom-left corner beside the
-                  // hand; portrait phones stack them in a column above the raised hand.
-                  "bottom-[max(12px,env(safe-area-inset-bottom))] max-w-[calc(100%-200px)] flex-wrap items-center max-sm:bottom-[calc(var(--hand-h,72px)_+_12px)] max-sm:flex-col max-sm:items-start portrait:bottom-[calc(var(--hand-h,72px)_+_12px)] portrait:flex-col portrait:items-start desktop:bottom-[max(12px,env(safe-area-inset-bottom))] desktop:flex-row desktop:items-center"
+                ? // In a game the controls form one nowrap row (hud-compact-controls); portrait
+                  // phones lift it above the raised hand.
+                  "bottom-[max(12px,env(safe-area-inset-bottom))] max-w-[calc(100%-200px)] flex-col items-start max-sm:bottom-[calc(var(--hand-h,72px)_+_12px)] portrait:bottom-[calc(var(--hand-h,72px)_+_12px)] portrait:max-w-[calc(100%-16px)]"
                 : "bottom-[max(12px,env(safe-area-inset-bottom))] flex-wrap items-center max-sm:bottom-2 short:bottom-2",
             )}
           >
-            <SettingsButton />
-            {inGame && <ViewControls />}
-            {inGame && <HostGameMenu />}
+            <div className="flex items-center gap-2">
+              <SettingsButton />
+              {inGame && <HostGameMenu />}
+              {inGame && <LogDrawer />}
+            </div>
             <ConnectionBadge />
           </div>
           {room === null && <StartScreen />}

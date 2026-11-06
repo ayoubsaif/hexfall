@@ -12,22 +12,29 @@ export const THROW_MS = 4000;
 
 export type ThrowMode = "animate" | "static";
 
+/** Why the dice show the roll the way they do: a live update, a snapshot, or reduced motion. */
+export type ThrowReason = "update" | "snapshot" | "reduced";
+
 export interface DiceThrow {
   /** Use as the dice's React key so the throw restarts on every new roll. */
   key: number;
   mode: ThrowMode;
+  reason: ThrowReason;
 }
 
 export function useDiceThrow(roll: DiceRoll | null): DiceThrow {
   const source = useGameStore((s) => s.source);
   const index = roll?.index ?? null;
   const [prev, setPrev] = useState(index);
-  const [state, setState] = useState<DiceThrow>({ key: 0, mode: "static" });
+  const [state, setState] = useState<DiceThrow>({ key: 0, mode: "static", reason: "snapshot" });
   if (index !== prev) {
     // Adjusting state during render (React's documented pattern for derived changes).
+    const reason: ThrowReason =
+      source !== "update" ? "snapshot" : prefersReducedMotion() ? "reduced" : "update";
     const next: DiceThrow = {
       key: state.key + 1,
-      mode: index !== null && source === "update" && !prefersReducedMotion() ? "animate" : "static",
+      mode: index !== null && reason === "update" ? "animate" : "static",
+      reason,
     };
     setPrev(index);
     setState(next);

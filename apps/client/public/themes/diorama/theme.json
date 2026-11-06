@@ -2,10 +2,14 @@
   "id": "diorama",
   "version": 1,
   "license": "CC0-1.0",
-  "source": "Original work for Hexfall, except the piece models (see credits). Terrain tiles (tiles/forest|pasture|fields|hills|mountains|desert.webp): AI-generated with Creative Claw (Nano Banana 2) from text prompts only, with no image inputs or reference art, then approved by the project owner on 2026-11-04. Sea tile (tiles/sea.webp): hand-written SVG rasterized locally. Harbor badges (harbors/brick|grain|lumber|ore|wool.webp): square crops of the resource card art, which is cropped from the terrain tiles by tools/cards-from-tiles.mjs. Piece models (models/road|settlement|city.glb): converted from STL models by Burgers (CC-BY-4.0) with tools/stl-to-glb.mjs, reoriented, rescaled and with a thinned road. The robber uses its built-in procedural fallback.",
+  "source": "Original work for Hexfall, except the piece models (see credits). Terrain tiles (tiles/forest|pasture|fields|hills|mountains|desert.webp): AI-generated with Creative Claw (Nano Banana 2) from text prompts only, with no image inputs or reference art, then approved by the project owner on 2026-11-04. The sea is a procedural shader (no image). Harbor badges (harbors/brick|grain|lumber|ore|wool.webp): square crops of the resource card art, which is cropped from the terrain tiles by tools/cards-from-tiles.mjs. Piece models (models/road|settlement|city.glb): converted from STL models by Burgers (CC-BY-4.0) with tools/stl-to-glb.mjs, reoriented, rescaled and with a thinned road. The robber uses its built-in procedural fallback.",
   "credits": [
     {
-      "keys": ["piece.road", "piece.settlement", "piece.city"],
+      "keys": [
+        "piece.road",
+        "piece.settlement",
+        "piece.city"
+      ],
       "title": "Road, settlement and city models (modified)",
       "author": "Burgers",
       "url": "https://www.printables.com/@Burgers",
@@ -30,9 +34,6 @@
     },
     "tile.desert": {
       "image": "tiles/desert.webp"
-    },
-    "sea": {
-      "image": "tiles/sea.webp"
     },
     "harbor.brick": {
       "image": "harbors/brick.webp"

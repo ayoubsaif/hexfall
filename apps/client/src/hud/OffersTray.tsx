@@ -106,7 +106,7 @@ export function OffersTray() {
       data-testid="make-offer"
       disabled={inFlight}
       onClick={() => openTrade({ give: {}, get: {}, to: [active] })}
-      className="pointer-events-auto self-start bg-hud backdrop-blur-md"
+      className="pointer-events-auto self-start paper backdrop-blur-md"
     >
       <ArrowLeftRight aria-hidden="true" />
       {t("play.offers.makeOffer", { name: names(active) })}
@@ -132,7 +132,7 @@ export function OffersTray() {
         variant="secondary"
         aria-expanded={expanded}
         onClick={() => setExpanded(!expanded)}
-        className="pointer-events-auto self-start bg-hud backdrop-blur-md sm:hidden"
+        className="pointer-events-auto self-start paper backdrop-blur-md sm:hidden"
       >
         <ArrowLeftRight aria-hidden="true" />
         {expanded ? t("play.offers.hide") : t("play.offers.show", { count: offers.length })}
@@ -160,7 +160,7 @@ export function OffersTray() {
               data-mine={mine || undefined}
               data-fresh={fresh.includes(o.id) || undefined}
               className={cn(
-                "pointer-events-auto flex flex-col gap-1 rounded-xl border-l-4 bg-hud px-3 py-2 shadow-lg shadow-black/25 backdrop-blur-md transition-shadow",
+                "pointer-events-auto flex flex-col gap-1 border-l-4 hud-square px-3 py-2 transition-shadow",
                 fresh.includes(o.id) && "ring-2 ring-wait",
               )}
               style={{ borderLeftColor: seatColor(o.from).hex }}

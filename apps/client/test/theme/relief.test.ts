@@ -6,6 +6,8 @@ import {
   ISO_IMAGE_WIDTH,
   ISO_SIDE_HEIGHT,
   ISO_THICKNESS,
+  LAND_THICKNESS,
+  SEA_DEPTH,
   isoTopPixel,
   landRelief,
 } from "../../src/theme/relief.ts";
@@ -52,13 +54,23 @@ describe("land relief", () => {
   it("raises the island and lowers the sea when a terrain image is isometric", () => {
     expect(landRelief(iso)).toEqual({
       raised: true,
-      thickness: ISO_THICKNESS,
-      seaLevel: -ISO_THICKNESS,
+      isometric: true,
+      thickness: LAND_THICKNESS,
+      seaLevel: -SEA_DEPTH,
     });
   });
 
-  it("stays flat for top-down images or an isometric sea alone", () => {
-    for (const r of [landRelief(top), landRelief(isoSeaOnly)]) {
+  it("raises top-down terrain images too, without the isometric camera", () => {
+    expect(landRelief(top)).toEqual({
+      raised: true,
+      isometric: false,
+      thickness: LAND_THICKNESS,
+      seaLevel: -SEA_DEPTH,
+    });
+  });
+
+  it("stays flat with no terrain image (an isometric sea alone, or procedural terrain)", () => {
+    for (const r of [landRelief(isoSeaOnly), landRelief(manifest({}).entries)]) {
       expect(r).toEqual({ raised: false, thickness: 0, seaLevel: 0 });
     }
   });

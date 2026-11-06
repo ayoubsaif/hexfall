@@ -2,8 +2,7 @@
 // is a full-screen background behind the HUD, and the board is fitted to the whole screen.
 import { useThree } from "@react-three/fiber";
 import { useLayoutEffect, useMemo } from "react";
-import { PerspectiveCamera, Vector3 } from "three";
-import { areaCorners, diceAreaPlacement } from "./dice/area.ts";
+import { PerspectiveCamera } from "three";
 
 /** Radius of the circle that holds the sea ring and harbor badges. */
 export const FIT_RADIUS = 6.3;
@@ -23,36 +22,6 @@ export function fitPosition(distance: number, elevation = FIT_ELEVATION): [numbe
   return [0, distance * Math.sin(elevation), distance * Math.cos(elevation)];
 }
 
-/** How far inside the screen edge the dice area must stay (normalized device coordinates). */
-const DICE_MARGIN = 0.94;
-
-/**
- * Fit distance that also keeps the dice area in view (openspec physics-dice-3d, design
- * decision 5): starts at `fitDistance` and backs off in small steps until every corner of
- * the area, at table and die height, projects inside the screen.
- */
-export function fitDistanceWithDice(aspect: number, elevation = FIT_ELEVATION): number {
-  const corners = areaCorners(diceAreaPlacement(aspect));
-  const cam = new PerspectiveCamera(FIT_FOV, aspect, 0.1, 500);
-  const p = new Vector3();
-  let distance = fitDistance(aspect);
-  for (let i = 0; i < 40; i++) {
-    cam.position.set(...fitPosition(distance, elevation));
-    cam.lookAt(0, 0, 0);
-    cam.updateMatrixWorld();
-    cam.updateProjectionMatrix();
-    const inside = corners.every(([x, z]) =>
-      [-0.3, 0.3].every((y) => {
-        p.set(x, y, z).project(cam);
-        return Math.abs(p.x) <= DICE_MARGIN && Math.abs(p.y) <= DICE_MARGIN;
-      }),
-    );
-    if (inside) return distance;
-    distance *= 1.03;
-  }
-  return distance;
-}
-
 /** Places the default camera whenever the view resizes; returns the fit distance. */
 export function useFitCamera(elevation = FIT_ELEVATION): number {
   const camera = useThree((s) => s.camera);
@@ -60,7 +29,7 @@ export function useFitCamera(elevation = FIT_ELEVATION): number {
   const height = useThree((s) => s.size.height);
   const controls = useThree((s) => s.controls) as { update?: () => void } | null;
   const aspect = width > 0 && height > 0 ? width / height : 1;
-  const distance = useMemo(() => fitDistanceWithDice(aspect, elevation), [aspect, elevation]);
+  const distance = useMemo(() => fitDistance(aspect), [aspect]);
 
   useLayoutEffect(() => {
     if (camera instanceof PerspectiveCamera) {

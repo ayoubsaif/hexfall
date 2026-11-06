@@ -1,8 +1,8 @@
 // shadcn/ui Sheet: a Radix dialog sliding in from an edge (the mobile event-log drawer).
 import * as DialogPrimitive from "@radix-ui/react-dialog";
-import { X } from "lucide-react";
 import type { ComponentProps, ReactNode } from "react";
 import { useTranslation } from "react-i18next";
+import { SealIcon } from "./SealIcon.tsx";
 import { cn } from "@/lib/utils.ts";
 import { useHudRoot } from "./hud-root.ts";
 
@@ -40,15 +40,15 @@ export function SheetContent({
         )}
         {...props}
       >
-        <div className="flex items-center justify-between gap-2">
+        <div className="hud-leather hud-title flex items-center justify-between gap-2 !pr-3">
           <DialogPrimitive.Title className="font-serif text-lg font-semibold">
             {title}
           </DialogPrimitive.Title>
           <DialogPrimitive.Close
             aria-label={t("session.ui.close")}
-            className="inline-flex size-10 shrink-0 cursor-pointer items-center justify-center rounded-md text-muted-foreground outline-none hover:bg-ink/10 hover:text-foreground focus-visible:ring-2 focus-visible:ring-ring"
+            className="inline-flex size-11 shrink-0 cursor-pointer items-center justify-center outline-none transition-transform hover:scale-110 focus-visible:ring-2 focus-visible:ring-ring"
           >
-            <X className="size-4" aria-hidden="true" />
+            <SealIcon className="size-full drop-shadow-md" />
           </DialogPrimitive.Close>
         </div>
         {children}

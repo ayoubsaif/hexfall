@@ -82,7 +82,7 @@ export function ChoiceGroup<V extends string>({
               aria-checked={checked}
               tabIndex={checked ? 0 : -1}
               className={cn(
-                "min-h-9 cursor-pointer rounded-full bg-white/10 px-3.5 text-sm font-semibold text-muted-foreground transition-colors duration-150 outline-none hover:text-foreground focus-visible:ring-2 focus-visible:ring-ring aria-checked:bg-primary aria-checked:text-primary-foreground max-sm:min-h-10 motion-reduce:transition-none",
+                "min-h-9 cursor-pointer rounded-full bg-ink/10 px-3.5 text-sm font-semibold text-muted-foreground transition-colors duration-150 outline-none hover:text-foreground focus-visible:ring-2 focus-visible:ring-ring aria-checked:bg-primary aria-checked:text-primary-foreground max-sm:min-h-10 motion-reduce:transition-none",
               )}
               onClick={() => onChange(c.value)}
               onKeyDown={(e) => {

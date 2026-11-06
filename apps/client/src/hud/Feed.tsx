@@ -100,7 +100,7 @@ export function Toasts() {
           key={t.id}
           data-testid="toast"
           data-tone={t.tone}
-          className="pointer-events-auto flex animate-fade-in items-center gap-2 rounded-xl border-l-4 border-transparent bg-hud px-3 py-2 shadow-lg shadow-black/25 backdrop-blur-md data-[tone=bad]:border-bad data-[tone=good]:border-ok data-[tone=info]:border-wait"
+          className="pointer-events-auto flex animate-fade-in items-center gap-2 rounded-xl border-l-4 border-transparent paper px-3 py-2 backdrop-blur-sm data-[tone=bad]:border-bad data-[tone=good]:border-ok data-[tone=info]:border-wait"
         >
           <span>{t.text}</span>
           <DismissButton onClick={() => dismissToast(t.id)} />
@@ -143,7 +143,7 @@ export function Rejection() {
     <div
       role="alert"
       data-interactive
-      className="pointer-events-auto flex animate-fade-in items-center gap-2 rounded-xl border border-bad bg-hud px-3 py-2 shadow-lg shadow-black/25 backdrop-blur-md"
+      className="pointer-events-auto flex animate-fade-in items-center gap-2 rounded-xl border border-bad paper px-3 py-2 backdrop-blur-sm"
     >
       <span>{ruleErrorText(rejection.code, rejection.message, t)}</span>
       <code className="text-[11px] text-muted-foreground">{rejection.code}</code>

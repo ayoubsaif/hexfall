@@ -5,16 +5,7 @@
 // icon buttons with no panel. Shown only to the active player after setup.
 import type { Resource, ResourceBundle } from "@hexfall/engine";
 import { COSTS, RESOURCES } from "@hexfall/engine/geometry";
-import {
-  Castle,
-  Handshake,
-  House,
-  Landmark,
-  Layers,
-  type LucideIcon,
-  Route,
-  SkipForward,
-} from "lucide-react";
+import type { LucideIcon } from "lucide-react";
 import { useEffect } from "react";
 import { useTranslation } from "react-i18next";
 import { TooltipProvider } from "@/components/ui/tooltip.tsx";
@@ -33,6 +24,7 @@ import {
 import { GameCard } from "../cards/GameCard.tsx";
 import { countdownText, useCountdown } from "../countdown.ts";
 import { useInFlight, useLegal, useOwn, useView } from "../state.ts";
+import { gameIcon } from "../GameIcon.tsx";
 import { Fab, type FabRing } from "./Fab.tsx";
 
 /** "1 Brick, 1 Lumber". */
@@ -82,7 +74,7 @@ const BUILDS: {
   {
     kind: "road",
     label: "buildRoad",
-    icon: Route,
+    icon: gameIcon("road"),
     cost: COSTS.road,
     piece: "roads",
     legal: "buildRoad",
@@ -90,7 +82,7 @@ const BUILDS: {
   {
     kind: "settlement",
     label: "buildSettlement",
-    icon: House,
+    icon: gameIcon("settlement"),
     cost: COSTS.settlement,
     piece: "settlements",
     legal: "buildSettlement",
@@ -98,7 +90,7 @@ const BUILDS: {
   {
     kind: "city",
     label: "buildCity",
-    icon: Castle,
+    icon: gameIcon("city"),
     cost: COSTS.city,
     piece: "cities",
     legal: "buildCity",
@@ -170,7 +162,7 @@ export function ActionButtons() {
           );
         })}
         <Fab
-          icon={Layers}
+          icon={gameIcon("devcard")}
           label={t("play.actions.buyDevCard")}
           tooltip={<CostTip label={t("play.actions.buyDevCard")} cost={COSTS.devCard} />}
           description={t("play.actions.costs", { cost: costText(COSTS.devCard, t) })}
@@ -178,13 +170,13 @@ export function ActionButtons() {
           onClick={() => act({ type: "buyDevCard" })}
         />
         <Fab
-          icon={Landmark}
+          icon={gameIcon("bank")}
           label={t("play.actions.tradeBank")}
           disabled={!c.maritime}
           onClick={() => openDialog("maritime")}
         />
         <Fab
-          icon={Handshake}
+          icon={gameIcon("trade")}
           label={t("play.actions.tradePlayers")}
           disabled={!c.proposeTrade}
           onClick={() =>
@@ -196,7 +188,7 @@ export function ActionButtons() {
           }
         />
         <Fab
-          icon={SkipForward}
+          icon={gameIcon("endturn")}
           label={t("play.actions.endTurn")}
           primary
           ring={ring}

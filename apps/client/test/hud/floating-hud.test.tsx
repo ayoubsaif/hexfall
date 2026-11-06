@@ -134,8 +134,8 @@ describe("Turn status and controls (full HUD)", () => {
     m = mount(<Hud />);
     const road = fab("Build road")!;
     expect(road.disabled).toBe(false);
-    expect(road.className).toContain("rounded-full");
-    expect(road.querySelector("svg")).not.toBeNull();
+    expect(road.className).toContain("hud-leather-round");
+    expect(road.querySelector("img")).not.toBeNull();
     expect(road.closest('[data-slot="card"]')).toBeNull();
     expect(road.parentElement?.querySelector("[data-fab-badge]")?.textContent).toBe("13");
     act(() => {
@@ -326,11 +326,11 @@ describe("GameCard layouts", () => {
     expect(name(peek!).className).toContain("top-0");
     expect(name(peek!).className).not.toContain("bottom-0");
     expect(name(normal!).className).toContain("bottom-0");
-    // Icon in the upper half for peek; centered by default.
+    // Peek: name strip on top and the painted art behind it; centered by default.
     const art = (c: HTMLElement) => c.querySelector<HTMLElement>("[data-card-art]")!;
     expect(art(peek!).className).toContain("items-start");
     expect(art(normal!).className).toContain("items-center");
-    expect(art(peek!).querySelector("[data-card-icon]")).not.toBeNull();
+    expect(art(peek!).style.backgroundImage).toContain("cards/dev/knight.webp");
     // Badge top right in both.
     for (const c of [peek!, normal!]) {
       expect(c.querySelector('[data-slot="badge"]')?.className).toContain("-right-1.5");

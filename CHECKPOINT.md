@@ -1,5 +1,31 @@
 # Hexfall: session checkpoint (2026-11-04)
 
+## 2026-11-06 update: `settlecoast-parchment-ui` (in progress, uncommitted)
+
+Restyle of the UI to a parchment look (cream paper, forest green, leather buttons, Cormorant Garamond + Manrope). Change: `openspec/changes/settlecoast-parchment-ui/` (proposal, design, `specs/parchment-theme`, tasks). Run `/opsx:apply settlecoast-parchment-ui` to continue. Style reference was captured with REA from settlecoast.com (palette, fonts, framing only; **no artwork or code copied**).
+
+**Done (tasks 1, 2, 3.1-3.3, 4.1-4.4, 5, 6.1, 6.3, 7 ticked in tasks.md):**
+
+- Tokens/fonts in `apps/client/src/style.css` (`--color-paper|ink|forest|leather|gold|cream`; old `hud*`, `primary`, etc. re-pointed at them), `.paper`, `.paper-solid`, `.frame` (corner brackets via `::before`) utilities, aurora removed for a static vignette. Fonts are self-hosted in `apps/client/public/fonts` (preloaded in `index.html`).
+- All `components/ui` primitives restyled; `bg-hud`/`bg-white/N`/`bg-black/N` swept to `paper`/`bg-ink/N`/`bg-cream/70` across `hud/` and `settings/`.
+- `StartScreen`, `Lobby`, `SavedGames` headings in serif; start card has tagline + description (new i18n keys `session.start.*`, `session.splash.*` in en and es).
+- `hud/Splash.tsx` mounted by `SplashGate` in `App.tsx` while `useTheme().status === "loading"`. Progress bar is indeterminate (the loader reports no progress). Tips rotate every 6 s; pause/next; no auto-rotate with reduced motion.
+- Cards: square corners (`rounded-none`); dev cards use painted art `apps/client/public/cards/dev/<card>.webp`, made by `tools/dev-cards-gen.mjs` (Gemini `gemini-nano-banana-2.1`, `GEMINI_API_KEY` in gitignored `.env`; `--force <card>` to redo). `GameCard` uses `devCardArtUrl`; the icon overlay and `DEV_ICON` are gone.
+- Tests: new `test/theme/contrast.test.ts` (token contrast), `test/hud/Splash.test.tsx`; 599 client tests pass. `vp check` fails only on 3 pre-existing unformatted files (`.github/workflows/fly-deploy.yml`, `fly.toml`, `docs/art/minimal/build.mjs`).
+
+**Still open:**
+
+- 3.4 and 4.5: verify layout at 360x740, 900x500, 1440x900 (no overlap/horizontal scroll). Only start screen and lobby were seen in a browser; the in-game HUD (needs a started 3-player game) has not been looked at.
+- 6.2: tests for selected tile `aria-pressed` and for no third-party font request.
+- 6.4: screenshots of start, lobby, game HUD.
+- 6.5: docs/README screenshots; at archive time note that this supersedes the dark-glass look (`hud-tailwind-cards`) and aurora (`aurora-background`), which are not in main specs.
+- Spec and design say panels are opaque; in code `.paper` is 93% opaque (`--color-hud`) and `.paper-solid` is 100%. Reconcile the text or the code.
+- Possible polish: `TurnFocus` heading font, resource card frame contrast against paper (task 4.1 says re-check 3:1), option tiles on the start screen were not built (Hexfall has no AI/online features).
+
+**Not mine, do not lose:** uncommitted work from another session in `apps/client/src/scene/` (dice, `useFitCamera`), `game/diceThrow.ts`, tests under `test/scene/dice` and `test/game/diceThrow.test.tsx`, `openspec/specs/board-dice/spec.md`, and `openspec/changes/archive/2026-11-06-dice-center-fade/`. `vp fmt` was run on `apps/client/src` and `apps/client/test`, so check `git diff` on those before committing. Commit parchment files separately.
+
+**Local testing tips:** port 8080 may already be used by another server. Run a private one: `PORT=8091 ALLOWED_ORIGIN=http://localhost:5199 node apps/server/src/main.ts` (needs Redis on :6379) and the client with `VITE_SERVER_URL=ws://localhost:8091 pnpm exec vp dev --port 5199` from `apps/client`. Headless Chromium screenshots render blank (WebGL); use the Chrome tools instead. Do not `pkill -f` with a pattern that matches your own shell command.
+
 Hexfall (working title) is an online, 3–4 player, human-only implementation of the Catan base-game rules (5th edition, 2020 rulebook, as specified in the user's AGENTS.md rules text). It has an **original visual identity**: no Catan name, logo or official art.
 
 ## Done

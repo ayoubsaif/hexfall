@@ -64,18 +64,18 @@ export function Fab({
             aria-describedby={desc ? id : undefined}
             data-primary={primary || undefined}
             className={cn(
-              "relative inline-flex cursor-pointer items-center justify-center rounded-full shadow-lg shadow-black/30 outline-none",
+              "relative inline-flex cursor-pointer items-center justify-center shadow-lg shadow-black/30 outline-none",
               "transition-[translate,background-color,opacity] duration-150 focus-visible:ring-2 focus-visible:ring-ring",
               "hover:-translate-y-0.5 disabled:pointer-events-none disabled:cursor-default disabled:opacity-50",
               primary
-                ? "size-14 bg-primary text-primary-foreground max-sm:size-12 short:size-12"
-                : "size-12 bg-hud text-hud-fg backdrop-blur-md hover:bg-hud-solid max-sm:size-11 short:size-11",
+                ? "size-14 hud-leather-round max-sm:size-12 short:size-12"
+                : "size-12 hud-leather-round max-sm:size-11 short:size-11",
               "aria-pressed:bg-primary aria-pressed:text-primary-foreground",
               className,
             )}
             {...props}
           >
-            <Icon aria-hidden="true" strokeWidth={2} className={primary ? "size-6" : "size-5"} />
+            <Icon aria-hidden="true" strokeWidth={2} className={primary ? "size-9" : "size-8"} />
             {ring && (
               <svg
                 aria-hidden="true"

@@ -1,22 +1,52 @@
-// Two 3D dice on a mat beside the island (openspec physics-dice-3d; specs board-dice). A new
-// roll that should animate is simulated once with physics and played back; anything else
-// shows the dice at rest. The die model sits inside each body with a fixed cube rotation, so
-// the side that lands up always shows the server's value. The physics code loads on mount.
+// Two 3D dice thrown onto the middle of the island (openspec physics-dice-3d, dice-center-fade;
+// specs board-dice). A new roll that should animate is simulated once with physics and played
+// back; otherwise the dice show at rest (or not at all for a snapshot). They rest 5 s, fade
+// out and hide. The die model sits inside each body with a fixed cube rotation, so the side
+// that lands up always shows the server's value. The physics code loads on mount.
 import { useFrame, useThree } from "@react-three/fiber";
 import { useEffect, useLayoutEffect, useRef, useState } from "react";
-import type { Group } from "three";
+import type { Group, Material, Mesh, Object3D } from "three";
 import { useDiceThrow } from "../../game/diceThrow.ts";
-import { latestRoll, previousRoll } from "../../game/status.ts";
+import { latestRoll } from "../../game/status.ts";
 import { setDiceSettled } from "../../store/dice.ts";
 import { useGameStore } from "../../store/game.ts";
 import { useRoomStore } from "../../store/room.ts";
 import { Asset } from "../../theme/index.ts";
-import { DICE_AREA, diceAreaPlacement } from "./area.ts";
-import { DiceController, type DiceFrame, type Planner } from "./controller.ts";
+import { useViewStore } from "../../store/view.ts";
+import { DICE_LIFT, DICE_SCALE, diceZoomBoost } from "./area.ts";
+import { DiceController, type Planner } from "./controller.ts";
+import { diceObstacles } from "./obstacles.ts";
 import { rotationQuaternion } from "./faces.ts";
 
-const MAT_COLOR = "#21423a";
-const MAT_RIM = 0.12;
+const noRaycast = () => undefined;
+
+/**
+ * Prepares a die's meshes once (they may load later, so this runs every visible frame and
+ * skips meshes already done): no pointer picks, and its own materials so the fade does not
+ * touch shared ones. Then writes the opacity; materials are transparent only while fading.
+ */
+function applyOpacity(root: Object3D | null, opacity: number): void {
+  root?.traverse((o) => {
+    const mesh = o as Mesh;
+    if (!mesh.isMesh) return;
+    if (!mesh.userData.diceReady) {
+      mesh.raycast = noRaycast;
+      mesh.material = Array.isArray(mesh.material)
+        ? mesh.material.map((m) => m.clone())
+        : mesh.material.clone();
+      mesh.userData.diceReady = true;
+    }
+    const mats: Material[] = Array.isArray(mesh.material) ? mesh.material : [mesh.material];
+    for (const m of mats) {
+      const fading = opacity < 1;
+      if (m.transparent !== fading) {
+        m.transparent = fading;
+        m.needsUpdate = true;
+      }
+      m.opacity = opacity;
+    }
+  });
+}
 
 /** Loads the physics planner once; null while loading or if loading failed. */
 function usePlanner(): Planner | null {
@@ -35,7 +65,12 @@ function usePlanner(): Planner | null {
   return planner;
 }
 
-function apply(frame: DiceFrame, bodies: (Group | null)[], models: (Group | null)[]): void {
+function apply(c: DiceController, bodies: (Group | null)[], models: (Group | null)[]): void {
+  const { frame, visible, opacity } = c;
+  bodies.forEach((b) => {
+    if (b) b.visible = visible;
+    if (visible) applyOpacity(b, opacity);
+  });
   frame.bodies.forEach((pose, i) => {
     bodies[i]?.position.set(...pose.position);
     bodies[i]?.quaternion.set(...pose.quaternion);
@@ -43,16 +78,18 @@ function apply(frame: DiceFrame, bodies: (Group | null)[], models: (Group | null
   frame.models.forEach((m, i) => models[i]?.quaternion.copy(rotationQuaternion(m)));
 }
 
+/** `floorY`: height of the land surface the dice land on. */
 export function BoardDice({ floorY }: { floorY: number }) {
   const log = useGameStore((s) => s.log);
+  const view = useGameStore((s) => s.view);
   const room = useRoomStore((s) => s.room) ?? "";
-  const aspect = useThree((s) => (s.size.height > 0 ? s.size.width / s.size.height : 1));
   const invalidate = useThree((s) => s.invalidate);
+  const zoom = useViewStore((s) => s.zoom);
   const roll = latestRoll(log);
   const thrown = useDiceThrow(roll);
   const planner = usePlanner();
   const controller = useRef<DiceController | null>(null);
-  controller.current ??= new DiceController(previousRoll(log));
+  controller.current ??= new DiceController();
   const body0 = useRef<Group>(null);
   const body1 = useRef<Group>(null);
   const model0 = useRef<Group>(null);
@@ -64,9 +101,16 @@ export function BoardDice({ floorY }: { floorY: number }) {
   // One decision per new roll (thrown.key changes once per roll index).
   useLayoutEffect(() => {
     const c = controller.current!;
-    const outcome = c.roll({ mode: thrown.mode, roll, previous: previousRoll(log), room, planner });
+    const outcome = c.roll({
+      mode: thrown.mode,
+      reason: thrown.reason,
+      roll,
+      room,
+      planner,
+      obstacles: view && thrown.mode === "animate" ? diceObstacles(view) : [],
+    });
     if (outcome.settled !== null) setDiceSettled(outcome.settled);
-    apply(c.frame, ...refs());
+    apply(c, ...refs());
     invalidate();
     // Only a new throw decision re-runs this; later log updates in the turn do not.
     // eslint-disable-next-line react-hooks/exhaustive-deps
@@ -76,23 +120,18 @@ export function BoardDice({ floorY }: { floorY: number }) {
     const c = controller.current!;
     if (!c.playing) return;
     const done = c.tick(state.clock.getElapsedTime());
-    apply(c.frame, ...refs());
+    apply(c, ...refs());
     if (done !== null) setDiceSettled(done);
   });
 
-  const place = diceAreaPlacement(aspect);
   return (
-    <group position={[place.x, floorY, place.z]} rotation={[0, place.yaw, 0]}>
-      <mesh rotation={[-Math.PI / 2, 0, 0]} position={[0, 0.001, 0]} receiveShadow>
-        <planeGeometry args={[DICE_AREA.halfX * 2 + MAT_RIM, DICE_AREA.halfZ * 2 + MAT_RIM]} />
-        <meshStandardMaterial color={MAT_COLOR} roughness={0.95} />
-      </mesh>
-      <group ref={body0}>
+    <group position={[0, floorY + DICE_LIFT, 0]} scale={DICE_SCALE * diceZoomBoost(zoom)}>
+      <group ref={body0} visible={false}>
         <group ref={model0}>
           <Asset assetKey="dice.die" />
         </group>
       </group>
-      <group ref={body1}>
+      <group ref={body1} visible={false}>
         <group ref={model1}>
           <Asset assetKey="dice.die" />
         </group>

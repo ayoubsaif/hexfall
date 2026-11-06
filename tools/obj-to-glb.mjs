@@ -4,7 +4,7 @@
 // Reads docs/art/sources/dice/Dice.obj + Dice.mtl, checks which side carries which value by
 // counting pips, centers the die on the origin, scales its edge to 0.30 units, and writes a
 // meshopt-compressed GLB into the diorama theme with two materials: "Body" (the source's
-// "Red") and "Pips" (the source's "White"), colored like the client's die (white body, black
+// "Red") and "Pips" (the source's "White"), colored like the client's die (red body, gold
 // pips; apps/client/src/theme/die.ts). Deterministic: same input, same bytes.
 //
 // Usage: pnpm run models:dice   (or: node tools/obj-to-glb.mjs)

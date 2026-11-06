@@ -7,19 +7,31 @@
 // geometry is built in the XY plane and rotated -90° about X, so shape +Y becomes -Z,
 // the top of the board (row 1). Each shape's UVs span its square bounding box, so a
 // square image's top edge faces the top of the board.
+import { useTexture } from "@react-three/drei";
 import {
   BufferGeometry,
   CircleGeometry,
   CylinderGeometry,
   DoubleSide,
   Float32BufferAttribute,
+  MirroredRepeatWrapping,
   RingGeometry,
+  SRGBColorSpace,
   Shape,
   ShapeGeometry,
   type Texture,
 } from "three";
 import type { AssetKey } from "./keys.ts";
-import { ISO_SIDE_HEIGHT, ISO_THICKNESS, type Projection, isoTopPixel, pixelUv } from "./relief.ts";
+import {
+  ISO_SIDE_HEIGHT,
+  ISO_THICKNESS,
+  LAND_ROUNDING,
+  LAND_THICKNESS,
+  type Projection,
+  domeHeight,
+  isoTopPixel,
+  pixelUv,
+} from "./relief.ts";
 import { useLandRelief } from "./useLandRelief.ts";
 
 /** Hex circumradius: tiles and sea are pointy-top hexes with corners at ±Z. */
@@ -243,6 +255,133 @@ export function isoGeometry(): { top: BufferGeometry; sides: BufferGeometry } {
   return isoCache;
 }
 
+/** Soil texture repeats per board unit on the block walls. */
+const SOIL_TILES_PER_UNIT = 0.9;
+export const SOIL_URL = "/textures/soil.webp";
+
+const blockCache = new Map<string, { top: BufferGeometry; sides: BufferGeometry }>();
+
+/** Hex ring of `inset` units inside the hex outline, at height y (corner i, mitred). */
+function ring(inset: number, y: number): [number, number, number][] {
+  const r = HEX_RADIUS - inset / Math.cos(Math.PI / 6);
+  return Array.from({ length: 6 }, (_, i) => {
+    const a = (i * Math.PI) / 3;
+    return [r * Math.sin(a), y, r * Math.cos(a)] as [number, number, number];
+  });
+}
+
+/** Wall shade (multiplies the terrain image or earth color): lit at the rim, dark at the base. */
+const WALL_TOP: [number, number, number] = [1, 1, 1];
+const WALL_BOTTOM: [number, number, number] = [0.28, 0.26, 0.26];
+
+/**
+ * A tall land block: a domed top (UVs into the isometric image) whose edge curves down in a
+ * quarter-round shoulder of LAND_ROUNDING into straight earth sides of LAND_THICKNESS. The
+ * dome (see `domeHeight`) is zero near edges and corners so pieces stay on y = 0.
+ * `top` takes the image; `sides` carry a vertex-colour earth gradient.
+ */
+export function landBlockGeometry(
+  assetKey = "",
+  iso = true,
+): { top: BufferGeometry; sides: BufferGeometry } {
+  const cacheKey = `${assetKey}|${iso}`;
+  const cached = blockCache.get(cacheKey);
+  if (cached) return cached;
+  const b = LAND_ROUNDING;
+  const steps = 6;
+  const shoulder: { inset: number; y: number }[] = [{ inset: b, y: 0 }];
+  for (let k = 1; k <= steps; k++) {
+    const t = (k / steps) * (Math.PI / 2);
+    shoulder.push({ inset: b * (1 - Math.sin(t)), y: -b * (1 - Math.cos(t)) });
+  }
+
+  const pos: number[] = [];
+  const uv: number[] = [];
+  // Isometric art squashes the top face; top-down art spans the hex corners.
+  const topUv = (x: number, z: number): [number, number] =>
+    iso ? isoTopUv(x, z) : [0.5 + x / (2 * HEX_RADIUS), 0.5 - z / (2 * HEX_RADIUS)];
+  const push = (x: number, y: number, z: number) => {
+    pos.push(x, y, z);
+    uv.push(...topUv(x, z));
+  };
+  // Shoulder strips (flat ring at y = 0 down to the vertical wall).
+  for (let k = 0; k < shoulder.length - 1; k++) {
+    const a = ring(shoulder[k]!.inset, shoulder[k]!.y);
+    const c = ring(shoulder[k + 1]!.inset, shoulder[k + 1]!.y);
+    for (let i = 0; i < 6; i++) {
+      const j = (i + 1) % 6;
+      for (const p of [a[i]!, c[i]!, a[j]!, a[j]!, c[i]!, c[j]!]) push(...p);
+    }
+  }
+  // Domed cap: polar grid over the inset hex (6 sides × SUB points per side, N rings).
+  const SUB = 6;
+  const N = 8;
+  const edge = ring(b, 0);
+  const boundary: [number, number][] = [];
+  for (let i = 0; i < 6; i++) {
+    const p0 = edge[i]!;
+    const p1 = edge[(i + 1) % 6]!;
+    for (let m = 0; m < SUB; m++) {
+      const f = m / SUB;
+      boundary.push([p0[0] + (p1[0] - p0[0]) * f, p0[2] + (p1[2] - p0[2]) * f]);
+    }
+  }
+  const at = (j: number, m: number): [number, number, number] => {
+    const [bx, bz] = boundary[m % boundary.length]!;
+    const s = j / N;
+    const x = bx * s;
+    const z = bz * s;
+    // Falls to exactly zero on the cap boundary (s = 1), so it meets the rim without cracks.
+    return [x, domeHeight(assetKey, 0) * (1 - s * s) ** 2, z];
+  };
+  for (let j = 0; j < N; j++) {
+    for (let m = 0; m < boundary.length; m++) {
+      const a = at(j, m);
+      const a2 = at(j, m + 1);
+      const c = at(j + 1, m);
+      const c2 = at(j + 1, m + 1);
+      // Wound to face up (+Y), like the shoulder strips.
+      for (const p of j === 0 ? [a, c, c2] : [a, c, a2, a2, c, c2]) push(...p);
+    }
+  }
+  const top = new BufferGeometry();
+  top.setAttribute("position", new Float32BufferAttribute(pos, 3));
+  top.setAttribute("uv", new Float32BufferAttribute(uv, 2));
+  top.computeVertexNormals();
+
+  // Vertical wall with a colour gradient.
+  const wall = ring(0, -b);
+  const bottom = ring(0, -LAND_THICKNESS);
+  const wp: number[] = [];
+  const wc: number[] = [];
+  const wu: number[] = [];
+  const vert = (p: [number, number, number], low: boolean, along: number) => {
+    wp.push(...p);
+    // The wall tiles the soil texture: u runs around the hex (one edge = one board unit),
+    // v runs down the wall.
+    wu.push(along * SOIL_TILES_PER_UNIT, p[1] * SOIL_TILES_PER_UNIT);
+    wc.push(...(low ? WALL_BOTTOM : WALL_TOP));
+  };
+  for (let i = 0; i < 6; i++) {
+    const j = i + 1;
+    const jj = j % 6;
+    vert(wall[i]!, false, i);
+    vert(bottom[i]!, true, i);
+    vert(wall[jj]!, false, j);
+    vert(wall[jj]!, false, j);
+    vert(bottom[i]!, true, i);
+    vert(bottom[jj]!, true, j);
+  }
+  const sides = new BufferGeometry();
+  sides.setAttribute("position", new Float32BufferAttribute(wp, 3));
+  sides.setAttribute("color", new Float32BufferAttribute(wc, 3));
+  sides.setAttribute("uv", new Float32BufferAttribute(wu, 2));
+  sides.computeVertexNormals();
+  const out = { top, sides };
+  blockCache.set(cacheKey, out);
+  return out;
+}
+
 /** Side color of raised land tiles whose image (or fallback) has no earth band. */
 export const EARTH_COLOR = "#6b4f33";
 
@@ -251,6 +390,21 @@ const OUTLINE_COLOR = "#1d1a16";
 /** Whether a key draws its thin dark edge (terrain tiles, tokens, badges; not sea). */
 export function hasOutline(key: FlatAssetKey): boolean {
   return key !== "sea";
+}
+
+/** The block's side walls: the soil texture, tiled and mirrored (no seams), shaded dark at the base. */
+function SoilWalls({ geometry }: { geometry: BufferGeometry }) {
+  const map = useTexture(SOIL_URL, (t) => {
+    const tex = t as Texture;
+    tex.wrapS = tex.wrapT = MirroredRepeatWrapping;
+    tex.colorSpace = SRGBColorSpace;
+    tex.anisotropy = 4;
+  });
+  return (
+    <mesh geometry={geometry} castShadow receiveShadow>
+      <meshStandardMaterial vertexColors map={map} roughness={1} metalness={0} side={DoubleSide} />
+    </mesh>
+  );
 }
 
 export interface FlatShapeProps {
@@ -280,28 +434,34 @@ export function FlatShape({ assetKey, color, map, projection = "top" }: FlatShap
   const land = shape === "hex" && assetKey !== "sea";
   const chip = shape === "token";
   const y = chip ? CHIP.face : base + (marker ? FLAT_LAYER.marker : FLAT_LAYER.tile);
+  // A raised land block draws its own textured top and rounded rim, so no flat fill/outline.
+  const block = land && relief.raised;
   const outlineY = chip
     ? CHIP.outline
     : base + (marker ? FLAT_LAYER.markerOutline : FLAT_LAYER.tileOutline);
   return (
     <group>
       {land && relief.raised && (
-        <mesh geometry={isoGeometry().sides} castShadow receiveShadow>
-          <meshStandardMaterial
-            key={iso ? "map" : "color"}
-            color={iso ? "#ffffff" : EARTH_COLOR}
-            map={iso ? map : null}
-            roughness={1}
-            metalness={0}
-            side={DoubleSide}
-          />
-        </mesh>
+        <>
+          <SoilWalls geometry={landBlockGeometry(assetKey, iso).sides} />
+          <mesh geometry={landBlockGeometry(assetKey, iso).top} castShadow receiveShadow>
+            <meshStandardMaterial
+              key={map ? "map" : "color"}
+              color={map ? "#ffffff" : color}
+              map={map ?? null}
+              roughness={1}
+              metalness={0}
+              side={DoubleSide}
+            />
+          </mesh>
+        </>
       )}
       {chip && (
         <mesh geometry={chipSideGeometry()} name="chip-side" castShadow receiveShadow>
           <meshStandardMaterial color={CHIP_EDGE} roughness={0.9} metalness={0} />
         </mesh>
       )}
+      {!block && (
       <mesh geometry={fill} position={[0, y, 0]} receiveShadow>
         <meshStandardMaterial
           key={map ? "map" : "color"}
@@ -314,7 +474,8 @@ export function FlatShape({ assetKey, color, map, projection = "top" }: FlatShap
           polygonOffsetUnits={marker ? -2 : 0}
         />
       </mesh>
-      {hasOutline(assetKey) && (
+      )}
+      {!block && hasOutline(assetKey) && (
         <mesh geometry={outline} position={[0, outlineY, 0]} renderOrder={1}>
           <meshBasicMaterial
             color={OUTLINE_COLOR}

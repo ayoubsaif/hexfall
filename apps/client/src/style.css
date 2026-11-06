@@ -222,6 +222,114 @@ body,
     inset 0 0 0 5px rgb(135 98 53 / 25%),
     0 10px 28px rgb(0 0 0 / 35%);
 }
+/* Square HUD control (openspec improve-touch-camera-and-hud-layout): 0 radius, brown border. */
+.hud-square {
+  border: 2px solid var(--color-leather);
+  border-radius: 0;
+  background-color: var(--color-hud-solid);
+  box-shadow: 0 2px 0 rgb(74 44 26 / 45%);
+}
+.hud-square:where(:hover, [aria-pressed="true"]) {
+  background-color: var(--color-paper-deep);
+}
+/* Leather plaque button (reference art): brown leather, thin gold inner line, brass rivets at
+   both ends. Text and icons turn cream. CSS only. */
+.hud-leather {
+  --color-hud-fg: var(--color-cream);
+  --color-hud-muted: #f1e4c4;
+  --color-foreground: var(--color-cream);
+  --color-muted-foreground: #f1e4c4;
+  --color-ok: #5fd08a;
+  --color-wait: #f0b84a;
+  --color-bad: #ff8f80;
+  color: var(--color-cream);
+  position: relative;
+  border: 2px solid #2a160b;
+  border-radius: 8px;
+  padding-inline: 22px;
+  background:
+    radial-gradient(circle at 50% 50%, #f3d58a 0 1.5px, #b98a3c 2.5px 4.5px, #5a3a14 5.5px, transparent 6px) 5px 50% / 14px 14px no-repeat,
+    radial-gradient(circle at 50% 50%, #f3d58a 0 1.5px, #b98a3c 2.5px 4.5px, #5a3a14 5.5px, transparent 6px) calc(100% - 5px) 50% / 14px 14px no-repeat,
+    linear-gradient(180deg, #8a4a2a 0%, #6b3720 45%, #512a18 100%);
+  box-shadow:
+    inset 0 0 0 1.5px #c9a04e,
+    inset 0 0 0 3px #3a1d0e,
+    inset 0 2px 3px 3px rgb(255 190 120 / 18%),
+    0 3px 6px rgb(0 0 0 / 55%);
+  text-shadow: 0 1px 1px rgb(0 0 0 / 60%);
+}
+/* Title banner for dialogs, drawers and cards: the plaque without the hover brightening. */
+.hud-title {
+  padding-block: 6px;
+  filter: none !important;
+}
+.hud-leather:where(:hover, [aria-pressed="true"]) {
+  filter: brightness(1.15);
+}
+/* Round variant for icon-only buttons: gold ring, no rivets. */
+.hud-leather-round {
+  --color-hud-fg: var(--color-cream);
+  --color-hud-muted: #f1e4c4;
+  --color-foreground: var(--color-cream);
+  --color-muted-foreground: #f1e4c4;
+  --color-ok: #5fd08a;
+  --color-wait: #f0b84a;
+  --color-bad: #ff8f80;
+  color: var(--color-cream);
+  border: 2px solid #2a160b;
+  border-radius: 9999px;
+  background: radial-gradient(circle at 50% 35%, #7b4026 0%, #512a18 80%);
+  box-shadow:
+    inset 0 0 0 2px #d2a653,
+    inset 0 0 0 4px #5d3a14,
+    inset 0 0 0 5px #b98a3c,
+    0 3px 6px rgb(0 0 0 / 55%);
+}
+.hud-leather-round:where(:hover, [aria-pressed="true"]) {
+  filter: brightness(1.2);
+}
+/* Zoom slider: dark brass track, gold knob. */
+.hud-range {
+  appearance: none;
+  height: 12px;
+  cursor: pointer;
+  border-radius: 6px;
+  background: linear-gradient(180deg, #1b0f08, #4a2c1a);
+  border: 1px solid #c9a04e;
+}
+.hud-range::-webkit-slider-thumb {
+  appearance: none;
+  width: 20px;
+  height: 20px;
+  border-radius: 9999px;
+  border: 1px solid #5d3a14;
+  background: radial-gradient(circle at 35% 30%, #fff1b0, #e8bc4a 55%, #a8741c);
+  box-shadow: 0 1px 3px rgb(0 0 0 / 60%);
+}
+.hud-range::-moz-range-thumb {
+  width: 20px;
+  height: 20px;
+  border-radius: 9999px;
+  border: 1px solid #5d3a14;
+  background: radial-gradient(circle at 35% 30%, #fff1b0, #e8bc4a 55%, #a8741c);
+}
+.hud-range:focus-visible {
+  outline: 2px solid var(--color-ring);
+  outline-offset: 3px;
+}
+/* Dark leather header strip for cards (player panels): subtle vertical grain, gold underline. */
+.hud-card-head {
+  --color-hud-fg: var(--color-cream);
+  --color-hud-muted: #f1e4c4;
+  --color-muted-foreground: #f1e4c4;
+  --color-bad: #ff8f80;
+  color: var(--color-cream);
+  background:
+    repeating-linear-gradient(90deg, rgb(255 255 255 / 3.5%) 0 1px, transparent 1px 3px),
+    linear-gradient(180deg, #5a3a26 0%, #3e2616 100%);
+  border-bottom: 2px solid #c9a04e;
+  text-shadow: 0 1px 1px rgb(0 0 0 / 60%);
+}
 .paper-solid {
   background-color: var(--color-paper);
 }

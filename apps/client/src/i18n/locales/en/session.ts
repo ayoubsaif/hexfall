@@ -2,6 +2,9 @@
 // replaced-seat notice, the HUD shell and shared UI components.
 export const session = {
   start: {
+    tagline: "Gather. Trade. Build.",
+    description: "Race your friends to 10 victory points on a little island.",
+    newAdventure: "Begin a new adventure",
     yourName: "Your name",
     seatLost: "Your seat could not be restored.",
     nameTooLong: "Names can be at most {{max}} characters.",
@@ -11,6 +14,39 @@ export const session = {
     joinRoom: "Join room",
     createInstead: "Create a new room instead",
     waitingForServer: "Waiting for the server…",
+  },
+  splash: {
+    eyebrow: "Gather · Trade · Build",
+    tagline: "A little island. A world of possibilities.",
+    loading: "Loading island artwork…",
+    fieldGuide: "Field guide",
+    pause: "Pause tips",
+    resume: "Resume tips",
+    next: "Next tip",
+    progress: "Loading progress",
+    tipCount: "{{n}} / {{total}}",
+    tips: {
+      t1: {
+        title: "Start with steady income.",
+        body: "Reach 10 points on your turn. Settling near 6s and 8s gives you stronger income.",
+      },
+      t2: {
+        title: "Spread your numbers.",
+        body: "Different dice numbers and all five resources keep you producing whatever is rolled.",
+      },
+      t3: {
+        title: "Harbors are shortcuts.",
+        body: "A harbor lowers your trade rate with the bank. Match it to the resource you produce most.",
+      },
+      t4: {
+        title: "Watch the robber.",
+        body: "A 7 moves the robber and can empty your hand. Spend before you hold more than seven cards.",
+      },
+      t5: {
+        title: "Roads open the map.",
+        body: "Roads connect your settlements and the longest one is worth two points.",
+      },
+    },
   },
   lobby: {
     room: "Room",

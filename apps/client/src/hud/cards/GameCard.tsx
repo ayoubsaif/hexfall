@@ -2,7 +2,6 @@
 // "Resource picture cards", "Development cards as cards", "Card accessibility";
 // design decisions 5 and 6).
 import type { DevCard, Resource } from "@hexfall/engine";
-import { Coins, Gift, type LucideIcon, Route, Shield, Trophy } from "lucide-react";
 import { type CSSProperties, type ReactNode, useId } from "react";
 import { useTranslation } from "react-i18next";
 import { Badge } from "@/components/ui/badge.tsx";
@@ -27,6 +26,16 @@ export function cardArtUrl(resource: Resource): string {
   return `${APP_BASE.endsWith("/") ? APP_BASE : `${APP_BASE}/`}cards/${resource}.webp`;
 }
 
+/** URL of a resource's painted icon (public/ui/resources, transparent 128 px). */
+export function resourceIconUrl(resource: Resource): string {
+  return `${APP_BASE.endsWith("/") ? APP_BASE : `${APP_BASE}/`}ui/resources/${resource}.webp`;
+}
+
+/** URL of a development card's painted art (public/cards/dev, made by tools/dev-cards-gen.mjs). */
+export function devCardArtUrl(card: DevCard): string {
+  return `${APP_BASE.endsWith("/") ? APP_BASE : `${APP_BASE}/`}cards/dev/${card}.webp`;
+}
+
 /** Frame color per resource (theme tokens in style.css). */
 export const RESOURCE_FRAME: Readonly<Record<Resource, string>> = {
   brick: "var(--color-res-brick)",
@@ -38,18 +47,10 @@ export const RESOURCE_FRAME: Readonly<Record<Resource, string>> = {
 
 const DEV_FRAME = "#4b4f7a";
 
-export const DEV_ICON: Readonly<Record<DevCard, LucideIcon>> = {
-  knight: Shield,
-  roadBuilding: Route,
-  yearOfPlenty: Gift,
-  monopoly: Coins,
-  victoryPoint: Trophy,
-};
-
 const SIZE: Record<CardSize, string> = {
-  sm: "w-7 rounded-[3px] p-px",
-  md: "w-14 rounded-md p-[3px]",
-  lg: "w-[72px] rounded-lg p-1 max-sm:w-[52px] short:w-[52px]",
+  sm: "w-7 rounded-md p-px",
+  md: "w-14 rounded-xl p-[3px]",
+  lg: "w-[72px] rounded-xl p-1 max-sm:w-[52px] short:w-[52px]",
 };
 
 const NAME: Record<CardSize, string> = {
@@ -111,7 +112,6 @@ export function GameCard(props: GameCardProps) {
   const interactive = onClick !== undefined;
   const stacked = count !== undefined && count >= 2 && size !== "sm";
   const showBadge = count !== undefined && (count >= 2 || (alwaysShowCount && count >= 1));
-  const Icon = props.dev ? DEV_ICON[props.dev] : undefined;
   const uid = useId();
   const descId = description ? `${uid}-desc` : undefined;
   const peek = layout === "peek";
@@ -135,24 +135,29 @@ export function GameCard(props: GameCardProps) {
           "relative flex aspect-[5/7] w-full justify-center overflow-hidden bg-black/40 bg-cover bg-center",
           // Peek: icon centered in the upper half, below the top name strip.
           peek ? "items-start pt-[24%] max-sm:pt-[28%] short:pt-[28%]" : "items-center",
-          size === "sm" ? "rounded-[2px]" : "rounded-[4px]",
+          size === "sm" ? "rounded-[5px]" : "rounded-lg",
         )}
         style={
-          props.resource ? { backgroundImage: `url(${cardArtUrl(props.resource)})` } : undefined
+          props.resource
+            ? {
+                // Tinted face in the resource color; the icon sits on top (no terrain art).
+                backgroundImage: `radial-gradient(circle at 50% 38%, color-mix(in srgb, var(--frame) 55%, white) 0%, var(--frame) 70%, color-mix(in srgb, var(--frame) 70%, black) 100%)`,
+              }
+            : { backgroundImage: `url(${devCardArtUrl(props.dev)})` }
         }
       >
-        {Icon && (
-          <Icon
-            data-card-icon
+        {props.resource && (
+          <img
+            src={resourceIconUrl(props.resource)}
+            alt=""
+            width={128}
+            height={128}
+            draggable={false}
+            data-resource-icon
             className={cn(
-              "text-hud-fg/90",
-              size === "sm"
-                ? "size-3.5"
-                : size === "md"
-                  ? "size-6"
-                  : "size-7 max-sm:size-5 short:size-5",
+              "pointer-events-none w-[78%] drop-shadow-[0_2px_2px_rgb(0_0_0/45%)]",
+              peek && "mt-0",
             )}
-            strokeWidth={1.75}
           />
         )}
         <span

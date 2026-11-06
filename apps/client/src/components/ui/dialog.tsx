@@ -28,18 +28,20 @@ export function DialogContent({
     <DialogPrimitive.Portal container={container}>
       <DialogPrimitive.Overlay
         data-interactive
-        className="pointer-events-auto fixed inset-0 z-40 bg-black/30 data-[state=open]:animate-fade-in"
+        className="pointer-events-auto fixed inset-0 z-40 bg-black/45 data-[state=open]:animate-fade-in"
       />
       <DialogPrimitive.Content
         data-interactive
         className={cn(
-          "pointer-events-auto fixed top-1/2 left-1/2 z-50 max-h-[calc(100%-32px)] w-[min(380px,calc(100%-32px))] -translate-x-1/2 -translate-y-1/2 overflow-auto rounded-xl bg-hud-solid/95 p-4 text-foreground shadow-xl shadow-black/40 backdrop-blur-md outline-none data-[state=open]:animate-dialog-in",
+          "pointer-events-auto fixed top-1/2 left-1/2 z-50 max-h-[calc(100%-32px)] w-[min(380px,calc(100%-32px))] -translate-x-1/2 -translate-y-1/2 frame paper overflow-auto rounded-xl p-5 text-foreground outline-none data-[state=open]:animate-dialog-in",
           className,
         )}
         {...(description === undefined ? { "aria-describedby": undefined } : {})}
         {...props}
       >
-        <DialogPrimitive.Title className={hideHeader ? "sr-only" : "mb-2 text-base font-semibold"}>
+        <DialogPrimitive.Title
+          className={hideHeader ? "sr-only" : "hud-leather hud-title mb-3 text-center font-serif text-xl font-semibold"}
+        >
           {title}
         </DialogPrimitive.Title>
         {description !== undefined && (

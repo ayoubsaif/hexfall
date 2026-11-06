@@ -1,6 +1,8 @@
 // Settings entry point (specs/client-settings "Settings entry point"): one gear button in the
 // HUD corner, and the dialog host mounted once in the HUD. The dialog code loads on first open.
-import { Settings } from "lucide-react";
+import { gameIcon } from "../hud/GameIcon.tsx";
+
+const Settings = gameIcon("settings");
 import { Suspense, lazy, useState } from "react";
 import { useTranslation } from "react-i18next";
 import { openSettings, registerSettingsTrigger, useSettingsStore } from "./sections.ts";
@@ -21,10 +23,10 @@ export function SettingsButton() {
       aria-haspopup="dialog"
       aria-expanded={open}
       title={label}
-      className="pointer-events-auto grid size-[42px] cursor-pointer place-items-center rounded-full bg-hud text-hud-fg shadow-lg shadow-black/25 backdrop-blur-md transition-colors duration-150 outline-none hover:text-white focus-visible:ring-2 focus-visible:ring-ring max-sm:size-[46px] short:size-[46px] motion-reduce:transition-none"
+      className="pointer-events-auto grid size-10 cursor-pointer place-items-center hud-leather-round transition-colors duration-150 outline-none focus-visible:ring-2 focus-visible:ring-ring max-sm:size-11 short:size-11 pointer-coarse:size-11 motion-reduce:transition-none"
       onClick={openSettings}
     >
-      <Settings aria-hidden size={18} />
+      <Settings aria-hidden className="size-6" />
     </button>
   );
 }

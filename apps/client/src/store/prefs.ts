@@ -13,7 +13,12 @@ export interface Prefs {
   volume: number;
   /** Motion choice; "system" follows `prefers-reduced-motion`. */
   motion: MotionPref;
+  /** Plain wheel events over the board: "auto" detects touchpads (pan), "zoom" always zooms. */
+  wheel: WheelPref;
 }
+
+export type WheelPref = "auto" | "zoom";
+export const WHEEL_PREFS: readonly WheelPref[] = ["auto", "zoom"];
 
 export type MotionPref = "system" | "reduce" | "full";
 export const MOTION_PREFS: readonly MotionPref[] = ["system", "reduce", "full"];
@@ -32,6 +37,7 @@ export const DEFAULT_PREFS: Prefs = {
   notify: false,
   volume: 0.6,
   motion: "system",
+  wheel: "auto",
 };
 
 export type PrefsStorage = Pick<Storage, "getItem" | "setItem">;
@@ -57,6 +63,9 @@ export function readPrefs(storage: PrefsStorage | null = defaultStorage()): Pref
       motion: MOTION_PREFS.includes(p.motion as MotionPref)
         ? (p.motion as MotionPref)
         : DEFAULT_PREFS.motion,
+      wheel: WHEEL_PREFS.includes(p.wheel as WheelPref)
+        ? (p.wheel as WheelPref)
+        : DEFAULT_PREFS.wheel,
     };
   } catch {
     return { ...DEFAULT_PREFS };

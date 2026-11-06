@@ -7,7 +7,7 @@ export function Card({ className, ...props }: ComponentProps<"section">) {
     <section
       data-slot="card"
       className={cn(
-        "pointer-events-auto rounded-xl bg-hud text-foreground shadow-lg shadow-black/25 backdrop-blur-md",
+        "pointer-events-auto paper rounded-xl text-foreground backdrop-blur-sm",
         className,
       )}
       {...props}
@@ -16,5 +16,7 @@ export function Card({ className, ...props }: ComponentProps<"section">) {
 }
 
 export function CardTitle({ className, ...props }: ComponentProps<"h2">) {
-  return <h2 className={cn("text-base font-semibold", className)} {...props} />;
+  return (
+    <h2 className={cn("hud-leather hud-title block text-center font-serif text-lg leading-tight font-semibold", className)} {...props} />
+  );
 }

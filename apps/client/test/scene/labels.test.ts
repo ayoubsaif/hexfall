@@ -38,3 +38,13 @@ describe("fitDistance", () => {
     expect(portrait).toBeCloseTo(6.3 / Math.sin(halfH));
   });
 });
+
+import { numberSize } from "../../src/scene/NumberToken.tsx";
+
+describe("number token font size by probability", () => {
+  it("grows with the number of pips, so 6 and 8 are the largest", () => {
+    const sizes = [1, 2, 3, 4, 5].map(numberSize);
+    for (let i = 1; i < sizes.length; i++) expect(sizes[i]!).toBeGreaterThan(sizes[i - 1]!);
+    expect(numberSize(5)).toBeGreaterThan(numberSize(4));
+  });
+});

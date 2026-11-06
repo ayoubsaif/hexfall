@@ -2,6 +2,7 @@
 // pick targets, the board dice and camera controls.
 import { beginnerBoard } from "@hexfall/engine/geometry";
 import { OrbitControls } from "@react-three/drei";
+import { MOUSE, TOUCH } from "three";
 import { useThree } from "@react-three/fiber";
 import { useEffect, useMemo } from "react";
 import { CameraRig } from "./CameraRig.tsx";
@@ -16,6 +17,8 @@ import { producingHexes } from "./motion.ts";
 import { Pieces } from "./Pieces.tsx";
 import { Targets } from "./Targets.tsx";
 import { useFitCamera } from "./useFitCamera.ts";
+import { useGestures } from "./useGestures.ts";
+import { useZoomBridge } from "./useZoomBridge.ts";
 
 /** The live game when the server delivered one, else the beginner preview (board-view "Preview board"). */
 function GameBoard() {
@@ -69,9 +72,11 @@ function useCanvasCursor() {
 
 export function Scene() {
   useCanvasCursor();
+  useGestures();
   // Isometric tile art is painted for one view: start there and allow only a small turn.
   const relief = useLandRelief();
   const fit = useFitCamera(relief.isometric ? (ISO_ELEVATION_DEG * Math.PI) / 180 : undefined);
+  useZoomBridge(fit);
   const turn = relief.isometric ? ISO_AZIMUTH_LIMIT : Infinity;
   // Land hex centers do not depend on the terrain shuffle, so the preview board gives them.
   const landCenters = useMemo(
@@ -102,6 +107,9 @@ export function Scene() {
       />
       <OrbitControls
         makeDefault
+        enableZoom={false}
+        mouseButtons={{ LEFT: MOUSE.ROTATE, MIDDLE: MOUSE.DOLLY, RIGHT: MOUSE.PAN }}
+        touches={{ ONE: TOUCH.ROTATE, TWO: TOUCH.DOLLY_PAN }}
         onStart={() => setCameraDragging(true)}
         onEnd={() => setCameraDragging(false)}
         target={[0, 0, 0]}

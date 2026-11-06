@@ -2,10 +2,11 @@
 // 1, 2 and 8). The whole throw is simulated before any frame is shown, recorded per step,
 // and the die models are remapped so the side that lands up shows the server's value.
 // Pure: no React, no DOM, no clock.
-import { Body, Box, ContactMaterial, Material, Plane, Vec3, World } from "cannon-es";
+import { Body, Box, ContactMaterial, Cylinder, Material, Plane, Vec3, World } from "cannon-es";
 import { THROW_MS } from "../../game/diceThrow.ts";
 import { DIE_EDGE, type DieValue } from "../../theme/die.ts";
 import { type CubeRotation, remapFor, upAxis } from "./faces.ts";
+import type { Obstacle } from "./obstacles.ts";
 import { type AreaSize, type ThrowKey, throwParams } from "./seed.ts";
 
 /** Fixed simulation step (s). */
@@ -15,7 +16,7 @@ export const MAX_SECONDS = THROW_MS / 1000;
 /** Largest tilt from flat a resting die may have (radians). */
 export const MAX_TILT = (15 * Math.PI) / 180;
 /** Tries before giving up and showing the dice at rest. */
-export const MAX_ATTEMPTS = 4;
+export const MAX_ATTEMPTS = 8;
 
 /** The dice area, in its own coordinates (floor at y = 0, centered on the origin). */
 export { DICE_AREA } from "./area.ts";
@@ -50,8 +51,12 @@ export interface Quat {
 
 export const FLOATS_PER_FRAME = 14;
 
-/** Runs one attempt. */
-export function simulate(key: ThrowKey, area: AreaSize = DICE_AREA): SimResult {
+/** Runs one attempt. `obstacles` are the board pieces the dice bump into (static bodies). */
+export function simulate(
+  key: ThrowKey,
+  area: AreaSize = DICE_AREA,
+  obstacles: readonly Obstacle[] = [],
+): SimResult {
   const world = new World({ gravity: new Vec3(0, GRAVITY, 0), allowSleep: true });
   const table = new Material("table");
   const wall = new Material("wall");
@@ -63,6 +68,8 @@ export function simulate(key: ThrowKey, area: AreaSize = DICE_AREA): SimResult {
   world.addContactMaterial(
     new ContactMaterial(dieMat, dieMat, { friction: 0.2, restitution: 0.35 }),
   );
+  const piece = new Material("piece");
+  world.addContactMaterial(new ContactMaterial(piece, dieMat, { friction: 0.3, restitution: 0.3 }));
 
   const floor = new Body({ mass: 0, material: table, shape: new Plane() });
   floor.quaternion.setFromEuler(-Math.PI / 2, 0, 0);
@@ -79,6 +86,17 @@ export function simulate(key: ThrowKey, area: AreaSize = DICE_AREA): SimResult {
     const b = new Body({ mass: 0, material: wall, shape: new Plane() });
     b.position.set(x, WALL_HEIGHT / 2, z);
     b.quaternion.setFromEuler(0, yaw, 0);
+    world.addBody(b);
+  }
+
+  for (const o of obstacles) {
+    const shape =
+      o.shape === "box"
+        ? new Box(new Vec3(...o.half))
+        : new Cylinder(o.radius, o.radius, o.height, 12);
+    const b = new Body({ mass: 0, material: piece, shape });
+    b.position.set(...o.position);
+    if (o.shape === "box") b.quaternion.setFromEuler(0, o.yaw, 0);
     world.addBody(b);
   }
 
@@ -158,11 +176,12 @@ export function planThrow(
   room: string,
   index: number,
   values: readonly [DieValue, DieValue],
+  obstacles: readonly Obstacle[] = [],
   area: AreaSize = DICE_AREA,
   sim: typeof simulate = simulate,
 ): DiceThrowPlan | null {
   for (let attempt = 0; attempt < MAX_ATTEMPTS; attempt++) {
-    const result = sim({ room, index, attempt }, area);
+    const result = sim({ room, index, attempt }, area, obstacles);
     if (!result.settled) continue;
     return {
       recording: result.recording,

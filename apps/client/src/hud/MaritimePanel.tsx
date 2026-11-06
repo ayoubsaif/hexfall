@@ -42,7 +42,7 @@ function CardChoice({
       onClick={onSelect}
       className={cn(
         "pointer-events-auto flex cursor-pointer flex-col items-center gap-1 rounded-lg p-1 transition-transform duration-150 outline-none hover:-translate-y-1 focus-visible:-translate-y-1 focus-visible:ring-2 focus-visible:ring-ring disabled:cursor-not-allowed disabled:opacity-40 disabled:hover:translate-y-0",
-        checked && "bg-white/10 ring-2 ring-primary",
+        checked && "bg-ink/10 ring-2 ring-primary",
       )}
     >
       <GameCard resource={resource} size="md" />
@@ -160,7 +160,7 @@ export function MaritimePanel() {
             value={count}
             disabled={max === 0}
             onChange={(e) => setCount(Math.max(1, Math.floor(Number(e.target.value) || 1)))}
-            className="pointer-events-auto w-16 rounded-md border border-border bg-black/35 px-2 py-1 text-foreground disabled:opacity-50"
+            className="pointer-events-auto w-16 rounded-md border border-border bg-cream/70 px-2 py-1 text-foreground disabled:opacity-50"
           />
         </label>
         {give && get && (

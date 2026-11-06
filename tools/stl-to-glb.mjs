@@ -13,7 +13,7 @@ import { fileURLToPath } from "node:url";
 import { Document, Logger, NodeIO } from "@gltf-transform/core";
 import { EXTMeshoptCompression, KHRMeshQuantization } from "@gltf-transform/extensions";
 import { meshopt } from "@gltf-transform/functions";
-import { MeshoptDecoder, MeshoptEncoder } from "meshoptimizer";
+import { MeshoptDecoder, MeshoptEncoder, MeshoptSimplifier } from "meshoptimizer";
 
 const ROOT = resolve(dirname(fileURLToPath(import.meta.url)), "..");
 const SOURCE_DIR = join(ROOT, "docs", "art", "sources", "pieces");
@@ -24,12 +24,14 @@ const OUT_DIR = join(ROOT, "apps", "client", "public", "themes", "diorama", "mod
  * settlement and city are fitted by their longest horizontal side, at 1.5x their
  * fallback size (0.30 and 0.50), which the owner asked for so the buildings read clearly.
  * upAxis: the source's up axis ("y" or "z"); yawDeg: turn about Y after orienting;
- * crossScale: optional extra factor on Y and Z only (thins a chunky road).
+ * crossScale: optional extra factor on Y and Z only (thins a chunky road);
+ * keep: share of triangles kept by simplification (the models are tiny on screen, so the
+ * source's ~4-10k triangles are far more than the client needs).
  */
 export const PIECES = [
-  { name: "road", upAxis: "z", yawDeg: 0, fit: { mode: "x", size: 0.72 }, crossScale: 0.5 },
-  { name: "settlement", upAxis: "z", yawDeg: 0, fit: { mode: "footprint", size: 0.3 } },
-  { name: "city", upAxis: "z", yawDeg: 0, fit: { mode: "footprint", size: 0.5 } },
+  { name: "road", upAxis: "z", yawDeg: 0, fit: { mode: "x", size: 0.72 }, crossScale: 0.5, keep: 0.2 },
+  { name: "settlement", upAxis: "z", yawDeg: 0, fit: { mode: "footprint", size: 0.3 }, keep: 0.12 },
+  { name: "city", upAxis: "z", yawDeg: 0, fit: { mode: "footprint", size: 0.5 }, keep: 0.1 },
 ];
 
 export const CREASE_DEG = 40;
@@ -224,6 +226,42 @@ export function convertGeometry(stlBytes, piece) {
   return weldWithCreases(fixWinding(fitted));
 }
 
+/**
+ * Reduces a mesh to about `keep` of its triangles. Creased normals split vertices, which
+ * pins the simplifier to those seams, so it works on a position-only weld and the normals are
+ * rebuilt afterwards with `weldWithCreases`.
+ */
+export async function simplifyMesh(mesh, keep) {
+  if (keep >= 1) return mesh;
+  await MeshoptSimplifier.ready;
+  const ids = new Map();
+  const pos = [];
+  const index = new Uint32Array(mesh.index.length);
+  mesh.index.forEach((v, i) => {
+    const x = mesh.position[v * 3];
+    const y = mesh.position[v * 3 + 1];
+    const z = mesh.position[v * 3 + 2];
+    const key = `${x.toFixed(5)},${y.toFixed(5)},${z.toFixed(5)}`;
+    let id = ids.get(key);
+    if (id === undefined) {
+      id = ids.size;
+      ids.set(key, id);
+      pos.push(x, y, z);
+    }
+    index[i] = id;
+  });
+  const target = Math.max(3, Math.floor((index.length * keep) / 3) * 3);
+  const [slim] = MeshoptSimplifier.simplify(index, new Float32Array(pos), 3, target, 0.5, []);
+  console.log(`stl-to-glb: simplified ${index.length / 3} → ${slim.length / 3} triangles`);
+  const corners = new Float32Array(slim.length * 3);
+  slim.forEach((v, i) => {
+    corners[i * 3] = pos[v * 3];
+    corners[i * 3 + 1] = pos[v * 3 + 1];
+    corners[i * 3 + 2] = pos[v * 3 + 2];
+  });
+  return weldWithCreases(corners);
+}
+
 /** Builds and compresses a GLB from an indexed mesh. Resolves to the GLB bytes. */
 export async function writeGlb(mesh, name) {
   await MeshoptEncoder.ready;
@@ -261,14 +299,15 @@ export function createIO() {
 }
 
 export async function convertPiece(piece, sourceDir = SOURCE_DIR) {
-  const mesh = convertGeometry(readFileSync(join(sourceDir, `${piece.name}.stl`)), piece);
-  return writeGlb(mesh, piece.name);
+  const full = convertGeometry(readFileSync(join(sourceDir, `${piece.name}.stl`)), piece);
+  return writeGlb(await simplifyMesh(full, piece.keep ?? 1), piece.name);
 }
 
 async function main() {
   mkdirSync(OUT_DIR, { recursive: true });
   for (const piece of PIECES) {
     const glb = await convertPiece(piece);
+    // (triangle counts are logged by simplifyMesh)
     const out = join(OUT_DIR, `${piece.name}.glb`);
     writeFileSync(out, glb);
     console.log(`stl-to-glb: ${piece.name} → ${out} (${(glb.length / 1024).toFixed(1)} KB)`);

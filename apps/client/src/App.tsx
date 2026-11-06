@@ -4,7 +4,13 @@ import { Hud } from "./hud/Hud.tsx";
 import { useConnection } from "./net/useConnection.ts";
 import { Scene } from "./scene/Scene.tsx";
 import { bindUiToGame } from "./store/ui.ts";
-import { ThemeProvider } from "./theme/index.ts";
+import { Splash } from "./hud/Splash.tsx";
+import { ThemeProvider, useTheme } from "./theme/index.ts";
+
+/** Parchment splash until the theme manifest resolves; it never delays a ready app. */
+function SplashGate() {
+  return useTheme().status === "loading" ? <Splash /> : null;
+}
 
 // Wiring only. net/ runs the session (server -> stores); scene/ draws the board and picks;
 // hud/ is the DOM overlay; theme/ resolves assets. The ui store drops stale intent on
@@ -24,6 +30,7 @@ export function App() {
           <Scene />
         </Canvas>
         <Hud />
+        <SplashGate />
       </div>
     </ThemeProvider>
   );

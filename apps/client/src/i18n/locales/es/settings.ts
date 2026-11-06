@@ -43,6 +43,10 @@ export const settings: Catalog["settings"] = {
     system: "Según el sistema",
     reduce: "Reducir movimiento",
     full: "Movimiento completo",
+    wheel: "Panel táctil y rueda",
+    wheelHint: "En un panel táctil, desplazar con dos dedos mueve el tablero y pellizcar hace zoom. Elige \"La rueda hace zoom\" si desplazar debe hacer siempre zoom.",
+    wheel_auto: "Auto (el panel táctil mueve)",
+    wheel_zoom: "La rueda hace zoom",
   },
   about: {
     version: "Versión {{version}}",

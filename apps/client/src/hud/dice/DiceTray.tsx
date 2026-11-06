@@ -4,7 +4,6 @@
 // of the latest roll, docked at the bottom-right of the board area, or enlarged at the center
 // of the screen while the your-turn focus is open. The dice themselves roll on the board
 // (scene/dice/BoardDice.tsx); the tray announces the roll when they come to rest.
-import { Dices } from "lucide-react";
 import { useEffect, useLayoutEffect, useRef, useState } from "react";
 import type { Seat } from "@hexfall/engine";
 import { useTranslation } from "react-i18next";
@@ -17,6 +16,7 @@ import { useGameStore } from "../../store/game.ts";
 import { useDiceStore } from "../../store/dice.ts";
 import { useDockStore } from "../../store/dock.ts";
 import { setTurnFocus, useUiStore } from "../../store/ui.ts";
+import { DiceArt } from "./DiceArt.tsx";
 import { prefersReducedMotion } from "../cards/useCountChange.ts";
 import { countdownText, useCountdown } from "../countdown.ts";
 import { useInFlight, useLegal, useView } from "../state.ts";
@@ -133,7 +133,7 @@ export function DiceTray({ onSettled = closeFocusOnOwnRoll }: DiceTrayProps = {}
         "pointer-events-auto",
         centered
           ? "fixed top-1/2 left-1/2 z-40 -translate-x-1/2 -translate-y-1/2 [--die:88px] max-sm:[--die:64px]"
-          : "absolute z-10 [--die:44px] max-sm:[--die:36px] short:[--die:36px]",
+          : "absolute z-10 [--die:40px] max-sm:[--die:32px] short:[--die:32px]",
       )}
       style={centered ? undefined : { right: dock.right, bottom: dock.bottom }}
     >
@@ -150,23 +150,22 @@ export function DiceTray({ onSettled = closeFocusOnOwnRoll }: DiceTrayProps = {}
             if (action) act({ type: action });
           }}
           className={cn(
-            "flex items-center gap-[calc(var(--die)*0.45)] rounded-2xl bg-hud px-[calc(var(--die)*0.4)] py-[calc(var(--die)*0.35)] shadow-lg shadow-black/25 outline-none",
-            "transition-[translate,box-shadow] duration-150 focus-visible:ring-2 focus-visible:ring-ring",
-            "data-[ready]:cursor-pointer data-[ready]:ring-2 data-[ready]:ring-wait data-[ready]:hover:-translate-y-0.5",
+            "flex items-center gap-[calc(var(--die)*0.2)] bg-transparent p-1 outline-none",
+            "transition-[translate,filter] duration-150 focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-leather",
+            "data-[ready]:cursor-pointer data-[ready]:[filter:drop-shadow(0_0_6px_var(--color-wait))] data-[ready]:hover:-translate-y-0.5",
             "disabled:cursor-default",
           )}
         >
-          <Dices
-            aria-hidden
-            data-rolling={(thrown.mode === "animate" && !settled) || undefined}
-            className="size-[var(--die)] text-hud-fg data-[rolling]:opacity-60"
-            strokeWidth={1.6}
+          <DiceArt
+            dice={roll && settled ? roll.dice : null}
+            rolling={thrown.mode === "animate" && !settled}
+            className="h-[calc(var(--die)*1.7)] w-[calc(var(--die)*2)] data-[rolling]:opacity-60"
           />
           <span
             data-testid="dice-total"
             data-seven={total === 7 || undefined}
             aria-hidden="true"
-            className="min-w-[2ch] text-center text-lg font-bold text-hud-fg tabular-nums data-[seven]:text-bad"
+            className="min-w-[2ch] text-center text-xl font-bold text-hud-fg tabular-nums [text-shadow:0_1px_0_#f7edd5,0_0_4px_#f7edd5] data-[seven]:text-bad"
           >
             {total ?? ""}
           </span>
@@ -176,7 +175,7 @@ export function DiceTray({ onSettled = closeFocusOnOwnRoll }: DiceTrayProps = {}
             id="dice-countdown"
             data-testid="dice-countdown"
             data-warning={own.warning || undefined}
-            className="pointer-events-none absolute -top-2 -left-2 rounded-full bg-hud px-1.5 py-0.5 text-xs font-semibold text-hud-fg tabular-nums shadow-md shadow-black/25 data-[warning]:text-bad"
+            className="pointer-events-none absolute -top-2 -left-2 hud-square px-1.5 py-0.5 text-xs font-semibold text-hud-fg tabular-nums shadow-md shadow-black/25 data-[warning]:text-bad"
           >
             <span aria-hidden="true">{own.secondsLeft}s</span>
             <span className="sr-only">{countdownText(own.secondsLeft, t)}</span>

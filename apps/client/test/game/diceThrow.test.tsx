@@ -43,7 +43,7 @@ describe("useDiceThrow", () => {
     act(() => root.render(<Probe roll={null} />));
     const first = seen.at(-1)!;
     act(() => root.render(<Probe roll={roll(5)} />));
-    expect(seen.at(-1)).toEqual({ key: first.key + 1, mode: "animate" });
+    expect(seen.at(-1)).toEqual({ key: first.key + 1, mode: "animate", reason: "update" });
   });
 
   it("shows a roll from a snapshot statically", () => {
@@ -51,12 +51,14 @@ describe("useDiceThrow", () => {
     act(() => root.render(<Probe roll={null} />));
     act(() => root.render(<Probe roll={roll(5)} />));
     expect(seen.at(-1)!.mode).toBe("static");
+    expect(seen.at(-1)!.reason).toBe("snapshot");
   });
 
   it("starts static when mounted with a roll already present", () => {
     act(() => useGameStore.setState({ source: "update" }));
     act(() => root.render(<Probe roll={roll(5)} />));
     expect(seen.at(-1)!.mode).toBe("static");
+    expect(seen.at(-1)!.reason).toBe("snapshot");
   });
 
   it("never animates under reduced motion", () => {
@@ -65,6 +67,7 @@ describe("useDiceThrow", () => {
     act(() => root.render(<Probe roll={null} />));
     act(() => root.render(<Probe roll={roll(5)} />));
     expect(seen.at(-1)!.mode).toBe("static");
+    expect(seen.at(-1)!.reason).toBe("reduced");
   });
 
   it("does not replay the same roll on re-render, and re-keys the next one", () => {

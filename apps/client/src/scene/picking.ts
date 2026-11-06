@@ -3,7 +3,10 @@
 import type { ClientAction } from "@hexfall/protocol";
 import type { Pick } from "../game/pick.ts";
 
-/** Pointer travel (px) above which a press is a camera drag, not a pick. */
+import { dragThreshold } from "./gestures.ts";
+import { wasMultiTouch } from "./useGestures.ts";
+
+/** Pointer travel (px) above which a touch press is a camera drag, not a pick (mouse: 3). */
 export const DRAG_THRESHOLD_PX = 6;
 
 export type PickOutcome =
@@ -38,6 +41,7 @@ export function pickOutcome(
 }
 
 /** True when a click ended a camera drag rather than a tap or click. */
-export function isDrag(deltaPx: number): boolean {
-  return deltaPx > DRAG_THRESHOLD_PX;
+export function isDrag(deltaPx: number, pointerType?: string): boolean {
+  if (wasMultiTouch()) return true;
+  return deltaPx > (pointerType === undefined ? DRAG_THRESHOLD_PX : dragThreshold(pointerType));
 }

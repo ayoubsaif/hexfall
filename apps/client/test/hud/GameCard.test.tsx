@@ -2,7 +2,7 @@
 import { act } from "react";
 import { createRoot, type Root } from "react-dom/client";
 import { afterEach, beforeEach, describe, expect, it, vi } from "vite-plus/test";
-import { GameCard, cardArtUrl } from "../../src/hud/cards/GameCard.tsx";
+import { GameCard, resourceIconUrl } from "../../src/hud/cards/GameCard.tsx";
 import { type CountChange, useCountChange } from "../../src/hud/cards/useCountChange.ts";
 
 (globalThis as { IS_REACT_ACT_ENVIRONMENT?: boolean }).IS_REACT_ACT_ENVIRONMENT = true;
@@ -30,7 +30,7 @@ describe("GameCard", () => {
     expect(container.querySelector(".sr-only")?.textContent).toBe("Brick, 3");
     const art = container.querySelector<HTMLElement>("[data-card-art]");
     expect(art?.getAttribute("aria-hidden")).toBe("true");
-    expect(art?.style.backgroundImage).toContain(cardArtUrl("brick"));
+    expect(art?.querySelector("img[data-resource-icon]")?.getAttribute("src")).toBe(resourceIconUrl("brick"));
     // The count badge is visual only; the name already carries it.
     expect(container.querySelector('[data-slot="badge"]')?.getAttribute("aria-hidden")).toBe(
       "true",

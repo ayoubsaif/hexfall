@@ -84,7 +84,7 @@ export function Lobby({ inviteLink }: { inviteLink?: string }) {
 
   return (
     <div className={panelClass} data-interactive>
-      <h2 className="mb-2.5 text-lg font-semibold">
+      <h2 className="mb-2.5 font-serif text-2xl font-semibold">
         {t("session.lobby.room")}{" "}
         <span className="tracking-[0.12em] uppercase tabular-nums">{room}</span>
       </h2>

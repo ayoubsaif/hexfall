@@ -1,6 +1,9 @@
 // Host pause / end controls and the paused notice (openspec change pause-and-resume-games:
 // specs game-pause "Pause controls in the HUD", "Paused screen"; early-end "End control").
-import { Flag, Pause } from "lucide-react";
+import { gameIcon } from "./GameIcon.tsx";
+
+const Flag = gameIcon("flag");
+const Pause = gameIcon("pause");
 import { useState } from "react";
 import { useTranslation } from "react-i18next";
 import { Button } from "@/components/ui/button.tsx";
@@ -110,10 +113,10 @@ export function HostGameMenu() {
         aria-label={label}
         aria-haspopup="dialog"
         title={label}
-        className="pointer-events-auto grid size-[42px] cursor-pointer place-items-center rounded-full bg-hud text-hud-fg shadow-lg shadow-black/25 backdrop-blur-md transition-colors duration-150 outline-none hover:text-white focus-visible:ring-2 focus-visible:ring-ring max-sm:size-[46px] short:size-[46px] motion-reduce:transition-none"
+        className="pointer-events-auto grid size-10 cursor-pointer place-items-center hud-leather-round transition-colors duration-150 outline-none focus-visible:ring-2 focus-visible:ring-ring max-sm:size-11 short:size-11 pointer-coarse:size-11 motion-reduce:transition-none"
         onClick={() => setStep("menu")}
       >
-        <Pause aria-hidden size={18} />
+        <Pause aria-hidden className="size-6" />
       </button>
       <Dialog open={step === "menu"} onOpenChange={close}>
         <DialogContent title={t("session.pause.menuTitle")} data-testid="game-menu">

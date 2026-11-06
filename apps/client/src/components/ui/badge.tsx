@@ -8,9 +8,9 @@ export const badgeVariants = cva(
   {
     variants: {
       variant: {
-        default: "bg-white/15 text-foreground",
+        default: "bg-ink/15 text-foreground",
         accent: "bg-primary text-primary-foreground",
-        muted: "bg-black/40 text-muted-foreground",
+        muted: "bg-ink/10 text-muted-foreground",
       },
     },
     defaultVariants: { variant: "default" },

@@ -5,7 +5,7 @@ import { useFrame, useThree } from "@react-three/fiber";
 import { useCallback, useMemo, useRef, useState } from "react";
 import type { Group, MeshBasicMaterial } from "three";
 import type { WriteSource } from "../store/game.ts";
-import { Asset } from "../theme/index.ts";
+import { Asset, domeHeight, useLandRelief } from "../theme/index.ts";
 import { cameraYaw, turnChips } from "./chipYaw.ts";
 import { HarborMarker } from "./HarborMarker.tsx";
 import { type XZ, boardLayout } from "./layout.ts";
@@ -35,10 +35,13 @@ function Robber({
   hex,
   position,
   source,
+  lift = 0,
 }: {
   hex: HexId;
   position: XZ;
   source: WriteSource | null;
+  /** Height of the land under the robber (domed terrain). */
+  lift?: number;
 }) {
   const ref = useRef<Group>(null);
   const reduced = useReducedMotion();
@@ -71,7 +74,9 @@ function Robber({
   const start = tween.current?.from ?? position;
   return (
     <group ref={ref} position={[start[0], 0, start[1]]}>
-      <Asset assetKey="piece.robber" />
+      <group position={[0, lift, 0]}>
+        <Asset assetKey="piece.robber" />
+      </group>
     </group>
   );
 }
@@ -146,20 +151,28 @@ export function BoardView({
   const glowMs = motionDurations(reduced).glow;
   const glowing = useMemo(() => new Set(glowHexes ?? []), [glowHexes]);
   const chipRef = useChipYaw();
+  // Domed land lifts each hex's token to the top of its dome.
+  const relief = useLandRelief();
+  const terrainOf = useMemo(() => new Map(layout.tiles.map((t) => [t.hex, t.assetKey])), [layout]);
+  const lift = (hex: number) => (relief.raised ? domeHeight(terrainOf.get(hex) ?? "", 0) : 0);
+  const robber = layout.robber;
+  const robberCenter = layout.tiles.find((t) => t.hex === robber.hex)?.position ?? robber.position;
+  const robberLift = relief.raised
+    ? domeHeight(
+        terrainOf.get(robber.hex) ?? "",
+        Math.hypot(robber.position[0] - robberCenter[0], robber.position[1] - robberCenter[1]),
+      )
+    : 0;
   return (
     <>
-      {layout.sea.map((s) => (
-        <group key={s.key} position={[s.position[0], 0, s.position[1]]}>
-          <Asset assetKey="sea" />
-        </group>
-      ))}
+      {/* The sea itself is the procedural Water plane in Scene (no sea tile images). */}
       {layout.tiles.map((t) => (
         <group key={t.key} position={[t.position[0], 0, t.position[1]]}>
           <Asset assetKey={t.assetKey} />
         </group>
       ))}
       {layout.tokens.map((t) => (
-        <group key={t.key} position={[t.position[0], 0, t.position[1]]}>
+        <group key={t.key} position={[t.position[0], lift(t.hex), t.position[1]]}>
           <group ref={chipRef} name="chip">
             <NumberToken value={t.value} />
           </group>
@@ -167,9 +180,14 @@ export function BoardView({
         </group>
       ))}
       {layout.harbors.map((h) => (
-        <HarborMarker key={h.key} item={h} />
+        <HarborMarker key={h.key} item={h} chipRef={chipRef} />
       ))}
-      <Robber hex={layout.robber.hex} position={layout.robber.position} source={source} />
+      <Robber
+        hex={layout.robber.hex}
+        position={layout.robber.position}
+        source={source}
+        lift={robberLift}
+      />
     </>
   );
 }

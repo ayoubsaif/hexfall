@@ -18,6 +18,9 @@ export {
   ISO_IMAGE_WIDTH,
   ISO_SIDE_HEIGHT,
   ISO_THICKNESS,
+  LAND_THICKNESS,
+  SEA_DEPTH,
+  domeHeight,
   type LandRelief,
   type Projection,
 } from "./relief.ts";

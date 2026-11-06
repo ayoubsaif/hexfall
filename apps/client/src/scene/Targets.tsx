@@ -102,7 +102,7 @@ export function Targets() {
   if (!pick) return null;
 
   const onPick = (id: number, e: ThreeEvent<MouseEvent>) => {
-    if (isDrag(e.delta)) return;
+    if (isDrag(e.delta, (e.nativeEvent as PointerEvent).pointerType)) return;
     const outcome = pickOutcome(
       pick,
       id,

@@ -83,7 +83,7 @@ describe("planThrow (spec: Dice land on the server's roll)", () => {
       return key.attempt === 0 ? { ...real, settled: false } : real;
     };
     const values: [DieValue, DieValue] = [6, 1];
-    const plan = planThrow("RETRY1", 7, values, DICE_AREA, sim);
+    const plan = planThrow("RETRY1", 7, values, [], DICE_AREA, sim);
     expect(plan?.attempt).toBeGreaterThanOrEqual(1);
     expect(attempts[0]).toBe(0);
     expect(attempts[1]).toBe(1);
@@ -95,7 +95,7 @@ describe("planThrow (spec: Dice land on the server's roll)", () => {
       calls++;
       return { ...simulate(key), settled: false };
     };
-    expect(planThrow("GIVEUP", 1, [3, 4], DICE_AREA, sim)).toBeNull();
+    expect(planThrow("GIVEUP", 1, [3, 4], [], DICE_AREA, sim)).toBeNull();
     expect(calls).toBe(MAX_ATTEMPTS);
   });
 });

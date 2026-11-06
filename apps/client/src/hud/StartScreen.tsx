@@ -13,9 +13,9 @@ export const NAME_MAX = 20;
 
 /** Shared looks for the start screen and lobby (both centered HUD cards). */
 export const panelClass =
-  "pointer-events-auto absolute top-1/2 left-1/2 flex max-h-[calc(100%-32px)] w-[min(360px,calc(100%-32px))] -translate-x-1/2 -translate-y-1/2 flex-col gap-1.5 overflow-auto rounded-xl bg-hud p-5 text-sm shadow-lg shadow-black/25 backdrop-blur-md";
+  "pointer-events-auto absolute top-1/2 left-1/2 flex max-h-[calc(100%-32px)] w-[min(440px,calc(100%-32px))] -translate-x-1/2 -translate-y-1/2 flex-col gap-1.5 overflow-auto frame paper rounded-xl p-6 text-sm backdrop-blur-sm";
 export const inputClass =
-  "min-h-9 w-full min-w-0 rounded-md border border-white/20 bg-black/35 px-2 py-1.5 text-hud-fg outline-none focus-visible:ring-2 focus-visible:ring-ring max-sm:min-h-10";
+  "min-h-9 w-full min-w-0 rounded-md border border-ink/30 bg-cream/70 px-2 py-1.5 text-hud-fg outline-none focus-visible:ring-2 focus-visible:ring-ring max-sm:min-h-10";
 export const fieldClass = "my-1.5 flex flex-col gap-1";
 export const hintClass = "my-1 text-muted-foreground data-[bad]:text-bad";
 export const errorClass = "my-1.5 text-bad";
@@ -52,7 +52,9 @@ export function StartScreen() {
 
   return (
     <div className={panelClass} data-interactive>
-      <h1 className="mb-2 text-[28px] font-bold tracking-wide">Hexfall</h1>
+      <h1 className="font-serif text-4xl leading-none font-semibold text-forest">Hexfall</h1>
+      <p className="mb-1 font-serif text-lg text-ink-muted">{t("session.start.tagline")}</p>
+      <p className="mb-2 text-muted-foreground">{t("session.start.description")}</p>
       {notice && (
         <p className="text-wait" role="status">
           {notice === SEAT_LOST_NOTICE ? t("session.start.seatLost") : notice}

@@ -1,6 +1,9 @@
 // "Your games" on the start screen (specs/saved-games "Saved games list"): every room this
 // browser holds a seat in, from a server lookup; Continue resumes, Remove forgets locally.
-import { Flag, X } from "lucide-react";
+import { X } from "lucide-react";
+import { gameIcon } from "./GameIcon.tsx";
+
+const Flag = gameIcon("flag");
 import { useEffect, useState } from "react";
 import { useTranslation } from "react-i18next";
 import { Button } from "@/components/ui/button.tsx";
@@ -19,7 +22,7 @@ function Entry({ game, busy }: { game: SavedGame; busy: boolean }) {
   const canEnd = game.seat === game.host && (game.status === "playing" || game.status === "paused");
   return (
     <li
-      className="flex items-start gap-2 rounded-lg bg-black/25 p-2.5"
+      className="flex items-start gap-2 rounded-lg bg-ink/10 p-2.5"
       data-testid="saved-game"
       data-room={game.room}
     >
@@ -109,7 +112,7 @@ export function SavedGames({ busy }: { busy: boolean }) {
   if (entries.length === 0 && !loading) return null;
   return (
     <section className="mb-2 flex flex-col gap-1.5" aria-labelledby="saved-games-title">
-      <h2 id="saved-games-title" className="text-sm font-semibold">
+      <h2 id="saved-games-title" className="font-serif text-lg font-semibold">
         {t("session.saved.title")}
       </h2>
       {loading && entries.length === 0 ? (

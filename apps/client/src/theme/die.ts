@@ -22,9 +22,9 @@ export const DIE_FACE_AXES: Readonly<Record<DieValue, Axis>> = {
   6: [0, -1, 0],
 };
 
-/** Die colors (sRGB): a white body with black pips. The die GLB uses the same ones. */
-export const DIE_BODY_COLOR = "#f4f1ea";
-export const DIE_PIP_COLOR = "#141414";
+/** Die colors (sRGB): a classic red body with light-gold pips. The die GLB uses the same ones. */
+export const DIE_BODY_COLOR = "#b8231a";
+export const DIE_PIP_COLOR = "#ffe066";
 
 /** Pip spots on a unit face, in [-1, 1]²: classic die layouts. */
 const SPOTS: Readonly<Record<DieValue, readonly (readonly [number, number])[]>> = {

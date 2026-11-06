@@ -6,10 +6,10 @@ import type { Pick } from "../../src/game/pick.ts";
 import { boardLayout } from "../../src/scene/layout.ts";
 import { TARGET_LIFT, landTop, pieceLayout, targetLayout } from "../../src/scene/pieces.ts";
 import { beginnerBoard } from "@hexfall/engine/geometry";
-import { ISO_THICKNESS, type LandRelief } from "../../src/theme/relief.ts";
+import { type LandRelief, LAND_THICKNESS, SEA_DEPTH } from "../../src/theme/relief.ts";
 
 const FLAT: LandRelief = { raised: false, thickness: 0, seaLevel: 0 };
-const RAISED: LandRelief = { raised: true, thickness: ISO_THICKNESS, seaLevel: -ISO_THICKNESS };
+const RAISED: LandRelief = { raised: true, thickness: LAND_THICKNESS, seaLevel: -SEA_DEPTH };
 
 function emptyBoard() {
   const vertices: (Building | null)[] = Array.from(

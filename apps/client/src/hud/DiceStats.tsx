@@ -42,7 +42,7 @@ export function DiceStats() {
                     data-seven={n === 7 || undefined}
                     className={cn(
                       "w-full rounded-t-sm",
-                      count === 0 ? "bg-white/10" : n === 7 ? "bg-bad" : "bg-primary",
+                      count === 0 ? "bg-ink/10" : n === 7 ? "bg-bad" : "bg-primary",
                     )}
                     style={{ height: count === 0 ? "2px" : `${(count / max) * 100}%` }}
                   />

@@ -3,6 +3,9 @@ import type { Catalog } from "../index.ts";
 
 export const session: Catalog["session"] = {
   start: {
+    tagline: "Recolecta. Comercia. Construye.",
+    description: "Compite con tus amigos hasta 10 puntos de victoria en una pequeña isla.",
+    newAdventure: "Empieza una nueva aventura",
     yourName: "Tu nombre",
     seatLost: "No se pudo recuperar tu asiento.",
     nameTooLong: "Los nombres pueden tener como máximo {{max}} caracteres.",
@@ -12,6 +15,39 @@ export const session: Catalog["session"] = {
     joinRoom: "Unirse a la sala",
     createInstead: "Crear una sala nueva",
     waitingForServer: "Esperando al servidor…",
+  },
+  splash: {
+    eyebrow: "Recolecta · Comercia · Construye",
+    tagline: "Una pequeña isla. Un mundo de posibilidades.",
+    loading: "Cargando la isla…",
+    fieldGuide: "Guía de campo",
+    pause: "Pausar consejos",
+    resume: "Reanudar consejos",
+    next: "Siguiente consejo",
+    progress: "Progreso de carga",
+    tipCount: "{{n}} / {{total}}",
+    tips: {
+      t1: {
+        title: "Empieza con ingresos estables.",
+        body: "Llega a 10 puntos en tu turno. Poblar junto a 6 y 8 te da más ingresos.",
+      },
+      t2: {
+        title: "Reparte tus números.",
+        body: "Números distintos y los cinco recursos te mantienen produciendo salga lo que salga.",
+      },
+      t3: {
+        title: "Los puertos son atajos.",
+        body: "Un puerto mejora tu tasa con el banco. Elige el del recurso que más produces.",
+      },
+      t4: {
+        title: "Vigila al ladrón.",
+        body: "Un 7 mueve al ladrón y puede vaciarte la mano. Gasta antes de tener más de siete cartas.",
+      },
+      t5: {
+        title: "Los caminos abren el mapa.",
+        body: "Los caminos unen tus poblados y el más largo vale dos puntos.",
+      },
+    },
   },
   lobby: {
     room: "Sala",

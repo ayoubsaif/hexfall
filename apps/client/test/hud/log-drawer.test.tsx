@@ -46,7 +46,7 @@ function pick(el: Element | null | undefined): void {
   });
 }
 
-const toggle = () => byText(document.body, "button", "Log");
+const toggle = () => document.querySelector<HTMLElement>('[data-testid="log-button"]');
 const tab = (name: string) => byText(document.body, '[role="tab"]', name);
 const bars = () =>
   Object.fromEntries(

@@ -128,7 +128,7 @@ function Composer({
                   }
                   className={cn(
                     "pointer-events-auto flex items-center gap-1.5 rounded-full border border-border px-2.5 py-1 text-sm outline-none focus-visible:ring-2 focus-visible:ring-ring",
-                    on ? "bg-white/15" : "opacity-60",
+                    on ? "bg-ink/15" : "opacity-60",
                   )}
                 >
                   <span

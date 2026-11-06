@@ -1,44 +1,34 @@
-// Where the dice area sits on the table (openspec physics-dice-3d, design decision 5): beside
-// the island at the viewer's front-right in landscape, in front of it (toward the viewer) in
-// portrait, always outside the island's fit circle and inside the default camera view.
-// No physics import here, so the main bundle can use it.
-import { FIT_RADIUS } from "../useFitCamera.ts";
+// Where the dice are thrown (openspec dice-center-fade, design decisions 1 and 3): on the land
+// at the middle of the island, over the center hex and the ring around it, so the throw is in
+// view from every camera angle. The physics runs in local units (die edge DIE_EDGE); the whole
+// dice group is drawn scaled by DICE_SCALE. No physics import here, so the main bundle can use it.
 
-/** Half sizes of the dice area (the physics walls), in hex-circumradius units. */
-export const DICE_AREA = { halfX: 1.3, halfZ: 0.8 } as const;
+/** Half sizes of the dice area (the physics walls), in local units before DICE_SCALE. */
+export const DICE_AREA = { halfX: 1.1, halfZ: 0.8 } as const;
 
-export interface AreaPlacement {
-  /** Area center on the table plane. */
-  x: number;
-  z: number;
-  /** Turn of the area about Y (radians). */
-  yaw: number;
+/** Scale of the board dice group: a world die edge of DIE_EDGE × 1.5 = 0.45. */
+export const DICE_SCALE = 1.5;
+
+/**
+ * Extra size for the dice while the camera is at or below the default zoom, so they stay easy
+ * to read: 1.35 x at 100 % zoom or less, easing to 1 x from 150 % up (already zoomed in).
+ */
+export function diceZoomBoost(zoomPercent: number): number {
+  const t = Math.min(1, Math.max(0, (150 - zoomPercent) / 50));
+  return 1 + 0.35 * t;
 }
 
-/** Gap between the island's fit circle and the nearest point of the dice area. */
-const GAP = 0.35;
+/** Lift above the land surface so die shadows do not fight with tile tops. */
+export const DICE_LIFT = 0.01;
 
-export function diceAreaPlacement(aspect: number): AreaPlacement {
-  if (aspect >= 1) {
-    // Right of the island, a little toward the viewer; the throw runs toward the island.
-    return { x: FIT_RADIUS + GAP + DICE_AREA.halfX, z: 1.6, yaw: Math.PI };
-  }
-  // Portrait: in front of the island, the long side across the screen.
-  return { x: 0, z: FIT_RADIUS + GAP + DICE_AREA.halfZ, yaw: 0 };
-}
-
-/** The four corners of the area on the table, in world X/Z. */
-export function areaCorners(p: AreaPlacement): [number, number][] {
-  const c = Math.cos(p.yaw);
-  const s = Math.sin(p.yaw);
+/** The four corners of the area on the table, in world X/Z (centered on the origin). */
+export function areaCorners(): [number, number][] {
+  const x = DICE_AREA.halfX * DICE_SCALE;
+  const z = DICE_AREA.halfZ * DICE_SCALE;
   return [
-    [-1, -1],
-    [1, -1],
-    [1, 1],
-    [-1, 1],
-  ].map(([a, b]) => {
-    const lx = a! * DICE_AREA.halfX;
-    const lz = b! * DICE_AREA.halfZ;
-    return [p.x + c * lx + s * lz, p.z - s * lx + c * lz];
-  });
+    [-x, -z],
+    [x, -z],
+    [x, z],
+    [-x, z],
+  ];
 }

@@ -49,7 +49,7 @@ export function StatusPill() {
       data-testid="status-pill"
       className="pointer-events-none absolute bottom-[var(--pill-bottom,120px)] left-1/2 flex w-max max-w-[calc(100%_-_2_*_var(--pill-side,12px))] -translate-x-1/2 flex-col items-center gap-1.5"
     >
-      <div className="flex max-w-full items-center gap-2 rounded-2xl bg-hud px-3.5 py-1.5 shadow-lg shadow-black/25 backdrop-blur-md">
+      <div className="flex max-w-full items-center gap-2 hud-square px-3.5 py-1.5">
         <p
           data-testid="turn-status"
           data-your-move={status.yourMove || undefined}
@@ -62,7 +62,7 @@ export function StatusPill() {
       </div>
       {picking && (
         <p
-          className="pointer-events-auto m-0 flex items-center gap-2 rounded-full bg-hud px-3 py-0.5 text-xs text-wait shadow-lg shadow-black/25 backdrop-blur-md"
+          className="pointer-events-auto m-0 flex items-center gap-2 hud-square px-3 py-0.5 text-xs text-wait"
           role="status"
         >
           {t("play.pill.pickSpot")}
