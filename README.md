@@ -41,6 +41,10 @@ pnpm run build   # production builds of every package
 - **End game now**: the host can end a running or paused game early. The player with the most victory points (hidden VP cards included) wins; tied players share the win. Everyone sees the final scores. The result is kept for 1 day.
 - Other rooms expire 14 days after their last change.
 
+## Dice
+
+The dice are 3D and are thrown onto a mat beside the island with real physics ([cannon-es](https://github.com/pmndrs/cannon-es), loaded only once a game is shown). The server still rolls every number with its seeded RNG. Each client simulates the throw first, sees which side lands up, and turns the die model inside its physics body so that side shows the rolled value. The die never jumps at the end. Every player sees the same tumble, because it is seeded from the room code and the roll. After a reload or under reduced motion, the dice show their values at rest without a throw.
+
 ## Deploy
 
 A deployment has three parts:
@@ -147,6 +151,8 @@ On Vercel, for example: set the root directory to `apps/client`, the build comma
 Deploy the server and the client together whenever `PROTOCOL_VERSION` in `packages/protocol/src/envelope.ts` changes (version 5 added pausing, ending early and the saved games list). An old client talking to a new server gets a "new version" banner asking the player to reload. Games in progress survive server restarts.
 
 ## Assets
+
+Piece and die models are converted from committed sources in `docs/art/sources/`: `pnpm run models:pieces` (STL → road, settlement, city) and `pnpm run models:dice` (`Dice.obj` → `die.glb`). The die model is not mapped in the theme until its license is recorded in `docs/art/sources/dice/SOURCE.md`; until then the game draws a built-in die.
 
 App icons, `favicon.ico` and the link-preview image (`og-image.png`) are generated from `apps/client/brand/icon.png`. After changing that image, run `pnpm run icons:build` and commit the files it writes to `apps/client/public/`.
 

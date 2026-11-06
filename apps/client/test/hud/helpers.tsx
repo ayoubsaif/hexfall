@@ -4,6 +4,7 @@ import type { ClientAction } from "@hexfall/protocol";
 import { act, type ReactNode } from "react";
 import { createRoot, type Root } from "react-dom/client";
 import { setSessionApi, type SessionApi } from "../../src/net/actions.ts";
+import { resetDice } from "../../src/store/dice.ts";
 import { initialConnectionState, useConnectionStore } from "../../src/store/connection.ts";
 import { resetGame, useGameStore } from "../../src/store/game.ts";
 import { resetRoom, useRoomStore } from "../../src/store/room.ts";
@@ -109,6 +110,7 @@ export function resetAll(): void {
     resetGame();
     resetRoom({ prefillRoom: null, notice: null });
     resetUi();
+    resetDice();
     useConnectionStore.setState({ ...initialConnectionState, status: "open" });
   });
   setSessionApi();

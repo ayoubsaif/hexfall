@@ -10,13 +10,7 @@ export {
   HEX_RADIUS,
   TOKEN_RADIUS,
 } from "./flat.tsx";
-export {
-  DIE_EDGE,
-  DIE_FACE_AXES,
-  DIE_VALUES,
-  type Axis,
-  type DieValue,
-} from "./die.ts";
+export { DIE_EDGE, DIE_FACE_AXES, DIE_VALUES, type Axis, type DieValue } from "./die.ts";
 export { ASSET_KEYS, type AssetKey, type AssetKind, assetKind } from "./keys.ts";
 export {
   ISO_ELEVATION_DEG,

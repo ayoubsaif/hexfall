@@ -65,7 +65,9 @@ describe("DiceController", () => {
     const boom: Planner = () => {
       throw new Error("physics broke");
     };
-    expect(throwing.roll({ ...base, mode: "animate", roll: roll(2, 3), planner: boom }).settled).toBe(5);
+    expect(
+      throwing.roll({ ...base, mode: "animate", roll: roll(2, 3), planner: boom }).settled,
+    ).toBe(5);
     expect(shown(throwing)).toEqual([2, 3]);
   });
 

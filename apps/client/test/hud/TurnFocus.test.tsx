@@ -4,7 +4,7 @@ import { createGame } from "@hexfall/engine";
 import { afterEach, beforeEach, describe, expect, it, vi } from "vite-plus/test";
 import { DiceTray } from "../../src/hud/dice/DiceTray.tsx";
 import { TITLE_MARK, TurnFocus } from "../../src/hud/TurnFocus.tsx";
-import { FOCUS_LINGER_MS, useTurnFocus } from "../../src/hud/useTurnFocus.ts";
+import { useTurnFocus } from "../../src/hud/useTurnFocus.ts";
 import { localNow } from "../../src/hud/countdown.ts";
 import { useUiStore } from "../../src/store/ui.ts";
 import { playState } from "../game/fixtures.ts";
@@ -104,18 +104,13 @@ describe("useTurnFocus", () => {
     expect(focus()).toBe("open");
   });
 
-  it("after the viewer's roll an open focus waits for the dice, then closes on its own", () => {
-    vi.useFakeTimers();
+  it("closes as soon as the viewer's roll arrives (spec board-dice: Focus closes before the throw)", () => {
     seatRoom(0);
     showGame(playState({ seat: 0, rolled: false }), 0);
     m = mount(<Probe />);
     showGame(playState({ seat: 0, rolled: true }), 0, {
       source: "update",
       lastEvents: [{ type: "diceRolled", seat: 0, dice: [2, 2], total: 4 }],
-    });
-    expect(focus()).toBe("open");
-    act(() => {
-      vi.advanceTimersByTime(FOCUS_LINGER_MS + 10);
     });
     expect(focus()).toBe("closed");
   });

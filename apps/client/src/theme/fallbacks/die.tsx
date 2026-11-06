@@ -18,7 +18,12 @@ const PIPS = DIE_VALUES.flatMap((value) =>
 export function DiePiece() {
   return (
     <group>
-      <RoundedBox args={[DIE_EDGE, DIE_EDGE, DIE_EDGE]} radius={DIE_EDGE * 0.14} smoothness={3} castShadow>
+      <RoundedBox
+        args={[DIE_EDGE, DIE_EDGE, DIE_EDGE]}
+        radius={DIE_EDGE * 0.14}
+        smoothness={3}
+        castShadow
+      >
         <meshStandardMaterial color={DIE_BODY_COLOR} roughness={0.35} />
       </RoundedBox>
       {PIPS.map((p) => (

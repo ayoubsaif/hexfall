@@ -6,6 +6,7 @@ import { PlayerPanels } from "../../src/hud/PlayerPanels.tsx";
 import { StatusPill } from "../../src/hud/StatusPill.tsx";
 import { ActionButtons } from "../../src/hud/actions/ActionButtons.tsx";
 import { DiceTray, THROW_MS } from "../../src/hud/dice/DiceTray.tsx";
+import { setDiceSettled } from "../../src/store/dice.ts";
 import { DEFAULT_DOCK, setDiceDock } from "../../src/store/dock.ts";
 import { createGame } from "@hexfall/engine";
 import { useConnectionStore } from "../../src/store/connection.ts";
@@ -178,7 +179,7 @@ describe("DiceTray", () => {
     expect(m.container.querySelector('[data-testid="dice-announce"]')?.textContent).toBe(
       "Rolled 3 and 4, total 7",
     );
-    expect(m.container.querySelector(".animate-dice-tumble")).toBeNull();
+    expect(m.container.querySelector("[data-rolling]")).toBeNull();
   });
 
   it("throws an update roll, then shows the total once the dice settle", () => {
@@ -193,14 +194,39 @@ describe("DiceTray", () => {
         log: [{ type: "diceRolled", seat: 0, dice: [5, 2], total: 7 }],
       }),
     );
-    expect(m.container.querySelectorAll(".animate-dice-tumble")).toHaveLength(2);
+    expect(m.container.querySelector("[data-rolling]")).not.toBeNull();
     expect(m.container.querySelector('[data-testid="dice-total"]')?.textContent).toBe("");
     expect(m.container.querySelector('[data-testid="dice-announce"]')?.textContent).toBe("");
-    act(() => {
-      vi.advanceTimersByTime(THROW_MS + 300);
-    });
+    // The board dice come to rest (spec board-dice: Announced on rest).
+    act(() => setDiceSettled(0));
     expect(m.container.querySelector('[data-testid="dice-total"]')?.textContent).toBe("7");
-    expect(m.container.querySelector(".animate-dice-tumble")).toBeNull();
+    expect(m.container.querySelector('[data-testid="dice-announce"]')?.textContent).toBe(
+      "Rolled 5 and 2, total 7",
+    );
+    expect(m.container.querySelector("[data-rolling]")).toBeNull();
+    vi.unstubAllGlobals();
+  });
+
+  it("settles on its own if the board dice never report rest", () => {
+    vi.useFakeTimers();
+    vi.stubGlobal("matchMedia", (q: string) => ({ matches: false, media: q }));
+    seatRoom(2);
+    showGame(playState(), 2, { log: [] });
+    m = mount(<DiceTray />);
+    act(() =>
+      useGameStore.setState({
+        source: "update",
+        log: [{ type: "diceRolled", seat: 0, dice: [1, 3], total: 4 }],
+      }),
+    );
+    act(() => {
+      vi.advanceTimersByTime(THROW_MS - 100);
+    });
+    expect(m.container.querySelector('[data-testid="dice-total"]')?.textContent).toBe("");
+    act(() => {
+      vi.advanceTimersByTime(400);
+    });
+    expect(m.container.querySelector('[data-testid="dice-total"]')?.textContent).toBe("4");
     vi.unstubAllGlobals();
   });
 

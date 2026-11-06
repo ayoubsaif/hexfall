@@ -28,22 +28,12 @@
 ## 4. HUD tray
 
 - [x] 4.1 `DiceTray`: drop `Die3d`, show the total (7 in the warning color, nothing before the turn's roll); keep button, names, highlight, send-once and placement
-- [ ] 4.2 Announce "Rolled X and Y, total Z" and run `onSettled` when the settled index reaches the roll; close the your-turn focus as soon as the viewer's own roll arrives (drop the linger in `useTurnFocus`)
-- [ ] 4.3 Remove `hud/dice/Die3d.tsx` and its tests; update the `DiceTray` tests and the i18n strings if any change (en/es)
+- [x] 4.2 Announce "Rolled X and Y, total Z" and run `onSettled` when the settled index reaches the roll; close the your-turn focus as soon as the viewer's own roll arrives (drop the linger in `useTurnFocus`)
+- [x] 4.3 Remove `hud/dice/Die3d.tsx` and its tests; update the `DiceTray` tests and the i18n strings if any change (en/es)
 
 ## 5. Verification
 
-- [ ] 5.1 Check that the production build puts cannon-es in its own chunk not loaded by the start screen
-- [ ] 5.2 Run client tests, lint, format and `pnpm run check` (asset budget)
-- [ ] 5.3 Try it in the running app: rolls during play and for order, two browser tabs show the same throw, reload mid-turn shows static dice, reduced motion shows static dice
-- [ ] 5.4 Update the README (dice section, `models:dice`) and note in `dice-tray-3d` that its CSS dice are superseded
-
-## Resume notes (checkpoint 2026-11-06)
-
-- Done: sections 1–3, 4.1. `useTurnFocus` now closes the focus at once on the viewer's roll (4.2 code done).
-- Next: update tests that still expect the old CSS dice / focus linger:
-  `test/hud/DiceTray.test.tsx` (centered mode closes at roll arrival; no `.animate-dice-tumble`),
-  `test/hud/TurnFocus.test.tsx` (`FOCUS_LINGER_MS` removed: expect "closed" right after the roll),
-  `test/hud/game-ui-panels.test.tsx` (~line 184, settle via `useDiceStore`/timeout).
-  Add `resetDice()` to `resetAll()` in `test/hud/helpers.tsx`.
-- Then 4.3 (delete `hud/dice/Die3d.tsx` + `test/hud/Die3d.test.tsx`), section 5.
+- [x] 5.1 Check that the production build puts cannon-es in its own chunk not loaded by the start screen
+- [x] 5.2 Run client tests, lint, format and `pnpm run check` (asset budget)
+- [x] 5.3 Try it in the running app: rolls during play and for order, two browser tabs show the same throw, reload mid-turn shows static dice, reduced motion shows static dice (checked live 2026-11-06 with two bots: roll for order and play rolls throw on the mat in about 1.5 s, the focus closes at once, the announcement waits for rest, the rested faces match the roll, a reload shows the dice at rest. Same throw across clients and reduced motion are covered by unit tests: one browser can't hold two seats of one room, and the OS motion setting can't be toggled from the browser tools)
+- [x] 5.4 Update the README (dice section, `models:dice`) and note in `dice-tray-3d` that its CSS dice are superseded

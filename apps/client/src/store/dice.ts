@@ -11,7 +11,8 @@ interface DiceState {
 export const useDiceStore = create<DiceState>(() => ({ settledIndex: null }));
 
 export function setDiceSettled(index: number): void {
-  if (useDiceStore.getState().settledIndex !== index) useDiceStore.setState({ settledIndex: index });
+  if (useDiceStore.getState().settledIndex !== index)
+    useDiceStore.setState({ settledIndex: index });
 }
 
 export function resetDice(): void {

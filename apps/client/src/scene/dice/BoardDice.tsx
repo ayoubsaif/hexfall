@@ -53,8 +53,12 @@ export function BoardDice({ floorY }: { floorY: number }) {
   const planner = usePlanner();
   const controller = useRef<DiceController | null>(null);
   controller.current ??= new DiceController(previousRoll(log));
-  const bodies = [useRef<Group>(null), useRef<Group>(null)];
-  const models = [useRef<Group>(null), useRef<Group>(null)];
+  const body0 = useRef<Group>(null);
+  const body1 = useRef<Group>(null);
+  const model0 = useRef<Group>(null);
+  const model1 = useRef<Group>(null);
+  const bodies = [body0, body1] as const;
+  const models = [model0, model1] as const;
   const refs = () => [bodies.map((r) => r.current), models.map((r) => r.current)] as const;
 
   // One decision per new roll (thrown.key changes once per roll index).
@@ -83,13 +87,16 @@ export function BoardDice({ floorY }: { floorY: number }) {
         <planeGeometry args={[DICE_AREA.halfX * 2 + MAT_RIM, DICE_AREA.halfZ * 2 + MAT_RIM]} />
         <meshStandardMaterial color={MAT_COLOR} roughness={0.95} />
       </mesh>
-      {[0, 1].map((i) => (
-        <group key={i} ref={bodies[i]} data-die={i}>
-          <group ref={models[i]}>
-            <Asset assetKey="dice.die" />
-          </group>
+      <group ref={body0}>
+        <group ref={model0}>
+          <Asset assetKey="dice.die" />
         </group>
-      ))}
+      </group>
+      <group ref={body1}>
+        <group ref={model1}>
+          <Asset assetKey="dice.die" />
+        </group>
+      </group>
     </group>
   );
 }

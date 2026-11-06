@@ -105,7 +105,9 @@ describe("poseAt", () => {
     const { recording } = simulate({ room: "SAMPLE", index: 0, attempt: 0 });
     const first = poseAt(recording, 0, -1);
     const stored = Array.from(recording.data.subarray(0, 7));
-    [...first.position, ...first.quaternion].forEach((v, i) => expect(v).toBeCloseTo(stored[i]!, 6));
+    [...first.position, ...first.quaternion].forEach((v, i) =>
+      expect(v).toBeCloseTo(stored[i]!, 6),
+    );
     const mid = poseAt(recording, 1, 0.123);
     expect(Math.hypot(...mid.quaternion)).toBeCloseTo(1, 6);
   });

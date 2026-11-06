@@ -11,6 +11,12 @@ describe("asset kinds", () => {
     const flat = ASSET_KEYS.filter((k) => assetKind(k) === "flat");
     const model = ASSET_KEYS.filter((k) => assetKind(k) === "model");
     expect(flat).toHaveLength(14);
-    expect(model.sort()).toEqual(["dice.die", "piece.city", "piece.road", "piece.robber", "piece.settlement"]);
+    expect(model.sort()).toEqual([
+      "dice.die",
+      "piece.city",
+      "piece.road",
+      "piece.robber",
+      "piece.settlement",
+    ]);
   });
 });

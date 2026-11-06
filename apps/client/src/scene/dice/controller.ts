@@ -70,7 +70,8 @@ export function poseAt(recording: Recording, die: 0 | 1, t: number): Pose {
   const a = i0 * FLOATS_PER_FRAME + die * 7;
   const b = i1 * FLOATS_PER_FRAME + die * 7;
   const lerp = (j: number) => d[a + j]! + (d[b + j]! - d[a + j]!) * k;
-  const dot = d[a + 3]! * d[b + 3]! + d[a + 4]! * d[b + 4]! + d[a + 5]! * d[b + 5]! + d[a + 6]! * d[b + 6]!;
+  const dot =
+    d[a + 3]! * d[b + 3]! + d[a + 4]! * d[b + 4]! + d[a + 5]! * d[b + 5]! + d[a + 6]! * d[b + 6]!;
   const s = dot < 0 ? -1 : 1;
   const q = [3, 4, 5, 6].map((j) => d[a + j]! + (s * d[b + j]! - d[a + j]!) * k);
   const len = Math.hypot(q[0]!, q[1]!, q[2]!, q[3]!) || 1;

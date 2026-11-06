@@ -1,3 +1,5 @@
+> **Superseded in part by `physics-dice-3d` (2026-11-06):** the CSS dice (`Die3d`, the tumble and bounce keyframes) are gone. The dice are now thrown with physics on the board. The tray keeps its placement and its role as the roll button, and shows the total.
+
 ## Why
 
 The dice are two small flat faces squeezed into the turn bar, so the most physical moment of a turn (throwing the dice) feels like reading a label. The owner wants the dice to sit on the table at the bottom-right of the board, drawn as real 3D cubes in the style of Parchís dice (reference: https://codepen.io/jico/pen/wvMpgog), and thrown by tapping them.

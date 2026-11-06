@@ -65,7 +65,7 @@ function rolledUpdate(): void {
 }
 
 describe("DiceTray centered mode", () => {
-  it("Roll from the focus: sends once, throws at the center, closes on rest, docks again", () => {
+  it("Roll from the focus: sends once, closes at once so the board throw is seen, docks again", () => {
     seatRoom(0);
     act(() => setDiceDock({ right: 342, bottom: 260 }));
     showGame(playState({ seat: 0, rolled: false }), 0, { log: [] });
@@ -80,15 +80,12 @@ describe("DiceTray centered mode", () => {
     expect(actions(calls)).toEqual([{ type: "rollDice" }]);
 
     rolledUpdate();
-    // The throw plays at the center; the overlay stays until the dice rest.
-    expect(m.container.querySelectorAll(".animate-dice-tumble")).toHaveLength(2);
-    expect(focus()).toBe("open");
-    expect(tray().hasAttribute("data-centered")).toBe(true);
-
+    // The dice are thrown on the board: the dimming focus closes right away.
+    expect(focus()).toBe("closed");
+    expect(q("[data-rolling]")).not.toBeNull();
     act(() => {
       vi.advanceTimersByTime(THROW_MS + 300);
     });
-    expect(focus()).toBe("closed");
     expect(tray()).toBe(el); // same element in both modes
     expect(el.hasAttribute("data-centered")).toBe(false);
     expect(el.style.right).toBe("342px");
@@ -103,9 +100,6 @@ describe("DiceTray centered mode", () => {
     m = withFocus();
     expect(focus()).toBe("open");
     rolledUpdate();
-    act(() => {
-      vi.advanceTimersByTime(THROW_MS + 300);
-    });
     expect(focus()).toBe("closed");
     expect(actions(calls)).toEqual([]);
   });
@@ -116,7 +110,7 @@ describe("DiceTray centered mode", () => {
     showGame(playState({ seat: 0, rolled: false }), 0, { log: [] });
     m = withFocus();
     rolledUpdate();
-    expect(m.container.querySelector(".animate-dice-tumble")).toBeNull();
+    expect(m.container.querySelector("[data-rolling]")).toBeNull();
     expect(focus()).toBe("closed");
   });
 

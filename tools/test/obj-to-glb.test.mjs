@@ -22,7 +22,9 @@ const mtlText = readFileSync(resolve(SOURCE, "Dice.mtl"), "utf8");
 
 describe("parsing", () => {
   it("reads quads with normals and materials", () => {
-    const obj = parseObj("v 0 0 0\nv 1 0 0\nv 1 1 0\nv 0 1 0\nvn 0 0 1\nusemtl A\nf 1//1 2//1 3//1 4//1\n");
+    const obj = parseObj(
+      "v 0 0 0\nv 1 0 0\nv 1 1 0\nv 0 1 0\nvn 0 0 1\nusemtl A\nf 1//1 2//1 3//1 4//1\n",
+    );
     expect(obj.positions).toHaveLength(4);
     expect(obj.faces[0]).toEqual({
       material: "A",
@@ -52,7 +54,10 @@ describe("face map", () => {
 
   it("rejects a tampered source whose +Y pip is moved to -Y", async () => {
     // Mirror every vertex on Y: the 1 lands on -Y and the 6 on +Y.
-    const mirrored = objText.replace(/^v (\S+) (\S+) (\S+)$/gm, (_l, x, y, z) => `v ${x} ${-y} ${z}`);
+    const mirrored = objText.replace(
+      /^v (\S+) (\S+) (\S+)$/gm,
+      (_l, x, y, z) => `v ${x} ${-y} ${z}`,
+    );
     await expect(convertDie(mirrored, mtlText)).rejects.toThrow(/side \+y/);
   });
 });
@@ -108,9 +113,8 @@ describe("committed die source (spec: Converted die follows the contract)", () =
 
 describe("client contract", () => {
   it("matches the client's DIE_FACE_AXES and DIE_EDGE (fallback and model show the same value)", async () => {
-    const { DIE_FACE_AXES, DIE_EDGE: clientEdge } = await import(
-      "../../apps/client/src/theme/die.ts"
-    );
+    const { DIE_FACE_AXES, DIE_EDGE: clientEdge } =
+      await import("../../apps/client/src/theme/die.ts");
     expect(clientEdge).toBe(DIE_EDGE);
     for (const [side, value] of Object.entries(FACE_MAP)) {
       const axis = "xyz".indexOf(side[1]);

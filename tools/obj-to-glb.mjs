@@ -168,7 +168,9 @@ export function buildMeshes(obj, edge = DIE_EDGE) {
   }
   const flip = volume < 0;
 
-  const materials = [...new Set(obj.faces.map((f) => f.material))].sort();
+  const materials = [...new Set(obj.faces.map((f) => f.material))].sort((a, b) =>
+    a < b ? -1 : a > b ? 1 : 0,
+  );
   return materials.map((name) => {
     const position = [];
     const normal = [];

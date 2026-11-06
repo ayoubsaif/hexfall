@@ -34,12 +34,6 @@
   --color-res-ore: #5f6b78;
   --color-res-wool: #7fa046;
 
-  /* Parchís-style dice (openspec dice-tray-3d), after jico's "3D Dice with CSS" pen. */
-  --color-die: #f6f3f0;
-  --color-die-rim: #fffdfb;
-  --color-pip: #131210;
-  --color-pip-red: #f63330;
-
   /* Breakpoints from specs/hud-presentation "Responsive HUD layout". */
   --breakpoint-sm: 40rem;
   --breakpoint-lg: 64rem;
@@ -51,10 +45,6 @@
   --animate-dialog-in: dialog-in 150ms ease-out;
   --animate-sheet-in-right: sheet-in-right 180ms ease-out;
   --animate-sheet-in-bottom: sheet-in-bottom 180ms ease-out;
-  /* The one exception to the 200 ms rule: the dice throw (at most 1.2 s, once per roll). */
-  --animate-dice-tumble: dice-tumble 800ms cubic-bezier(0.2, 0.7, 0.3, 1) both;
-  --animate-dice-bounce: dice-bounce 900ms linear both;
-  --animate-dice-shadow: dice-shadow 900ms linear both;
 
   @keyframes card-in {
     from {
@@ -87,59 +77,6 @@
   @keyframes sheet-in-bottom {
     from {
       transform: translateY(100%);
-    }
-  }
-  /* Two full turns ending on the rest pose (--rest), so the die always lands on its face. */
-  @keyframes dice-tumble {
-    from {
-      transform: var(--rest) rotateX(720deg) rotateY(360deg);
-    }
-    to {
-      transform: var(--rest);
-    }
-  }
-  /* Decaying hops, in the "translate" property (Tailwind v4 owns "transform" utilities). */
-  @keyframes dice-bounce {
-    0% {
-      translate: 0 calc(var(--die) * -1.1);
-      animation-timing-function: ease-in;
-    }
-    30% {
-      translate: 0 0;
-      animation-timing-function: ease-out;
-    }
-    50% {
-      translate: 0 calc(var(--die) * -0.35);
-      animation-timing-function: ease-in;
-    }
-    70% {
-      translate: 0 0;
-      animation-timing-function: ease-out;
-    }
-    82% {
-      translate: 0 calc(var(--die) * -0.1);
-      animation-timing-function: ease-in;
-    }
-    92%,
-    100% {
-      translate: 0 0;
-    }
-  }
-  @keyframes dice-shadow {
-    0% {
-      scale: 0.55;
-      opacity: 0.35;
-    }
-    30%,
-    70%,
-    92%,
-    100% {
-      scale: 1;
-      opacity: 1;
-    }
-    50% {
-      scale: 0.8;
-      opacity: 0.7;
     }
   }
 }
@@ -337,8 +274,7 @@ body,
 .edge-hand > li[data-dev-start] {
   margin-left: calc(var(--overlap) + 8px);
 }
-/* One soft shadow behind the row instead of a panel: a radial gradient, no `filter`
-   (a filter on an ancestor of the dice tray would flatten its 3D dice). */
+/* One soft shadow behind the row instead of a panel: a radial gradient, no `filter`. */
 .hand-shadow {
   position: absolute;
   inset: -12px -40px 0;
