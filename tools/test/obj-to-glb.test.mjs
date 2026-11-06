@@ -68,7 +68,7 @@ async function readGlb(bytes) {
 }
 
 describe("committed die source (spec: Converted die follows the contract)", () => {
-  it("is centered with a 0.30 edge and keeps both materials", async () => {
+  it("is centered with a 0.30 edge, with a white body and black pips", async () => {
     const root = await readGlb(await convertDie(objText, mtlText));
     const { min, max } = getBounds(root.getDefaultScene() ?? root.listScenes()[0]);
     for (let a = 0; a < 3; a++) {
@@ -80,7 +80,14 @@ describe("committed die source (spec: Converted die follows the contract)", () =
         .listMaterials()
         .map((m) => m.getName())
         .sort(),
-    ).toEqual(["Red", "White"]);
+    ).toEqual(["Body", "Pips"]);
+    const color = (name) =>
+      root
+        .listMaterials()
+        .find((m) => m.getName() === name)
+        .getBaseColorFactor();
+    expect(Math.min(...color("Body").slice(0, 3))).toBeGreaterThan(0.8);
+    expect(Math.max(...color("Pips").slice(0, 3))).toBeLessThan(0.02);
   });
 
   it("is deterministic, meshopt-compressed and inside the budget", async () => {

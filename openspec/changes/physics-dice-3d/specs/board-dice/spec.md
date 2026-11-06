@@ -1,7 +1,7 @@
 ## ADDED Requirements
 
 ### Requirement: Dice on the board
-The board scene SHALL show two 3D dice on a dice area of the table beside the island, at the front-right as seen from the default camera. The dice area SHALL be outside every land hex and harbor marker and inside the default board framing at 16:9 and 9:16 viewports. Each die SHALL be a rounded cube with an edge of 0.30 hex-circumradius units, drawn with the `dice.die` asset (a red body with white pips) and casting shadows. The dice SHALL show the latest roll of the current turn, including rolls for order. Before any roll in the current turn they SHALL rest in the dice area showing the previous roll, or 1 and 1 when there is none.
+The board scene SHALL show two 3D dice on a dice area of the table beside the island, at the front-right as seen from the default camera. The dice area SHALL be outside every land hex and harbor marker and inside the default board framing at 16:9 and 9:16 viewports. Each die SHALL be a rounded cube with an edge of 0.30 hex-circumradius units, drawn with the `dice.die` asset (a white body with black pips) and casting shadows. The dice SHALL show the latest roll of the current turn, including rolls for order. Before any roll in the current turn they SHALL rest in the dice area showing the previous roll, or 1 and 1 when there is none.
 
 #### Scenario: Dice visible at load
 - **WHEN** the game view loads at a 16:9 or a 9:16 viewport

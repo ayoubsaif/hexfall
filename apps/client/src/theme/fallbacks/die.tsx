@@ -1,4 +1,4 @@
-// Procedural die for `dice.die`: a rounded red cube with white pips, centered on its origin
+// Procedural die for `dice.die`: a rounded white cube with black pips, centered on its origin
 // with the values on the contract axes (theme/die.ts), so it can stand in for the GLB.
 import { RoundedBox } from "@react-three/drei";
 import { Quaternion, Vector3 } from "three";

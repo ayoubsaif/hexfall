@@ -10,7 +10,7 @@ The dice are CSS cubes in a HUD tray that play a canned tumble. Players want rea
 - Rolls that arrive in a snapshot (join, resume) and every roll under reduced motion show the dice already at rest on their values, with no simulation played.
 - After the throw the dice stay on the table showing the roll until the next one. Before the first roll of a turn they sit in a resting pose.
 - The HUD dice tray keeps its job as the roll button and the text readout ("Rolled 3 and 4, total 7", announced when the dice settle). Its CSS cubes are replaced by a compact total readout. "Settled" now means the 3D dice came to rest.
-- A new `tools/obj-to-glb.mjs` converts `Dice.obj`/`Dice.mtl` into a meshopt-compressed `die.glb` in the diorama theme, keeping the red and white materials and recording which local axis carries each value (+Y=1, +Z=2, +X=3, −X=4, −Z=5, −Y=6, measured from the pip geometry).
+- A new `tools/obj-to-glb.mjs` converts `Dice.obj`/`Dice.mtl` into a meshopt-compressed `die.glb` in the diorama theme, recoloring it white with black pips (the owner's choice) and recording which local axis carries each value (+Y=1, +Z=2, +X=3, −X=4, −Z=5, −Y=6, measured from the pip geometry).
 - New model asset key `dice.die` with a procedural fallback (rounded cube with pips), so the game works without the file.
 - New dependency: `cannon-es` (pure JavaScript rigid-body physics), loaded lazily with the dice so the start screen does not pay for it.
 

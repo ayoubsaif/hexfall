@@ -2,9 +2,10 @@
 // specs/asset-theming "Reproducible die model conversion").
 //
 // Reads docs/art/sources/dice/Dice.obj + Dice.mtl, checks which side carries which value by
-// counting pips, centers the die on the origin, scales its edge to 0.30 units, keeps the
-// body ("Red") and pip ("White") materials and writes a meshopt-compressed GLB into the
-// diorama theme. Deterministic: same input, same bytes.
+// counting pips, centers the die on the origin, scales its edge to 0.30 units, and writes a
+// meshopt-compressed GLB into the diorama theme with two materials: "Body" (the source's
+// "Red") and "Pips" (the source's "White"), colored like the client's die (white body, black
+// pips; apps/client/src/theme/die.ts). Deterministic: same input, same bytes.
 //
 // Usage: pnpm run models:dice   (or: node tools/obj-to-glb.mjs)
 import { mkdirSync, readFileSync, writeFileSync } from "node:fs";
@@ -13,6 +14,7 @@ import { fileURLToPath } from "node:url";
 import { Document, Logger } from "@gltf-transform/core";
 import { meshopt } from "@gltf-transform/functions";
 import { MeshoptEncoder } from "meshoptimizer";
+import { DIE_BODY_COLOR, DIE_PIP_COLOR } from "../apps/client/src/theme/die.ts";
 import { createIO } from "./stl-to-glb.mjs";
 
 const ROOT = resolve(dirname(fileURLToPath(import.meta.url)), "..");
@@ -203,6 +205,20 @@ export function buildMeshes(obj, edge = DIE_EDGE) {
   });
 }
 
+/** Output material for each source material, with the client's die colors. */
+export const OUTPUT_MATERIALS = {
+  Red: { name: "Body", color: DIE_BODY_COLOR },
+  White: { name: "Pips", color: DIE_PIP_COLOR },
+};
+
+/** "#rrggbb" (sRGB) to linear RGB, as glTF base colors are linear. */
+export function srgbHexToLinear(hex) {
+  return [1, 3, 5].map((i) => {
+    const c = Number.parseInt(hex.slice(i, i + 2), 16) / 255;
+    return c <= 0.04045 ? c / 12.92 : ((c + 0.055) / 1.055) ** 2.4;
+  });
+}
+
 /** Blender's specular exponent (0–1000) as an approximate PBR roughness. */
 export function roughnessFromNs(ns) {
   return Math.min(1, Math.max(0.05, Math.sqrt(2 / (ns + 2))));
@@ -217,9 +233,10 @@ export async function writeDieGlb(meshes, mtl) {
   const mesh = doc.createMesh("die");
   for (const m of meshes) {
     const info = mtl[m.material] ?? { kd: [0.8, 0.8, 0.8], ns: 50 };
+    const out = OUTPUT_MATERIALS[m.material];
     const material = doc
-      .createMaterial(m.material)
-      .setBaseColorFactor([...info.kd, 1])
+      .createMaterial(out?.name ?? m.material)
+      .setBaseColorFactor([...(out ? srgbHexToLinear(out.color) : info.kd), 1])
       .setRoughnessFactor(roughnessFromNs(info.ns))
       .setMetallicFactor(0);
     const prim = doc

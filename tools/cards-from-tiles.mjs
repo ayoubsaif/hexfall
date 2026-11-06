@@ -136,7 +136,9 @@ async function main() {
     const harbor = await buildHarbor(bytes);
     const harborOut = join(HARBOR_DIR, `${resource}.webp`);
     writeFileSync(harborOut, harbor);
-    console.log(`cards: harbor ${resource} → ${harborOut} (${(harbor.length / 1024).toFixed(1)} KB)`);
+    console.log(
+      `cards: harbor ${resource} → ${harborOut} (${(harbor.length / 1024).toFixed(1)} KB)`,
+    );
   }
 }
 

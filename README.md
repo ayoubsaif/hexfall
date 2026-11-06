@@ -43,7 +43,7 @@ pnpm run build   # production builds of every package
 
 ## Dice
 
-The dice are 3D and are thrown onto a mat beside the island with real physics ([cannon-es](https://github.com/pmndrs/cannon-es), loaded only once a game is shown). The server still rolls every number with its seeded RNG. Each client simulates the throw first, sees which side lands up, and turns the die model inside its physics body so that side shows the rolled value. The die never jumps at the end. Every player sees the same tumble, because it is seeded from the room code and the roll. After a reload or under reduced motion, the dice show their values at rest without a throw.
+The dice are white with black pips, in 3D, and are thrown onto a mat beside the island with real physics ([cannon-es](https://github.com/pmndrs/cannon-es), loaded only once a game is shown). The server still rolls every number with its seeded RNG. Each client simulates the throw first, sees which side lands up, and turns the die model inside its physics body so that side shows the rolled value. The die never jumps at the end. Every player sees the same tumble, because it is seeded from the room code and the roll. After a reload or under reduced motion, the dice show their values at rest without a throw.
 
 ## Deploy
 

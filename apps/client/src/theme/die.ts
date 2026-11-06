@@ -22,9 +22,9 @@ export const DIE_FACE_AXES: Readonly<Record<DieValue, Axis>> = {
   6: [0, -1, 0],
 };
 
-/** Source colors of Dice.mtl (linear Kd 0.64/0.017/0.019 and 0.8) as sRGB hex. */
-export const DIE_BODY_COLOR = "#d12326";
-export const DIE_PIP_COLOR = "#e7e7e7";
+/** Die colors (sRGB): a white body with black pips. The die GLB uses the same ones. */
+export const DIE_BODY_COLOR = "#f4f1ea";
+export const DIE_PIP_COLOR = "#141414";
 
 /** Pip spots on a unit face, in [-1, 1]²: classic die layouts. */
 const SPOTS: Readonly<Record<DieValue, readonly (readonly [number, number])[]>> = {

@@ -52,9 +52,9 @@ The initial pose, linear velocity and angular velocity of each die come from a s
 
 ### 6. Die model through the theme
 - New model key `dice.die`. Unlike the pieces, the die's origin is its center (it rotates freely), and the converted GLB is scaled so its edge is 0.30 units.
-- `tools/obj-to-glb.mjs` parses the OBJ and MTL and writes `apps/client/public/themes/diorama/models/die.glb`: welded indexed geometry with normals, the two materials named `Red` and `White`, meshopt-compressed, deterministic.
+- `tools/obj-to-glb.mjs` parses the OBJ and MTL and writes `apps/client/public/themes/diorama/models/die.glb`: welded indexed geometry with normals, two materials, `Body` (from `Red`) and `Pips` (from `White`), recolored white and black to match the client's die colors, meshopt-compressed, deterministic. (The owner chose white dice with black pips on 2026-11-06, over the source's red and white.)
 - The value-to-axis map is a constant in the client (`DIE_FACE_AXES`). The conversion verifies it from the pip counts and fails if the source no longer matches.
-- Procedural fallback: a rounded box (drei `RoundedBox`) in the same red with white pip discs placed on the same axes, so remapping works the same on both.
+- Procedural fallback: a rounded box (drei `RoundedBox`) in white with black pip discs placed on the same axes, so remapping works the same on both.
 - Sources move to `docs/art/sources/dice/` with a `SOURCE.md` (author, URL, license), as for the pieces.
 
 ### 7. When to animate (reuses `useDiceThrow`)
