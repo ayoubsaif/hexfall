@@ -109,6 +109,31 @@ export default defineConfig({
         },
       },
       {
+        files: ["apps/client/test/**"],
+        rules: {
+          "no-restricted-imports": [
+            "error",
+            {
+              // Tests may read repo files (style.css, public art) through node:fs and node:path.
+              paths: ["ws", "ioredis", "redis"],
+              patterns: [
+                ...APP_PACKAGES,
+                ...REFERENCE_ART,
+                {
+                  group: ["@hexfall/engine/*", "!@hexfall/engine/geometry"],
+                  message:
+                    "Client may only import @hexfall/engine (types) and @hexfall/engine/geometry.",
+                },
+                {
+                  group: ["**/packages/engine/**"],
+                  message: "Import the engine through its package exports.",
+                },
+              ],
+            },
+          ],
+        },
+      },
+      {
         files: ["apps/server/**"],
         rules: {
           "no-restricted-imports": [

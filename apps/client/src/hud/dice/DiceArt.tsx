@@ -5,11 +5,36 @@
 // perspective. Pure SVG, no image asset and no second WebGL context.
 const PIP_POS: Record<number, [number, number][]> = {
   1: [[0.5, 0.5]],
-  2: [[0.27, 0.27], [0.73, 0.73]],
-  3: [[0.27, 0.27], [0.5, 0.5], [0.73, 0.73]],
-  4: [[0.27, 0.27], [0.73, 0.27], [0.27, 0.73], [0.73, 0.73]],
-  5: [[0.27, 0.27], [0.73, 0.27], [0.5, 0.5], [0.27, 0.73], [0.73, 0.73]],
-  6: [[0.27, 0.25], [0.73, 0.25], [0.27, 0.5], [0.73, 0.5], [0.27, 0.75], [0.73, 0.75]],
+  2: [
+    [0.27, 0.27],
+    [0.73, 0.73],
+  ],
+  3: [
+    [0.27, 0.27],
+    [0.5, 0.5],
+    [0.73, 0.73],
+  ],
+  4: [
+    [0.27, 0.27],
+    [0.73, 0.27],
+    [0.27, 0.73],
+    [0.73, 0.73],
+  ],
+  5: [
+    [0.27, 0.27],
+    [0.73, 0.27],
+    [0.5, 0.5],
+    [0.27, 0.73],
+    [0.73, 0.73],
+  ],
+  6: [
+    [0.27, 0.25],
+    [0.73, 0.25],
+    [0.27, 0.5],
+    [0.73, 0.5],
+    [0.27, 0.75],
+    [0.73, 0.75],
+  ],
 };
 
 /** Left and right faces for a given top value: never the top's opposite (sum 7) or the top. */
@@ -29,7 +54,14 @@ function Pips({ value, matrix, id }: { value: number; matrix: string; id: string
     <g transform={`matrix(${matrix})`}>
       {(PIP_POS[value] ?? PIP_POS[1]!).map(([x, y], i) => (
         <g key={i}>
-          <circle cx={x} cy={y} r={0.1} fill="#5a3200" opacity={0.55} transform="translate(0.012 0.02)" />
+          <circle
+            cx={x}
+            cy={y}
+            r={0.1}
+            fill="#5a3200"
+            opacity={0.55}
+            transform="translate(0.012 0.02)"
+          />
           <circle cx={x} cy={y} r={0.095} fill={`url(#${id}-gold)`} />
         </g>
       ))}
@@ -48,13 +80,46 @@ function Cube({ x, y, value, id }: { x: number; y: number; value: number; id: st
     <g transform={`translate(${x} ${y})`} strokeLinejoin="round" strokeLinecap="round">
       <ellipse cx="0" cy={F[1] + H + 3} rx="34" ry="9" fill="#000" opacity="0.28" />
       {/* faces */}
-      <polygon points={`${pt(O)} ${pt(R)} ${pt(F)} ${pt(L)}`} fill={`url(#${id}-top)`} stroke="#6e0f0a" strokeWidth="2.2" />
-      <polygon points={`${pt(L)} ${pt(F)} ${pt(F, H)} ${pt(L, H)}`} fill={`url(#${id}-left)`} stroke="#6e0f0a" strokeWidth="2.2" />
-      <polygon points={`${pt(F)} ${pt(R)} ${pt(R, H)} ${pt(F, H)}`} fill={`url(#${id}-right)`} stroke="#6e0f0a" strokeWidth="2.2" />
+      <polygon
+        points={`${pt(O)} ${pt(R)} ${pt(F)} ${pt(L)}`}
+        fill={`url(#${id}-top)`}
+        stroke="#6e0f0a"
+        strokeWidth="2.2"
+      />
+      <polygon
+        points={`${pt(L)} ${pt(F)} ${pt(F, H)} ${pt(L, H)}`}
+        fill={`url(#${id}-left)`}
+        stroke="#6e0f0a"
+        strokeWidth="2.2"
+      />
+      <polygon
+        points={`${pt(F)} ${pt(R)} ${pt(R, H)} ${pt(F, H)}`}
+        fill={`url(#${id}-right)`}
+        stroke="#6e0f0a"
+        strokeWidth="2.2"
+      />
       {/* rounded-edge highlights */}
-      <path d={`M${pt(L)} L${pt(F)} L${pt(R)}`} fill="none" stroke="#ff9a8a" strokeWidth="1.1" opacity="0.7" />
-      <path d={`M${pt(F)} L${pt(F, H)}`} fill="none" stroke="#e5584a" strokeWidth="1" opacity="0.6" />
-      <path d={`M${pt(O)} L${pt(R)}`} fill="none" stroke="#ffb8aa" strokeWidth="0.9" opacity="0.5" />
+      <path
+        d={`M${pt(L)} L${pt(F)} L${pt(R)}`}
+        fill="none"
+        stroke="#ff9a8a"
+        strokeWidth="1.1"
+        opacity="0.7"
+      />
+      <path
+        d={`M${pt(F)} L${pt(F, H)}`}
+        fill="none"
+        stroke="#e5584a"
+        strokeWidth="1"
+        opacity="0.6"
+      />
+      <path
+        d={`M${pt(O)} L${pt(R)}`}
+        fill="none"
+        stroke="#ffb8aa"
+        strokeWidth="0.9"
+        opacity="0.5"
+      />
       {/* pips: top face, left face, right face */}
       <Pips id={id} value={value} matrix={`${EX[0]} ${EX[1]} ${EY[0]} ${EY[1]} 0 0`} />
       <Pips id={id} value={left} matrix={`${EX[0]} ${EX[1]} 0 ${H} ${EY[0]} ${EY[1]}`} />

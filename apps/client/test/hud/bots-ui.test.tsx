@@ -86,8 +86,8 @@ describe("Play solo", () => {
     m = mount(<StartScreen />);
     const input = m.container.querySelector("input")!;
     act(() => {
-      const set = Object.getOwnPropertyDescriptor(HTMLInputElement.prototype, "value")!.set!;
-      set.call(input, "Ana");
+      const desc = Object.getOwnPropertyDescriptor(HTMLInputElement.prototype, "value")!;
+      desc.set!.call(input, "Ana");
       input.dispatchEvent(new Event("input", { bubbles: true }));
     });
     const solo = byText(m.container, "button", "Play solo vs bots")!;

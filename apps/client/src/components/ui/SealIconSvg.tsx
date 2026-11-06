@@ -9,7 +9,8 @@ const WAX = (() => {
   const pts: string[] = [];
   for (let i = 0; i < n; i++) {
     const a = (i / n) * Math.PI * 2;
-    const r = 41 + 2.8 * Math.sin(a * 5 + 0.9) + 1.8 * Math.sin(a * 9 - 0.3) + 1.2 * Math.sin(a * 2 + 2);
+    const r =
+      41 + 2.8 * Math.sin(a * 5 + 0.9) + 1.8 * Math.sin(a * 9 - 0.3) + 1.2 * Math.sin(a * 2 + 2);
     pts.push(`${(C + r * Math.cos(a)).toFixed(2)} ${(C + r * Math.sin(a)).toFixed(2)}`);
   }
   return `M${pts.join("L")}Z`;
@@ -56,15 +57,41 @@ export function SealIconSvg({ className }: { className?: string }) {
           <stop offset="1" stopColor="#9f6f14" />
         </linearGradient>
       </defs>
-      <path d={WAX} fill="url(#sealv-wax)" stroke="#560a07" strokeWidth="1.5" strokeLinejoin="round" />
-      <path d="M18 40C22 25 35 14 50 12" fill="none" stroke="#ffb0a2" strokeWidth="2.2" strokeLinecap="round" opacity="0.5" />
-      <path d="M82 66C78 78 68 86 56 88" fill="none" stroke="#3d0603" strokeWidth="2.2" strokeLinecap="round" opacity="0.35" />
+      <path
+        d={WAX}
+        fill="url(#sealv-wax)"
+        stroke="#560a07"
+        strokeWidth="1.5"
+        strokeLinejoin="round"
+      />
+      <path
+        d="M18 40C22 25 35 14 50 12"
+        fill="none"
+        stroke="#ffb0a2"
+        strokeWidth="2.2"
+        strokeLinecap="round"
+        opacity="0.5"
+      />
+      <path
+        d="M82 66C78 78 68 86 56 88"
+        fill="none"
+        stroke="#3d0603"
+        strokeWidth="2.2"
+        strokeLinecap="round"
+        opacity="0.35"
+      />
       {/* recessed centre with a thin gold rim */}
       <circle cx={C} cy={C} r="35" fill="url(#sealv-dish)" stroke="#5f0d09" strokeWidth="1.2" />
       <circle cx={C} cy={C} r="33" fill="none" stroke="#e9b24d" strokeWidth="0.9" opacity="0.75" />
       {BRANCHES.map((b, bi) => (
         <g key={bi}>
-          <path d={b.stem} fill="none" stroke="url(#sealv-gold)" strokeWidth="1.1" strokeLinecap="round" />
+          <path
+            d={b.stem}
+            fill="none"
+            stroke="url(#sealv-gold)"
+            strokeWidth="1.1"
+            strokeLinecap="round"
+          />
           {b.leaves.map((l) => (
             <path
               key={l.k}

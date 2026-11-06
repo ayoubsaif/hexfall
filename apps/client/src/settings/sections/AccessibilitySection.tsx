@@ -9,22 +9,25 @@ export function AccessibilitySection() {
   const wheel = usePrefsStore((s) => s.wheel);
   return (
     <div className="flex flex-col gap-4">
-    <ChoiceGroup
-      testId="settings-motion"
-      label={t("settings.accessibility.motion")}
-      hint={t("settings.accessibility.motionHint")}
-      value={motion}
-      choices={MOTION_PREFS.map((m) => ({ value: m, label: t(`settings.accessibility.${m}`) }))}
-      onChange={(m) => setPref("motion", m)}
-    />
-    <ChoiceGroup
-      testId="settings-wheel"
-      label={t("settings.accessibility.wheel")}
-      hint={t("settings.accessibility.wheelHint")}
-      value={wheel}
-      choices={WHEEL_PREFS.map((w) => ({ value: w, label: t(`settings.accessibility.wheel_${w}`) }))}
-      onChange={(w) => setPref("wheel", w)}
-    />
+      <ChoiceGroup
+        testId="settings-motion"
+        label={t("settings.accessibility.motion")}
+        hint={t("settings.accessibility.motionHint")}
+        value={motion}
+        choices={MOTION_PREFS.map((m) => ({ value: m, label: t(`settings.accessibility.${m}`) }))}
+        onChange={(m) => setPref("motion", m)}
+      />
+      <ChoiceGroup
+        testId="settings-wheel"
+        label={t("settings.accessibility.wheel")}
+        hint={t("settings.accessibility.wheelHint")}
+        value={wheel}
+        choices={WHEEL_PREFS.map((w) => ({
+          value: w,
+          label: t(`settings.accessibility.wheel_${w}`),
+        }))}
+        onChange={(w) => setPref("wheel", w)}
+      />
     </div>
   );
 }

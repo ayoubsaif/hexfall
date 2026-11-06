@@ -112,15 +112,13 @@ function sent(s = FakeSocket.last()) {
 }
 
 const seatsInfo = (n: number) =>
-  ["Ana", "Ben", "Cy", "Di"]
-    .slice(0, n)
-    .map((name, seat) => ({
-      seat,
-      name,
-      connected: true,
-      bot: false,
-      avatar: AVATAR_IDS[seat] as AvatarId,
-    }));
+  ["Ana", "Ben", "Cy", "Di"].slice(0, n).map((name, seat) => ({
+    seat,
+    name,
+    connected: true,
+    bot: false,
+    avatar: AVATAR_IDS[seat] as AvatarId,
+  }));
 
 function roomState(
   status: "lobby" | "playing" | "paused" | "ended" = "lobby",

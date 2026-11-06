@@ -92,7 +92,10 @@ export function ViewControls() {
           title={t(key)}
           aria-pressed={current === preset}
           onClick={() => setViewPreset(preset)}
-          className={cn(BTN, "aria-pressed:bg-black/40 aria-pressed:ring-1 aria-pressed:ring-[#e8bc4a]/70")}
+          className={cn(
+            BTN,
+            "aria-pressed:bg-black/40 aria-pressed:ring-1 aria-pressed:ring-[#e8bc4a]/70",
+          )}
         >
           <Icon aria-hidden size={20} strokeWidth={2} />
         </button>

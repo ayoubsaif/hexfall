@@ -1,6 +1,7 @@
 // Avatar picker (specs/player-avatars "Choosing an avatar before the game").
 // A radio group of the catalog; avatars held by other seats are disabled with the owner's name.
 import { AVATAR_IDS, type AvatarId } from "@hexfall/protocol";
+import { Check } from "lucide-react";
 import { useTranslation } from "react-i18next";
 import { cn } from "@/lib/utils.ts";
 import { Avatar } from "./Avatar.tsx";
@@ -50,9 +51,9 @@ export function AvatarPicker({ value, taken, seat = 0, onChange }: Props) {
             tabIndex={checked ? 0 : -1}
             data-avatar={id}
             className={cn(
-              "rounded-full p-0.5 outline-offset-2 focus-visible:outline-2",
+              "group relative flex aspect-square w-full items-center justify-center overflow-hidden rounded-lg border-2 border-transparent p-1 outline-offset-2 focus-visible:outline-2 focus-visible:outline-ring",
               owner !== undefined && "cursor-not-allowed opacity-35 grayscale",
-              checked && "outline-2 outline-wait",
+              checked && "border-hud-fg",
             )}
             onClick={() => owner === undefined && onChange(id)}
             onKeyDown={(e) => {
@@ -66,6 +67,23 @@ export function AvatarPicker({ value, taken, seat = 0, onChange }: Props) {
             }}
           >
             <Avatar id={id} seat={seat} name={label(id)} size="lg" eager />
+            <span
+              aria-hidden="true"
+              data-testid="avatar-tile-overlay"
+              className={cn(
+                "pointer-events-none absolute inset-0 transition-colors",
+                checked ? "bg-black/25" : owner === undefined && "group-hover:bg-black/20",
+              )}
+            />
+            {checked && (
+              <span
+                data-testid="avatar-check"
+                aria-hidden="true"
+                className="absolute right-0.5 bottom-0.5 inline-flex size-4 items-center justify-center rounded-full bg-hud-fg text-hud-solid"
+              >
+                <Check className="size-3" strokeWidth={3} />
+              </span>
+            )}
           </button>
         );
       })}

@@ -40,7 +40,11 @@ export function DialogContent({
         {...props}
       >
         <DialogPrimitive.Title
-          className={hideHeader ? "sr-only" : "hud-leather hud-title mb-3 text-center font-serif text-xl font-semibold"}
+          className={
+            hideHeader
+              ? "sr-only"
+              : "hud-leather hud-title mb-3 text-center font-serif text-xl font-semibold"
+          }
         >
           {title}
         </DialogPrimitive.Title>

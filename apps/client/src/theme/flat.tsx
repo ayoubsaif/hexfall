@@ -462,18 +462,18 @@ export function FlatShape({ assetKey, color, map, projection = "top" }: FlatShap
         </mesh>
       )}
       {!block && (
-      <mesh geometry={fill} position={[0, y, 0]} receiveShadow>
-        <meshStandardMaterial
-          key={map ? "map" : "color"}
-          color={map ? "#ffffff" : color}
-          map={map ?? null}
-          roughness={1}
-          metalness={0}
-          polygonOffset={marker}
-          polygonOffsetFactor={marker ? -2 : 0}
-          polygonOffsetUnits={marker ? -2 : 0}
-        />
-      </mesh>
+        <mesh geometry={fill} position={[0, y, 0]} receiveShadow>
+          <meshStandardMaterial
+            key={map ? "map" : "color"}
+            color={map ? "#ffffff" : color}
+            map={map ?? null}
+            roughness={1}
+            metalness={0}
+            polygonOffset={marker}
+            polygonOffsetFactor={marker ? -2 : 0}
+            polygonOffsetUnits={marker ? -2 : 0}
+          />
+        </mesh>
       )}
       {!block && hasOutline(assetKey) && (
         <mesh geometry={outline} position={[0, outlineY, 0]} renderOrder={1}>

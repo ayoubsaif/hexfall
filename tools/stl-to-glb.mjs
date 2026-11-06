@@ -29,7 +29,14 @@ const OUT_DIR = join(ROOT, "apps", "client", "public", "themes", "diorama", "mod
  * source's ~4-10k triangles are far more than the client needs).
  */
 export const PIECES = [
-  { name: "road", upAxis: "z", yawDeg: 0, fit: { mode: "x", size: 0.72 }, crossScale: 0.5, keep: 0.2 },
+  {
+    name: "road",
+    upAxis: "z",
+    yawDeg: 0,
+    fit: { mode: "x", size: 0.72 },
+    crossScale: 0.5,
+    keep: 0.2,
+  },
   { name: "settlement", upAxis: "z", yawDeg: 0, fit: { mode: "footprint", size: 0.3 }, keep: 0.12 },
   { name: "city", upAxis: "z", yawDeg: 0, fit: { mode: "footprint", size: 0.5 }, keep: 0.1 },
 ];

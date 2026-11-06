@@ -32,8 +32,7 @@ export const RESOURCES = {
   brick:
     "A rustic wooden wheelbarrow loaded with stacked red-orange clay bricks, standing on arid " +
     "dry soil with clay-colored hills behind it.",
-  wool:
-    "A fluffy cute cartoon sheep standing in the middle of a green flowery meadow under a blue sky.",
+  wool: "A fluffy cute cartoon sheep standing in the middle of a green flowery meadow under a blue sky.",
   ore:
     "A mining cart on rails carrying a large veined block of mineral ore, jagged rocky mountain " +
     "peaks in the background.",

@@ -85,9 +85,9 @@ describe("useCountdown", () => {
     act(() => root.render(<Probe />));
     expect(last()?.secondsLeft).toBe(5);
     const before = seen.length;
-    act(() => vi.advanceTimersByTime(1_000));
+    void act(() => vi.advanceTimersByTime(1_000));
     expect(last()?.secondsLeft).toBe(4);
-    act(() => vi.advanceTimersByTime(1_000));
+    void act(() => vi.advanceTimersByTime(1_000));
     expect(last()?.secondsLeft).toBe(3);
     // Two ticks, two renders: nothing in between.
     expect(seen.length - before).toBe(2);
@@ -96,17 +96,17 @@ describe("useCountdown", () => {
   it("stops at zero", () => {
     act(() => useGameStore.setState({ timer: timer(2_000), timerAt: performance.now() }));
     act(() => root.render(<Probe />));
-    act(() => vi.advanceTimersByTime(5_000));
+    void act(() => vi.advanceTimersByTime(5_000));
     expect(last()?.secondsLeft).toBe(0);
     const n = seen.length;
-    act(() => vi.advanceTimersByTime(5_000));
+    void act(() => vi.advanceTimersByTime(5_000));
     expect(seen.length).toBe(n);
   });
 
   it("resets when a new message arrives", () => {
     act(() => useGameStore.setState({ timer: timer(3_000), timerAt: performance.now() }));
     act(() => root.render(<Probe />));
-    act(() => vi.advanceTimersByTime(2_000));
+    void act(() => vi.advanceTimersByTime(2_000));
     expect(last()?.secondsLeft).toBe(1);
     act(() => useGameStore.setState({ timer: timer(90_000, 90_000), timerAt: performance.now() }));
     expect(last()?.secondsLeft).toBe(90);

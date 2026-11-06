@@ -42,11 +42,15 @@ export function useGestures(): void {
       const offset = camera.position.clone().sub(controls.target);
       if (kind === "pan") {
         const dist = offset.length();
-        const perPx = (2 * dist * Math.tan((((camera as { fov?: number }).fov ?? 45) * Math.PI) / 360)) / el.clientHeight;
+        const perPx =
+          (2 * dist * Math.tan((((camera as { fov?: number }).fov ?? 45) * Math.PI) / 360)) /
+          el.clientHeight;
         camera.updateMatrixWorld();
         _right.setFromMatrixColumn(camera.matrixWorld, 0);
         _up.setFromMatrixColumn(camera.matrixWorld, 1);
-        const move = _right.multiplyScalar(e.deltaX * perPx).add(_up.multiplyScalar(-e.deltaY * perPx));
+        const move = _right
+          .multiplyScalar(e.deltaX * perPx)
+          .add(_up.multiplyScalar(-e.deltaY * perPx));
         const next = controls.target.clone().add(move);
         if (next.length() > dist * PAN_LIMIT) next.setLength(dist * PAN_LIMIT);
         camera.position.add(next.clone().sub(controls.target));

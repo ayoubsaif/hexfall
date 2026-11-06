@@ -26,6 +26,13 @@ A player SHALL be able to pick an avatar when creating or joining a room and to 
 - **WHEN** a seated player picks a different free avatar before the game starts
 - **THEN** all clients show the new avatar and the old one becomes free
 
+#### Scenario: Square selector states
+- **WHEN** the picker is shown
+- **THEN** each option is a square tile (equal width and height, slightly rounded corners) around its round avatar, never a stretched pill
+- **AND** hovering an enabled tile darkens it with a translucent dark overlay
+- **AND** the selected tile keeps a visible dark overlay plus a distinct border and a check badge, so it is distinguishable from hover without relying on color alone
+- **AND** keyboard focus shows a separate focus ring, and taken tiles show no hover effect
+
 #### Scenario: Locked after start
 - **WHEN** the game has started and a player sends `setAvatar`
 - **THEN** it fails with `game_started` and nothing changes

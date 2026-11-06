@@ -42,7 +42,8 @@ export const settings = {
     reduce: "Reduce motion",
     full: "Full motion",
     wheel: "Touchpad and wheel",
-    wheelHint: "Two-finger scroll on a touchpad pans the board and pinch zooms. Choose \"Wheel zooms\" if scrolling should always zoom.",
+    wheelHint:
+      'Two-finger scroll on a touchpad pans the board and pinch zooms. Choose "Wheel zooms" if scrolling should always zoom.',
     wheel_auto: "Auto (touchpad pans)",
     wheel_zoom: "Wheel zooms",
   },

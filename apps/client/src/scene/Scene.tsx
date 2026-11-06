@@ -79,10 +79,7 @@ export function Scene() {
   useZoomBridge(fit);
   const turn = relief.isometric ? ISO_AZIMUTH_LIMIT : Infinity;
   // Land hex centers do not depend on the terrain shuffle, so the preview board gives them.
-  const landCenters = useMemo(
-    () => boardLayout(beginnerBoard()).tiles.map((t) => t.position),
-    [],
-  );
+  const landCenters = useMemo(() => boardLayout(beginnerBoard()).tiles.map((t) => t.position), []);
   const tableY = relief.seaLevel - 0.02;
   return (
     <>

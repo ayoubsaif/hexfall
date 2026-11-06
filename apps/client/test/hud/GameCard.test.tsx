@@ -30,7 +30,9 @@ describe("GameCard", () => {
     expect(container.querySelector(".sr-only")?.textContent).toBe("Brick, 3");
     const art = container.querySelector<HTMLElement>("[data-card-art]");
     expect(art?.getAttribute("aria-hidden")).toBe("true");
-    expect(art?.querySelector("img[data-resource-icon]")?.getAttribute("src")).toBe(resourceIconUrl("brick"));
+    expect(art?.querySelector("img[data-resource-icon]")?.getAttribute("src")).toBe(
+      resourceIconUrl("brick"),
+    );
     // The count badge is visual only; the name already carries it.
     expect(container.querySelector('[data-slot="badge"]')?.getAttribute("aria-hidden")).toBe(
       "true",

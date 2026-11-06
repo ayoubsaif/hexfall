@@ -38,6 +38,12 @@
 - [x] 6.3 Cap visible toasts at 3 in `store/ui.ts`
 - [ ] 6.4 Check desktop, tablet, phone portrait and short screens in the browser: no overlap with hand, buttons or status pill
 
+## 6b. Picker selection style
+
+- [x] 6b.1 `AvatarPicker`: square tile per option (`aspect-square`), remove button `rounded-full` + `outline-wait` ring
+- [x] 6b.2 Hover = dark translucent overlay (enabled only); selected = stronger overlay + border + check badge; separate focus-visible ring
+- [ ] 6b.3 Test: tile is square, selected shows check badge, taken tile has no hover state; check light and dark theme
+
 ## 7. i18n and tests
 
 - [x] 7.1 English and Spanish strings: picker title, avatar names, `avatar_taken`, `bad_avatar`

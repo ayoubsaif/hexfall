@@ -73,7 +73,15 @@ describe("protocol v3", () => {
           room: "ABC234",
           status: "lobby",
           host: 0,
-          seats: [{ seat: 0, name: "Ana", connected: true, bot: false, avatar: "villager-beard" }],
+          seats: [
+            {
+              seat: 0,
+              name: "Ana",
+              connected: true,
+              bot: false,
+              avatar: "villager-beard" as const,
+            },
+          ],
           pausedAt: null,
           result: null,
         },
@@ -149,7 +157,8 @@ describe("protocol v3", () => {
     const wireToEngine: Assignable<ClientAction, SeatlessAction> = true;
     const engineToWire: Assignable<SeatlessAction, ClientAction> = true;
     expect([wireToEngine, engineToWire]).toEqual([true, true]);
-    expectTypeOf<ClientAction["type"]>().toEqualTypeOf<Action["type"]>();
+    // `timeout` is raised by the server, never sent by a client.
+    expectTypeOf<ClientAction["type"]>().toEqualTypeOf<Exclude<Action["type"], "timeout">>();
     // Spot checks at runtime: one parse per action type.
     const samples: SeatlessAction[] = [
       { type: "rollForOrder" },
@@ -279,7 +288,9 @@ describe("pause, end and saved games (protocol v5)", () => {
     const base = {
       room: "ABC234",
       host: 0,
-      seats: [{ seat: 0, name: "Ana", connected: true, bot: false, avatar: "villager-beard" }],
+      seats: [
+        { seat: 0, name: "Ana", connected: true, bot: false, avatar: "villager-beard" as const },
+      ],
     };
     const cases = [
       encodeServer("roomState", { ...base, status: "paused", pausedAt: 123, result: null }, 1),

@@ -86,6 +86,28 @@ describe("AvatarPicker", () => {
     expect(picked).toEqual(["baker"]);
   });
 
+  it("renders square tiles with a check badge on the selected one only", () => {
+    m = mount(
+      <AvatarPicker
+        value="villager-beard"
+        taken={new Map<AvatarId, string>([["farmer", "Ben"]])}
+        onChange={() => {}}
+      />,
+    );
+    const radios = [...m.container.querySelectorAll<HTMLElement>("[role=radio]")];
+    for (const r of radios) expect(r.className).toContain("aspect-square");
+    expect(radios.every((r) => !r.className.includes("rounded-full"))).toBe(true);
+    const checks = m.container.querySelectorAll("[data-testid=avatar-check]");
+    expect(checks).toHaveLength(1);
+    expect(
+      radios.find((r) => r.dataset.avatar === "villager-beard")?.contains(checks[0] ?? null),
+    ).toBe(true);
+    const farmerOverlay = radios
+      .find((r) => r.dataset.avatar === "farmer")
+      ?.querySelector("[data-testid=avatar-tile-overlay]");
+    expect(farmerOverlay?.className).not.toContain("group-hover");
+  });
+
   it("arrow keys skip taken avatars", () => {
     const picked: AvatarId[] = [];
     m = mount(

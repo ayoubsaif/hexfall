@@ -93,7 +93,10 @@ function forest() {
 
 function pasture() {
   const tufts = scatter(21, 30, { minGap: 60, pad: 20 })
-    .map(({ x, y }) => `<path d="M${f(x - 14)} ${f(y)} l6 -18 l4 18 l6 -24 l4 24 l6 -16 l4 16" fill="none" stroke="#7fb04a" stroke-width="5" stroke-linejoin="round"/>`)
+    .map(
+      ({ x, y }) =>
+        `<path d="M${f(x - 14)} ${f(y)} l6 -18 l4 18 l6 -24 l4 24 l6 -16 l4 16" fill="none" stroke="#7fb04a" stroke-width="5" stroke-linejoin="round"/>`,
+    )
     .join("\n  ");
   const sheep = scatter(22, 6, { minGap: 160, pad: 50 })
     .map(({ x, y, k }) => {
@@ -126,8 +129,13 @@ function fields() {
   const calmMask = `<ellipse cx="512" cy="512" rx="205" ry="180" fill="#e7bf4f"/>
   <ellipse cx="246" cy="666" rx="84" ry="72" fill="#e7bf4f"/>`;
   const stalks = scatter(31, 14, { minGap: 110, pad: 50 })
-    .map(({ x, y }) => `<line x1="${f(x)}" y1="${f(y)}" x2="${f(x)}" y2="${f(y - 70)}" stroke="#a87a1f" stroke-width="6"/>
-  <ellipse cx="${f(x)}" cy="${f(y - 80)}" rx="10" ry="22" fill="#f3d36b"/>`)
+    .map(
+      ({
+        x,
+        y,
+      }) => `<line x1="${f(x)}" y1="${f(y)}" x2="${f(x)}" y2="${f(y - 70)}" stroke="#a87a1f" stroke-width="6"/>
+  <ellipse cx="${f(x)}" cy="${f(y - 80)}" rx="10" ry="22" fill="#f3d36b"/>`,
+    )
     .join("\n  ");
   return tile({
     ground: "#e7bf4f",
@@ -175,7 +183,10 @@ function mountains() {
     })
     .join("\n  ");
   const rocks = scatter(52, 10, { minGap: 90, pad: 20 })
-    .map(({ x, y }) => `<path d="M${f(x - 16)} ${f(y)} L${f(x - 8)} ${f(y - 16)} L${f(x + 10)} ${f(y - 14)} L${f(x + 16)} ${f(y)} Z" fill="#7d8494"/>`)
+    .map(
+      ({ x, y }) =>
+        `<path d="M${f(x - 16)} ${f(y)} L${f(x - 8)} ${f(y - 16)} L${f(x + 10)} ${f(y - 14)} L${f(x + 16)} ${f(y)} Z" fill="#7d8494"/>`,
+    )
     .join("\n  ");
   return tile({
     ground: "#a7adb8",
@@ -197,10 +208,12 @@ function desert() {
   const calmMask = `<ellipse cx="512" cy="512" rx="200" ry="176" fill="#ecd59c"/>
   <ellipse cx="246" cy="666" rx="84" ry="72" fill="#ecd59c"/>`;
   const cacti = scatter(61, 5, { minGap: 200, pad: 60 })
-    .map(({ x, y }) => `${shadow(x, y, 26)}
+    .map(
+      ({ x, y }) => `${shadow(x, y, 26)}
   <rect x="${f(x - 10)}" y="${f(y - 76)}" width="20" height="78" rx="10" fill="#6f9a4a"/>
   <path d="M${f(x - 10)} ${f(y - 34)} h-14 a6 6 0 0 1 -6 -6 v-20" fill="none" stroke="#6f9a4a" stroke-width="12" stroke-linecap="round"/>
-  <path d="M${f(x + 10)} ${f(y - 46)} h14 a6 6 0 0 0 6 -6 v-14" fill="none" stroke="#6f9a4a" stroke-width="12" stroke-linecap="round"/>`)
+  <path d="M${f(x + 10)} ${f(y - 46)} h14 a6 6 0 0 0 6 -6 v-14" fill="none" stroke="#6f9a4a" stroke-width="12" stroke-linecap="round"/>`,
+    )
     .join("\n  ");
   const stones = scatter(62, 7, { minGap: 120, pad: 30 })
     .map(({ x, y }) => `<ellipse cx="${f(x)}" cy="${f(y - 8)}" rx="18" ry="11" fill="#c4a467"/>`)
@@ -217,7 +230,10 @@ function desert() {
 function sea() {
   // Top-down, 1024 x 1024: calm water with a few wave dashes, seamless enough per hex.
   const waves = scatter(71, 16, { minGap: 150, pad: -200, inset: 60, top: 60 })
-    .map(({ x, y }) => `<path d="M${f(x - 34)} ${f(y)} q17 -14 34 0 t34 0" fill="none" stroke="#7cc0e6" stroke-width="9" stroke-linecap="round" opacity="0.8"/>`)
+    .map(
+      ({ x, y }) =>
+        `<path d="M${f(x - 34)} ${f(y)} q17 -14 34 0 t34 0" fill="none" stroke="#7cc0e6" stroke-width="9" stroke-linecap="round" opacity="0.8"/>`,
+    )
     .join("\n  ");
   return `<?xml version="1.0" encoding="UTF-8"?>
 <svg xmlns="http://www.w3.org/2000/svg" width="1024" height="1024" viewBox="0 0 1024 1024">
