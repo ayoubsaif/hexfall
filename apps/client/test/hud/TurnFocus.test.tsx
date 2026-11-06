@@ -139,7 +139,7 @@ describe("TurnFocus", () => {
     expect(q('[data-testid="focus-countdown"]')?.hasAttribute("data-warning")).toBe(false);
     expect(tray().hasAttribute("data-centered")).toBe(true);
     expect(tray().className).toContain("z-40");
-    expect(tray().className).toContain("[--die:88px]");
+    expect(tray().className).toContain("[--die:72px]");
     expect(document.activeElement).toBe(dice());
   });
 

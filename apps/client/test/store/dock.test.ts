@@ -35,8 +35,8 @@ describe("hudLayout", () => {
       cornerHeight: 0,
     });
     expect(l.dock).toEqual({ right: 348 + HUD_GAP, bottom: 98 + HUD_GAP });
-    // Pill above the 78 px dice.
-    expect(l.pillBottom).toBe(98 + HUD_GAP + 78 + 8);
+    // Pill above the 64 px dice.
+    expect(l.pillBottom).toBe(98 + HUD_GAP + 64 + 8);
     // The pill clears the top of the button row, so it may use the full width.
     expect(l.pillSide).toBe(HUD_GAP);
   });
@@ -79,7 +79,7 @@ describe("hudLayout", () => {
       cornerHeight: 80,
     });
     expect(l.dock).toEqual({ right: 12 + HUD_GAP, bottom: 98 + HUD_GAP });
-    // Dice 78 px tall here (not compact); the corner controls are shorter.
+    // Dice 64 px tall here (not compact); the corner controls are shorter.
     expect(l.pillBottom).toBe(98 + HUD_GAP + 80 + 8);
   });
 
@@ -92,6 +92,6 @@ describe("hudLayout", () => {
       cornerHeight: 0,
     });
     expect(l.dock).toEqual({ right: 12 + HUD_GAP, bottom: HUD_GAP });
-    expect(l.pillBottom).toBe(HUD_GAP + 78 + 8);
+    expect(l.pillBottom).toBe(HUD_GAP + 64 + 8);
   });
 });

@@ -23,8 +23,8 @@ export function setDiceDock(next: Dock): void {
 /** Gap between floating HUD pieces and between them and the screen edges. */
 export const HUD_GAP = 12;
 
-/** Docked dice tray heights (DiceTray: --die 36 px compact, 44 px otherwise, × ~1.7). */
-const DICE_HEIGHT = { compact: 64, normal: 78 } as const;
+/** Docked dice tray heights (DiceTray: --die 26 px compact, 32 px otherwise, × 1.7 + padding). */
+const DICE_HEIGHT = { compact: 54, normal: 64 } as const;
 
 /** Measurements of the HUD in viewport pixels. */
 export interface HudMetrics {

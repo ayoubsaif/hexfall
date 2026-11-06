@@ -133,8 +133,8 @@ export function DiceTray({ onSettled = closeFocusOnOwnRoll }: DiceTrayProps = {}
       className={cn(
         "pointer-events-auto",
         centered
-          ? "fixed top-1/2 left-1/2 z-40 -translate-x-1/2 -translate-y-1/2 [--die:88px] max-sm:[--die:64px]"
-          : "absolute z-10 [--die:40px] max-sm:[--die:32px] short:[--die:32px]",
+          ? "fixed top-1/2 left-1/2 z-40 -translate-x-1/2 -translate-y-1/2 [--die:72px] max-sm:[--die:52px]"
+          : "absolute z-10 [--die:32px] max-sm:[--die:26px] short:[--die:26px]",
       )}
       style={centered ? undefined : { right: dock.right, bottom: dock.bottom }}
     >

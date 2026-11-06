@@ -49,6 +49,27 @@ const EX = [26, 15] as const; // top face "right" edge, running down-right
 const EY = [-26, 15] as const; // top face "left" edge, running down-left
 const H = 30; // vertical edge length
 
+type Pt = readonly [number, number];
+
+/** Closed polygon with every corner rounded by a quadratic curve of radius `r`. */
+function roundedPath(pts: readonly Pt[], r: number): string {
+  const n = pts.length;
+  const out: string[] = [];
+  pts.forEach((p, i) => {
+    const a = pts[(i + n - 1) % n]!;
+    const b = pts[(i + 1) % n]!;
+    const toward = (q: Pt) => {
+      const len = Math.hypot(q[0] - p[0], q[1] - p[1]);
+      const k = Math.min(r, len / 2) / len;
+      return [p[0] + (q[0] - p[0]) * k, p[1] + (q[1] - p[1]) * k] as const;
+    };
+    const s0 = toward(a);
+    const e0 = toward(b);
+    out.push(`${i === 0 ? "M" : "L"}${s0[0]},${s0[1]} Q${p[0]},${p[1]} ${e0[0]},${e0[1]}`);
+  });
+  return `${out.join(" ")} Z`;
+}
+
 function Pips({ value, matrix, id }: { value: number; matrix: string; id: string }) {
   return (
     <g transform={`matrix(${matrix})`}>
@@ -57,12 +78,15 @@ function Pips({ value, matrix, id }: { value: number; matrix: string; id: string
           <circle
             cx={x}
             cy={y}
-            r={0.1}
+            r={0.112}
             fill="#5a3200"
             opacity={0.55}
             transform="translate(0.012 0.02)"
           />
-          <circle cx={x} cy={y} r={0.095} fill={`url(#${id}-gold)`} />
+          <circle cx={x} cy={y} r={0.108} fill="#8a5a0c" />
+          <circle cx={x} cy={y} r={0.1} fill={`url(#${id}-gold)`} />
+          {/* specular glint */}
+          <circle cx={x - 0.032} cy={y - 0.036} r={0.03} fill="#fffbe0" opacity={0.95} />
         </g>
       ))}
     </g>
@@ -79,24 +103,31 @@ function Cube({ x, y, value, id }: { x: number; y: number; value: number; id: st
   return (
     <g transform={`translate(${x} ${y})`} strokeLinejoin="round" strokeLinecap="round">
       <ellipse cx="0" cy={F[1] + H + 3} rx="34" ry="9" fill="#000" opacity="0.28" />
-      {/* faces */}
-      <polygon
-        points={`${pt(O)} ${pt(R)} ${pt(F)} ${pt(L)}`}
+      {/* silhouette with generously rounded outer corners, like a casino die */}
+      <path
+        d={roundedPath([O, R, [R[0], R[1] + H], [F[0], F[1] + H], [L[0], L[1] + H], L], 6)}
+        fill="#6e0f0a"
+        stroke="#6e0f0a"
+        strokeWidth="2.2"
+      />
+      {/* faces: rounded too, so the seams read as soft bevels */}
+      <path
+        d={roundedPath([O, R, F, L], 3.5)}
         fill={`url(#${id}-top)`}
         stroke="#6e0f0a"
-        strokeWidth="2.2"
+        strokeWidth="1.6"
       />
-      <polygon
-        points={`${pt(L)} ${pt(F)} ${pt(F, H)} ${pt(L, H)}`}
+      <path
+        d={roundedPath([L, F, [F[0], F[1] + H], [L[0], L[1] + H]], 3.5)}
         fill={`url(#${id}-left)`}
         stroke="#6e0f0a"
-        strokeWidth="2.2"
+        strokeWidth="1.6"
       />
-      <polygon
-        points={`${pt(F)} ${pt(R)} ${pt(R, H)} ${pt(F, H)}`}
+      <path
+        d={roundedPath([F, R, [R[0], R[1] + H], [F[0], F[1] + H]], 3.5)}
         fill={`url(#${id}-right)`}
         stroke="#6e0f0a"
-        strokeWidth="2.2"
+        strokeWidth="1.6"
       />
       {/* rounded-edge highlights */}
       <path
@@ -160,9 +191,10 @@ export function DiceArt({
           <stop offset="1" stopColor="#650d08" />
         </linearGradient>
         <radialGradient id="dice-gold" cx="0.35" cy="0.3" r="0.8">
-          <stop offset="0" stopColor="#fff1b0" />
-          <stop offset="0.55" stopColor="#e8bc4a" />
-          <stop offset="1" stopColor="#a8741c" />
+          <stop offset="0" stopColor="#fff8c8" />
+          <stop offset="0.35" stopColor="#ffd941" />
+          <stop offset="0.75" stopColor="#e3a516" />
+          <stop offset="1" stopColor="#a86a0c" />
         </radialGradient>
       </defs>
       <Cube x={30} y={8} value={a} id="dice" />
