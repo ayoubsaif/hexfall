@@ -15,6 +15,7 @@ import { useGameStore } from "../store/game.ts";
 import { DEFAULT_DOCK, hudLayout, setDiceDock } from "../store/dock.ts";
 import { useRoomStore } from "../store/room.ts";
 import { type LogTab, setLogTab, useUiStore } from "../store/ui.ts";
+import { useHotkeys } from "../hotkeys/useHotkeys.ts";
 import { SettingsButton, SettingsHost } from "../settings/SettingsButton.tsx";
 import { ViewControls } from "./ViewControls.tsx";
 import { GameAlerts } from "./GameAlerts.tsx";
@@ -254,6 +255,7 @@ function LogTabs() {
 
 /** DOM overlay above the canvas. The container ignores the pointer; interactive children opt in. */
 export function Hud() {
+  useHotkeys();
   const room = useRoomStore((s) => s.room);
   const status = useRoomStore((s) => s.status);
   const hasView = useGameStore((s) => s.view !== null);

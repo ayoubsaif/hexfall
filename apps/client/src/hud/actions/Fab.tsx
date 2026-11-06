@@ -5,7 +5,9 @@
 import type { LucideIcon } from "lucide-react";
 import { type ComponentProps, type ReactNode, useId } from "react";
 import { Tooltip, TooltipContent, TooltipTrigger } from "@/components/ui/tooltip.tsx";
+import { Kbd } from "@/components/ui/kbd.tsx";
 import { cn } from "@/lib/utils.ts";
+import { type HotkeyId, hotkeyFor, hotkeyLabel } from "../../hotkeys/registry.ts";
 
 export interface FabRing {
   /** Time left as a share of the wait, 0–1. */
@@ -38,6 +40,8 @@ export type FabProps = Omit<ComponentProps<"button">, "children" | "aria-label">
   ring?: FabRing | null;
   /** The primary action: accent color and a larger button. */
   primary?: boolean;
+  /** Keyboard shortcut of this action: shown in the tooltip and exposed as aria-keyshortcuts. */
+  hotkey?: HotkeyId;
 };
 
 export function Fab({
@@ -48,6 +52,7 @@ export function Fab({
   description,
   ring = null,
   primary = false,
+  hotkey,
   className,
   ...props
 }: FabProps) {
@@ -62,6 +67,13 @@ export function Fab({
             type="button"
             aria-label={label}
             aria-describedby={desc ? id : undefined}
+            aria-keyshortcuts={
+              hotkey
+                ? hotkeyFor(hotkey)
+                    .keys.map((k) => (k === " " ? "Space" : k))
+                    .join(" ")
+                : undefined
+            }
             data-primary={primary || undefined}
             className={cn(
               "relative inline-flex cursor-pointer items-center justify-center shadow-lg shadow-black/30 outline-none",
@@ -126,7 +138,16 @@ export function Fab({
           )}
         </span>
       </TooltipTrigger>
-      <TooltipContent>{tooltip ?? label}</TooltipContent>
+      <TooltipContent>
+        {hotkey ? (
+          <span className="flex items-center gap-2">
+            {tooltip ?? label}
+            <Kbd data-hotkey={hotkey}>{hotkeyLabel(hotkey)}</Kbd>
+          </span>
+        ) : (
+          (tooltip ?? label)
+        )}
+      </TooltipContent>
     </Tooltip>
   );
 }

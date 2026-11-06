@@ -5,6 +5,7 @@
 import { Box, Map as MapIcon, Minus, Orbit, Plus, type LucideIcon } from "lucide-react";
 import { useTranslation } from "react-i18next";
 import { cn } from "@/lib/utils.ts";
+import { hotkeyLabel } from "../hotkeys/registry.ts";
 import {
   type ViewPreset,
   ZOOM_MAX,
@@ -44,7 +45,8 @@ export function ViewControls() {
         data-interactive
         data-testid="zoom-out"
         aria-label={t("board.zoomOut")}
-        title={t("board.zoomOut")}
+        title={`${t("board.zoomOut")} (${hotkeyLabel("zoomOut")})`}
+        aria-keyshortcuts="-"
         disabled={zoom <= ZOOM_MIN}
         onClick={() => requestZoom(zoom - STEP)}
         className={BTN}
@@ -68,7 +70,8 @@ export function ViewControls() {
         data-interactive
         data-testid="zoom-in"
         aria-label={t("board.zoomIn")}
-        title={t("board.zoomIn")}
+        title={`${t("board.zoomIn")} (${hotkeyLabel("zoomIn")})`}
+        aria-keyshortcuts="+"
         disabled={zoom >= ZOOM_MAX}
         onClick={() => requestZoom(zoom + STEP)}
         className={BTN}

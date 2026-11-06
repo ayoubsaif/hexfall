@@ -24,7 +24,7 @@ export function SettingsButton() {
       aria-expanded={open}
       title={label}
       className="pointer-events-auto grid size-10 cursor-pointer place-items-center hud-leather-round transition-colors duration-150 outline-none focus-visible:ring-2 focus-visible:ring-ring max-sm:size-11 short:size-11 pointer-coarse:size-11 motion-reduce:transition-none"
-      onClick={openSettings}
+      onClick={() => openSettings()}
     >
       <Settings aria-hidden className="size-6" />
     </button>

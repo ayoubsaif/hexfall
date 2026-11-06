@@ -16,6 +16,7 @@ import { useGameStore } from "../../store/game.ts";
 import { useDiceStore } from "../../store/dice.ts";
 import { useDockStore } from "../../store/dock.ts";
 import { setTurnFocus, useUiStore } from "../../store/ui.ts";
+import { hotkeyLabel } from "../../hotkeys/registry.ts";
 import { DiceArt } from "./DiceArt.tsx";
 import { prefersReducedMotion } from "../cards/useCountChange.ts";
 import { countdownText, useCountdown } from "../countdown.ts";
@@ -144,7 +145,8 @@ export function DiceTray({ onSettled = closeFocusOnOwnRoll }: DiceTrayProps = {}
           data-ready={action ? true : undefined}
           aria-label={name}
           aria-describedby={showCountdown ? "dice-countdown" : undefined}
-          title={action ? name : undefined}
+          title={action ? `${name} (${hotkeyLabel("rollDice")})` : undefined}
+          aria-keyshortcuts={action ? "Space r" : undefined}
           disabled={action === null}
           onClick={() => {
             if (action) act({ type: action });

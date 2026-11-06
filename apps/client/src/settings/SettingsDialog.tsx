@@ -1,7 +1,7 @@
 // Settings dialog (specs/client-settings "Settings dialog layout"), built from the shadcn
 // `sidebar-13` block: section sidebar on md+ screens, a native section picker below md, and a
 // "Settings › <section>" breadcrumb. Settings apply at once; there is no Save button.
-import { Accessibility, Bell, Globe, Info, type LucideIcon, Volume2 } from "lucide-react";
+import { Accessibility, Bell, Globe, Info, Keyboard, type LucideIcon, Volume2 } from "lucide-react";
 import { type CSSProperties, type ReactNode, useId } from "react";
 import { useTranslation } from "react-i18next";
 import {
@@ -34,6 +34,7 @@ import {
 } from "./sections.ts";
 import { AboutSection } from "./sections/AboutSection.tsx";
 import { AccessibilitySection } from "./sections/AccessibilitySection.tsx";
+import { KeyboardSection } from "./sections/KeyboardSection.tsx";
 import { LanguageSection } from "./sections/LanguageSection.tsx";
 import { NotificationsSection } from "./sections/NotificationsSection.tsx";
 import { SoundSection } from "./sections/SoundSection.tsx";
@@ -43,6 +44,7 @@ const ICONS: Record<SectionId, LucideIcon> = {
   sound: Volume2,
   notifications: Bell,
   accessibility: Accessibility,
+  keyboard: Keyboard,
   about: Info,
 };
 
@@ -51,6 +53,7 @@ const CONTENT: Record<SectionId, () => ReactNode> = {
   sound: () => <SoundSection />,
   notifications: () => <NotificationsSection />,
   accessibility: () => <AccessibilitySection />,
+  keyboard: () => <KeyboardSection />,
   about: () => <AboutSection />,
 };
 

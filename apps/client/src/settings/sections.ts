@@ -7,6 +7,7 @@ export const SECTION_IDS = [
   "sound",
   "notifications",
   "accessibility",
+  "keyboard",
   "about",
 ] as const;
 export type SectionId = (typeof SECTION_IDS)[number];
@@ -25,8 +26,8 @@ export const useSettingsStore = create<SettingsState>()(() => ({
   section: "language",
 }));
 
-export function openSettings(): void {
-  useSettingsStore.setState({ open: true });
+export function openSettings(section?: SectionId): void {
+  useSettingsStore.setState(section ? { open: true, section } : { open: true });
 }
 
 export function setSettingsOpen(open: boolean): void {

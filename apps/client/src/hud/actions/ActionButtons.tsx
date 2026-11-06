@@ -24,6 +24,7 @@ import {
 import { GameCard } from "../cards/GameCard.tsx";
 import { countdownText, useCountdown } from "../countdown.ts";
 import { useInFlight, useLegal, useOwn, useView } from "../state.ts";
+import type { HotkeyId } from "../../hotkeys/registry.ts";
 import { gameIcon } from "../GameIcon.tsx";
 import { Fab, type FabRing } from "./Fab.tsx";
 
@@ -70,6 +71,7 @@ const BUILDS: {
   cost: ResourceBundle;
   piece: Piece;
   legal: "buildRoad" | "buildSettlement" | "buildCity";
+  hotkey: HotkeyId;
 }[] = [
   {
     kind: "road",
@@ -78,6 +80,7 @@ const BUILDS: {
     cost: COSTS.road,
     piece: "roads",
     legal: "buildRoad",
+    hotkey: "buildRoad",
   },
   {
     kind: "settlement",
@@ -86,6 +89,7 @@ const BUILDS: {
     cost: COSTS.settlement,
     piece: "settlements",
     legal: "buildSettlement",
+    hotkey: "buildSettlement",
   },
   {
     kind: "city",
@@ -94,6 +98,7 @@ const BUILDS: {
     cost: COSTS.city,
     piece: "cities",
     legal: "buildCity",
+    hotkey: "buildCity",
   },
 ];
 
@@ -149,6 +154,7 @@ export function ActionButtons() {
               icon={b.icon}
               label={label}
               tooltip={<CostTip label={label} cost={b.cost} />}
+              hotkey={b.hotkey}
               badge={left}
               description={
                 left === undefined
@@ -164,6 +170,7 @@ export function ActionButtons() {
         <Fab
           icon={gameIcon("devcard")}
           label={t("play.actions.buyDevCard")}
+          hotkey="buyDevCard"
           tooltip={<CostTip label={t("play.actions.buyDevCard")} cost={COSTS.devCard} />}
           description={t("play.actions.costs", { cost: costText(COSTS.devCard, t) })}
           disabled={!c.buyDevCard}
@@ -172,12 +179,14 @@ export function ActionButtons() {
         <Fab
           icon={gameIcon("bank")}
           label={t("play.actions.tradeBank")}
+          hotkey="tradeBank"
           disabled={!c.maritime}
           onClick={() => openDialog("maritime")}
         />
         <Fab
           icon={gameIcon("trade")}
           label={t("play.actions.tradePlayers")}
+          hotkey="tradePlayers"
           disabled={!c.proposeTrade}
           onClick={() =>
             openTrade({
@@ -190,6 +199,7 @@ export function ActionButtons() {
         <Fab
           icon={gameIcon("endturn")}
           label={t("play.actions.endTurn")}
+          hotkey="endTurn"
           primary
           ring={ring}
           disabled={!c.endTurn}

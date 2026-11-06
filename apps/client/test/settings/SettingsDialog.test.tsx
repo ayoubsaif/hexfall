@@ -111,10 +111,17 @@ describe("Settings dialog layout", () => {
     m = mount(<SettingsDialog />);
   }
 
-  it("lists the five sections in order in the sidebar and the phone picker", () => {
+  it("lists the six sections in order in the sidebar and the phone picker", () => {
     render();
     const nav = SECTION_IDS.map((s) => byTestId(`settings-nav-${s}`)?.textContent);
-    expect(nav).toEqual(["Language", "Sound", "Notifications", "Accessibility", "About"]);
+    expect(nav).toEqual([
+      "Language",
+      "Sound",
+      "Notifications",
+      "Accessibility",
+      "Keyboard",
+      "About",
+    ]);
     const options = [...document.querySelectorAll('[data-testid="settings-picker"] option')].map(
       (o) => o.textContent,
     );
