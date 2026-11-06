@@ -2,7 +2,7 @@
 
 ## Purpose
 
-TBD - keyboard shortcuts for game actions and board view, driven by a single registry, with hints on buttons and a list in Settings.
+Let players run the most used turn actions and board view controls from the keyboard. Every shortcut comes from one registry, runs only when its button is enabled, shows as a key hint on the button, and is listed in the Keyboard section of Settings.
 
 ## Requirements
 
