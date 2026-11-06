@@ -64,6 +64,8 @@ type Face = { resource: Resource; dev?: undefined } | { dev: DevCard; resource?:
 export type GameCardProps = Face & {
   size?: CardSize;
   layout?: CardLayout;
+  /** Hide the name strip (the hand shows the name in a tooltip instead). */
+  hideName?: boolean;
   /** Makes a non-interactive card focusable (the edge hand raises it on focus). */
   tabIndex?: number;
   /** Count shown as a badge (and in the accessible name). */
@@ -94,6 +96,7 @@ export function GameCard(props: GameCardProps) {
   const {
     size = "lg",
     layout = "default",
+    hideName = false,
     tabIndex,
     count,
     alwaysShowCount = false,
@@ -164,7 +167,7 @@ export function GameCard(props: GameCardProps) {
           className={cn(
             "absolute inset-x-0 bg-hud-solid/90 py-px text-center leading-tight font-semibold tracking-wide text-hud-fg uppercase",
             peek ? "top-0" : "bottom-0",
-            NAME[size],
+            hideName ? "hidden" : NAME[size],
           )}
           data-card-name
         >

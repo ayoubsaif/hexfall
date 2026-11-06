@@ -77,7 +77,11 @@ function HarborChip({
 }) {
   const ref = useRef<Group>(null);
   const reduced = useReducedMotion();
-  const icon = useTexture(`/textures/harbor/${item.type}.webp`);
+  // Special harbors reuse the resource card icon on a disc in the card's frame color.
+  const special = item.type !== "generic";
+  const icon = useTexture(
+    special ? `/ui/resources/${item.type}.webp` : `/textures/harbor/${item.type}.webp`,
+  );
   icon.colorSpace = SRGBColorSpace;
   useFrame(({ clock }) => {
     const g = ref.current;
@@ -86,13 +90,22 @@ function HarborChip({
   return (
     <group ref={ref} position={[0, y, 0]}>
       <group ref={chipRef} name="chip">
-        <mesh position={[0, -0.004, 0]}>
-          <cylinderGeometry args={[0.3, 0.3, 0.02, 40]} />
-          <meshStandardMaterial color={HARBOR_COLORS[item.type]} roughness={0.6} />
-        </mesh>
-        <Asset assetKey="token" />
+        {special ? (
+          <mesh position={[0, CHIP.label / 2 - 0.0005, 0]}>
+            <cylinderGeometry args={[0.3, 0.3, CHIP.label - 0.001, 40]} />
+            <meshStandardMaterial color={HARBOR_COLORS[item.type]} roughness={0.6} />
+          </mesh>
+        ) : (
+          <>
+            <mesh position={[0, -0.004, 0]}>
+              <cylinderGeometry args={[0.3, 0.3, 0.02, 40]} />
+              <meshStandardMaterial color={HARBOR_COLORS[item.type]} roughness={0.6} />
+            </mesh>
+            <Asset assetKey="token" />
+          </>
+        )}
         <group position={[0, 0, -0.08]}>
-          <LabelQuad texture={icon} size={0.3} y={CHIP.label} />
+          <LabelQuad texture={icon} size={special ? 0.34 : 0.3} y={CHIP.label + 0.001} />
         </group>
         {texture && <LabelQuad texture={texture} size={0.5} y={CHIP.label} />}
       </group>
