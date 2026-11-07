@@ -196,7 +196,7 @@ function LogDrawer() {
  * In-game HUD (specs/hud-presentation "Responsive HUD layout"; design decisions 6, 7 and 9):
  * - the hand peeks from the bottom edge at the center, with no panel;
  * - the floating action buttons sit at the bottom-right, above the raised hand;
- * - the status pill floats above the hand;
+ * - the status pill sits in the top bar under the view controls;
  * - the event log opens as a drawer from the "Log" button at the top-left, with Log and Dice
  *   tabs (game-hud "Log drawer tabs"); every other control sits in the bottom-left cluster;
  * - tablet, mobile and short screens get compact panels.
@@ -211,9 +211,9 @@ function GameHud({ corner }: { corner: HTMLElement | null }) {
       >
         <PlayerPanels />
         <ViewControls />
+        <StatusPill />
       </div>
       <Hand ref={setHand} />
-      <StatusPill />
       <div
         data-testid="offers-anchor"
         className="absolute bottom-[calc(var(--hand-h,104px)_+_var(--corner-h,0px)_+_20px)] left-3 flex w-[min(300px,calc(100%-96px))] flex-col max-sm:left-2 short:left-2"

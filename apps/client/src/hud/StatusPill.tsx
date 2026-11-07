@@ -47,14 +47,14 @@ export function StatusPill() {
   return (
     <div
       data-testid="status-pill"
-      className="pointer-events-none absolute bottom-[var(--pill-bottom,120px)] left-1/2 flex w-max max-w-[calc(100%_-_2_*_var(--pill-side,12px))] -translate-x-1/2 flex-col items-center gap-1.5"
+      className="pointer-events-none flex w-max max-w-full flex-col items-start gap-1.5"
     >
-      <div className="flex max-w-full items-center gap-2 hud-square px-3.5 py-1.5">
+      <div className="flex max-w-full items-center gap-2 rounded-full border border-[#c9a04e]/40 bg-[#2a160b]/75 px-4 py-1.5 text-sm text-[#f6ecd0] shadow-sm shadow-black/20 backdrop-blur-sm">
         <p
           data-testid="turn-status"
           data-your-move={status.yourMove || undefined}
           role="status"
-          className="m-0 text-center font-semibold data-[your-move]:text-wait"
+          className="m-0 text-center font-semibold data-[your-move]:text-[#f0c860]"
         >
           {status.text}
         </p>
@@ -62,7 +62,7 @@ export function StatusPill() {
       </div>
       {picking && (
         <p
-          className="pointer-events-auto m-0 flex items-center gap-2 hud-square px-3 py-0.5 text-xs text-wait"
+          className="pointer-events-auto m-0 flex items-center gap-2 rounded-full border border-[#c9a04e]/40 bg-[#2a160b]/75 px-3 py-0.5 text-xs text-[#f6ecd0] shadow-sm shadow-black/20 backdrop-blur-sm"
           role="status"
         >
           {t("play.pill.pickSpot")}

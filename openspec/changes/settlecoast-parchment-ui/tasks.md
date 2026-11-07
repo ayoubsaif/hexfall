@@ -62,3 +62,7 @@
 - [x] 9.2 Replace the island illustration with large host/solo/join buttons using existing gold icons
 - [x] 9.3 Open focused mode forms, retain invite-link behavior and validation, and add a back action
 - [x] 9.4 Verify mode actions, translations, responsive entry layout and board mount/unmount; build the client
+
+## 10. Turn status label (owner request)
+
+- [x] 10.1 Move the turn status pill into the top bar under the view controls and give it the view-controls look (dark translucent leather, gold border, cream text, gold "your move" text) for contrast over the board
