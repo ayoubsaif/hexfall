@@ -89,6 +89,7 @@ export function PlayerPanels() {
           <li
             key={p.seat}
             data-testid="player-panel"
+            data-seat={p.seat}
             data-active={isActive || undefined}
             data-own={own || undefined}
             aria-current={isActive ? "true" : undefined}
