@@ -99,8 +99,10 @@ export function sampleCoast(land: readonly XZ[], x: number, z: number): CoastSam
   const bay = fbm(pwx * 0.7 + 5, pwz * 0.7 + 5) - 0.5;
   const rag = fbm(pwx * 2.6, pwz * 2.6) - 0.5;
   const fine = noise(pwx * 7.5, pwz * 7.5) - 0.5;
+  // Kept small so the waterline stays close to the hexes, and never past d + 0.05 so the beach
+  // is always dry right outside the land (specs/sea-shore "Narrow beach").
   return {
-    shore: d - 0.14 + bay * 1.15 + rag * 0.4 + fine * 0.08,
+    shore: Math.min(d + 0.05, d - 0.14 + bay * 0.55 + rag * 0.22 + fine * 0.08),
     depth: d + bay * 1.6 + rag * 0.7,
     phase: rag * 0.9 + bay * 0.5,
   };

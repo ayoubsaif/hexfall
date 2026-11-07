@@ -9,12 +9,28 @@ import { type Group, Matrix4, Mesh, type Object3D, Vector3 } from "three";
 import { Asset } from "../theme/index.ts";
 import { sailMaterial } from "./harborSail.ts";
 import { addHullMask } from "./hullMask.ts";
+import { useReducedMotion } from "./motion.ts";
 import { ensureSailUVs } from "./sailUv.ts";
 import { sailHeading, sailTilt, sailTurn, turnAbout } from "./sailYaw.ts";
 
 export interface BoatHandle {
   readonly root: Group;
   readonly type: HarborType;
+}
+
+/** Bobbing on the water (specs/sea-shore "Boats bob"): rise/fall, roll and pitch amplitudes. */
+export const BOB_HEIGHT = 0.008;
+const BOB_ROLL = 0.035;
+const BOB_PITCH = 0.015;
+
+/** The boat's bob at time `t` (s), phased by its position so boats never move in step. */
+export function bobAt(t: number, x: number, z: number): { y: number; roll: number; pitch: number } {
+  const phase = x * 1.7 + z * 2.3;
+  return {
+    y: BOB_HEIGHT * Math.sin(t * 1.3 + phase),
+    roll: BOB_ROLL * Math.sin(t * 0.9 + phase * 1.3),
+    pitch: BOB_PITCH * Math.sin(t * 1.1 + phase * 0.7),
+  };
 }
 
 interface Rig {
@@ -87,8 +103,16 @@ export function findRig(root: Object3D, type: HarborType): Rig | null {
  */
 export function useSailRigs(): (boat: BoatHandle | null) => void {
   const boats = useRef(new Map<Group, { type: HarborType; rig: Rig | null }>());
-  useFrame(({ camera }) => {
+  const reduced = useReducedMotion();
+  useFrame(({ camera, clock }) => {
+    const t = clock.elapsedTime;
     for (const [root, entry] of boats.current) {
+      // Float: bob the boat root inside its placed group; still with reduced motion.
+      const at = root.parent?.position;
+      const bob = reduced || !at ? null : bobAt(t, at.x, at.z);
+      root.position.y = bob?.y ?? 0;
+      root.rotation.x = bob?.roll ?? 0;
+      root.rotation.z = bob?.pitch ?? 0;
       if (!entry.rig || !within(entry.rig.sail, root)) entry.rig = findRig(root, entry.type);
       const rig = entry.rig;
       if (!rig) continue;

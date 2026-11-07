@@ -6,8 +6,8 @@ import { useMemo } from "react";
 import { DoubleSide, PlaneGeometry } from "three";
 import { Mat } from "./common.tsx";
 
-/** The fallback is drawn at the GLB's on-board size (theme scale 0.2 of a 5.3-long model). */
-const SIZE = 0.2 / 0.18;
+/** The fallback is drawn at the GLB's on-board size (theme scale 0.1 of a 5.3-long model). */
+const SIZE = 0.1 / 0.18;
 
 /** Sail extent in the hull frame: across the hull (Z) and up (Y), just in front of the mast. */
 export const BOAT_SAIL = {

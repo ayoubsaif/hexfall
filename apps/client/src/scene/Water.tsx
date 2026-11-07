@@ -136,7 +136,8 @@ void main() {
   col += vec3(0.85, 1.0, 0.96) * cc * 0.2 * (0.35 + 0.65 * shallowK);
 
   // Beach: the waterline breathes in and out; a wet, darker, glossier band lies just inside it.
-  float tide = 0.5 + 0.12 * sin(t * 0.7 + p.x * 1.5 + p.y * 1.1);
+  // Narrow band so the water reaches close to the hexes (specs/sea-shore "Narrow beach").
+  float tide = 0.26 + 0.06 * sin(t * 0.7 + p.x * 1.5 + p.y * 1.1);
   float beach = 1.0 - smoothstep(0.0, tide, dd);
   float wet = smoothstep(tide * 0.15, tide * 0.85, dd) * beach;
   vec3 beachCol = sand * (0.9 + 0.2 * max(dot(N, L), 0.0));

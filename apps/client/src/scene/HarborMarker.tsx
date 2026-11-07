@@ -1,13 +1,15 @@
-// Harbor marker: one edge-aligned stone pier with a boat moored at its sea end. The boat's
-// sail carries the trade rate and, for special harbors, the resource icon and tint, and it
-// turns toward the camera (specs/board-view "Harbor markers").
-import { useLandRelief } from "../theme/index.ts";
+// Harbor marker: one edge-aligned jetty (asset key `prop.jetty`) running from the coastal edge
+// out to sea, with a boat moored beyond its sea end. The boat's sail carries the trade rate and,
+// for special harbors, the resource icon and tint, and it turns toward the camera
+// (specs/board-view "Harbor markers").
+import { useMemo } from "react";
+import { Asset, JETTY_LENGTH, useLandRelief } from "../theme/index.ts";
+import { LAND_CENTERS, boatDistance } from "./boatFloat.ts";
 import { type BoatHandle, HarborBoat } from "./HarborBoat.tsx";
-import { HarborDock } from "./HarborDock.tsx";
 import type { HarborItem } from "./layout.ts";
 
-/** Gap from the pier's sea end to the hull's centre line: the boat lies well out in the sea. */
-const BOAT_CLEARANCE = 0.42;
+/** Gap from the jetty's sea end to the hull's centre line, so the boat lies just off its end. */
+const BOAT_GAP = 0.135;
 
 export function HarborMarker({
   item,
@@ -16,29 +18,35 @@ export function HarborMarker({
   item: HarborItem;
   boatRef: (boat: BoatHandle | null) => void;
 }) {
-  // On a raised island the sea sits lower, and the harbor sits on it.
+  // On a raised island the sea sits lower, and the boat floats on it.
   const { seaLevel } = useLandRelief();
   const [px, pz] = item.position;
   // Use the slot edge midpoint, not the island center: outer hex edges have six exact normals.
-  // Extend the sea end a little past the marker position.
   const mx = (item.ends[0][0] + item.ends[1][0]) / 2;
   const mz = (item.ends[0][1] + item.ends[1][1]) / 2;
-  const dx = mx - px;
-  const dz = mz - pz;
-  const length = Math.hypot(dx, dz);
-  const extension = 0.15 / length;
-  const ox = -dx * extension;
-  const oz = -dz * extension;
-  const pierX = dx - ox;
-  const pierZ = dz - oz;
-  // The hull lies along the coast (the slot path), just beyond the pier's sea end.
+  // Unit vector from the coastal edge out to sea.
+  const length = Math.hypot(px - mx, pz - mz);
+  const sx = (px - mx) / length;
+  const sz = (pz - mz) / length;
+  // The hull lies along the coast (the slot path), just beyond the jetty's sea end.
   const ex = item.ends[1][0] - item.ends[0][0];
   const ez = item.ends[1][1] - item.ends[0][1];
-  const out = BOAT_CLEARANCE / length;
+  const el = Math.hypot(ex, ez);
+  // Just past the jetty, or further out where the beach is wide, so the boat always floats.
+  const boatOut = useMemo(
+    () =>
+      boatDistance(LAND_CENTERS, [mx, mz], [sx, sz], [ex / el, ez / el], JETTY_LENGTH + BOAT_GAP),
+    [mx, mz, sx, sz, ex, ez, el],
+  );
   return (
-    <group position={[px + ox, 0, pz + oz]}>
-      <HarborDock dx={pierX} dz={pierZ} seaLevel={seaLevel} />
-      <group position={[-dx * out, seaLevel, -dz * out]} rotation={[0, Math.atan2(-ez, ex), 0]}>
+    <group>
+      <group position={[mx, 0, mz]} rotation={[0, Math.atan2(-sz, sx), 0]}>
+        <Asset assetKey="prop.jetty" />
+      </group>
+      <group
+        position={[mx + sx * boatOut, seaLevel, mz + sz * boatOut]}
+        rotation={[0, Math.atan2(-ez, ex), 0]}
+      >
         <HarborBoat type={item.type} register={boatRef} />
       </group>
     </group>

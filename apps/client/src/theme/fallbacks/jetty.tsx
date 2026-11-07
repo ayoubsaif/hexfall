@@ -1,17 +1,19 @@
-// A stone pier: a slab of stylized cartoon rock on squat stone pillars, lying on the sea and
-// running from the group's origin along (dx, dz). The stone is drawn procedurally (rounded grey
-// slabs, warm dark gaps, light rims, hairline cracks), so nothing to download. The marker
-// supplies the coastal edge normal, so the deck meets that hex edge squarely.
+// Procedural harbor jetty (`prop.jetty`): a slab of stylized cartoon rock on squat stone
+// pillars, lying on the sea. It follows the jetty contract: origin at the coastal edge midpoint
+// at land-top height, running JETTY_LENGTH out to sea along +X. The stone is drawn procedurally
+// (rounded grey slabs, warm dark gaps, light rims, hairline cracks), so nothing to download.
 import { useMemo } from "react";
 import { CanvasTexture, SRGBColorSpace } from "three";
+import { useLandRelief } from "../useLandRelief.ts";
 
 const STONE = "#9aa0a8";
 const STONE_DARK = "#5d626b";
 const WIDTH = 0.64;
+/** Length of the jetty from the coastal edge out to its sea end. */
+export const JETTY_LENGTH = 0.36;
 /** Deck height above the sea surface, and the thickness of the deck. */
 const DECK_Y = 0.09;
 const DECK_THICKNESS = 0.035;
-export const HARBOR_DECK_TOP = DECK_Y + DECK_THICKNESS / 2;
 const PILLAR_HEIGHT = 0.2;
 
 /** Texture size: the deck is about twice as long as it is wide. */
@@ -155,12 +157,14 @@ function stoneMaps(): StoneMaps | null {
   return stone;
 }
 
-export function HarborDock({ dx, dz, seaLevel }: { dx: number; dz: number; seaLevel: number }) {
-  const length = Math.hypot(dx, dz);
+export function JettyPiece() {
+  // On a raised island the sea sits lower than the land top, and the deck lies on the sea.
+  const { seaLevel } = useLandRelief();
+  const length = JETTY_LENGTH;
   const maps = useMemo(stoneMaps, []);
-  const pillars = [0.12, 0.5, 0.88];
+  const pillars = [0.2, 0.8];
   return (
-    <group position={[dx / 2, seaLevel, dz / 2]} rotation={[0, Math.atan2(-dz, dx), 0]}>
+    <group position={[length / 2, seaLevel, 0]}>
       <mesh position={[0, DECK_Y, 0]} castShadow receiveShadow>
         <boxGeometry args={[length, DECK_THICKNESS, WIDTH]} />
         <meshStandardMaterial

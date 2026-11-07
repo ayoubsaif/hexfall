@@ -9,15 +9,24 @@ const smooth = (a: number, b: number, v: number) => {
   return t * t * (3 - 2 * t);
 };
 
+/** Shore distance where the beach slope ends and the sand shelf begins (specs/sea-shore).
+ * Smaller = narrower beach; the waterline sits about a third of the way from -0.18. */
+export const BEACH_SLOPE_END = 0.75;
+
 /** Height relative to mean sea level. Shared profile with the water shader.
  * The dry berm joins the island below its roads, then slopes into a submerged sand shelf. */
 export function beachHeight(shore: number): number {
-  return 0.095 - 0.38 * smooth(-0.18, 1.5, shore) - Math.max(0, shore - 1.5) * 0.35;
+  return (
+    0.095 -
+    0.38 * smooth(-0.18, BEACH_SLOPE_END, shore) -
+    Math.max(0, shore - BEACH_SLOPE_END) * 0.35
+  );
 }
 
+const SLOPE_END_GLSL = BEACH_SLOPE_END.toFixed(4);
 export const beachHeightGlsl = /* glsl */ `
 float beachHeight(float shore) {
-  return 0.095 - 0.38 * smoothstep(-0.18, 1.5, shore) - max(0.0, shore - 1.5) * 0.35;
+  return 0.095 - 0.38 * smoothstep(-0.18, ${SLOPE_END_GLSL}, shore) - max(0.0, shore - ${SLOPE_END_GLSL}) * 0.35;
 }`;
 
 export function beachGeometry(land: readonly XZ[], seaLevel: number): BufferGeometry {

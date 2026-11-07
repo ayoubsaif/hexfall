@@ -7,10 +7,12 @@ import * as FlatTiles from "./flat/tiles.tsx";
 import { TokenPiece as FlatToken } from "./flat/token.tsx";
 import { BoatPiece } from "./boat.tsx";
 import { DiePiece } from "./die.tsx";
+import { JettyPiece } from "./jetty.tsx";
 import { CityPiece, RoadPiece, RobberPiece, SettlementPiece } from "./pieces.tsx";
 
 export type { FallbackProps } from "./common.tsx";
 export { BOAT_MAST, BOAT_SAIL } from "./boat.tsx";
+export { JETTY_LENGTH } from "./jetty.tsx";
 export { HARBOR_COLORS, type HarborKey } from "./flat/harbors.tsx";
 export { SEA_COLOR, TERRAIN_COLORS, type TerrainKey } from "./flat/tiles.tsx";
 export { TOKEN_COLOR } from "./flat/token.tsx";
@@ -24,6 +26,7 @@ const PIECES = {
   "piece.robber": RobberPiece,
   "dice.die": DiePiece,
   "prop.boat": BoatPiece,
+  "prop.jetty": JettyPiece,
 } as const;
 
 /** Flat colored hexes, the token chip and badges (same shapes as themed images). */

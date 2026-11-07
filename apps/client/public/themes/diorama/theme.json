@@ -2,7 +2,7 @@
   "id": "diorama",
   "version": 1,
   "license": "CC0-1.0",
-  "source": "Original work for Hexfall, except the piece models (see credits). Terrain tiles (tiles/forest|pasture|fields|hills|mountains|desert.webp): AI-generated with Creative Claw (Nano Banana 2) from text prompts only, with no image inputs or reference art, then approved by the project owner on 2026-11-04. The sea is a procedural shader that also samples two seamless textures (water/caustics|sand.webp): AI-generated with the Gemini image API (Nano Banana) from text prompts only (tools/sea-gen.mjs), made seamless by an offset cross-fade, with the owner-supplied reference screenshot used for style guidance only (never uploaded, copied or traced), then approved by the project owner on 2026-11-06. Harbor badges (harbors/brick|grain|lumber|ore|wool.webp): square crops of the resource card art, which is cropped from the terrain tiles by tools/cards-from-tiles.mjs. Piece models (models/road|settlement|city.glb): converted from STL models by Burgers (CC-BY-4.0) with tools/stl-to-glb.mjs, reoriented, rescaled and with a thinned road. The harbor boat model (models/boat.glb): original work by the project owner, made for Hexfall in Blender. The robber uses its built-in procedural fallback.",
+  "source": "Original work for Hexfall, except the piece models (see credits). Terrain tiles (tiles/forest|pasture|fields|hills|mountains|desert.webp): AI-generated with Creative Claw (Nano Banana 2) from text prompts only, with no image inputs or reference art, then approved by the project owner on 2026-11-04. The sea is a procedural shader that also samples two seamless textures (water/caustics|sand.webp): AI-generated with the Gemini image API (Nano Banana) from text prompts only (tools/sea-gen.mjs), made seamless by an offset cross-fade, with the owner-supplied reference screenshot used for style guidance only (never uploaded, copied or traced), then approved by the project owner on 2026-11-06. Harbor badges (harbors/brick|grain|lumber|ore|wool.webp): square crops of the resource card art, which is cropped from the terrain tiles by tools/cards-from-tiles.mjs. Piece models (models/road|settlement|city.glb): converted from STL models by Burgers (CC-BY-4.0) with tools/stl-to-glb.mjs, reoriented, rescaled and with a thinned road. The harbor boat model (models/boat.glb): original work by the project owner, made for Hexfall in Blender. The harbor jetty model (models/jetty.glb): original work for Hexfall, generated in Blender by a script and reviewed by the project owner. The robber uses its built-in procedural fallback.",
   "credits": [
     {
       "keys": ["piece.road", "piece.settlement", "piece.city"],
@@ -61,8 +61,11 @@
     },
     "prop.boat": {
       "model": "models/boat.glb",
-      "scale": 0.2,
-      "offset": [0, -0.05, 0]
+      "scale": 0.1,
+      "offset": [0, -0.025, 0]
+    },
+    "prop.jetty": {
+      "model": "models/jetty.glb"
     }
   }
 }

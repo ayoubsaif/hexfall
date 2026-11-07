@@ -27,3 +27,4 @@ export {
 export { type WaterUrls, resolveWaterUrls } from "./resolve.ts";
 export { ThemeProvider } from "./ThemeProvider.tsx";
 export { useLandRelief } from "./useLandRelief.ts";
+export { JETTY_LENGTH } from "./fallbacks/index.ts";

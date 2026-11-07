@@ -5,13 +5,14 @@ import { parseManifest } from "../../src/theme/manifest.ts";
 const base = { id: "diorama", version: 1, license: "CC0-1.0", source: "original" };
 
 describe("asset keys", () => {
-  it("is exactly the 20 supported keys", () => {
-    expect(ASSET_KEYS).toHaveLength(20);
-    expect(new Set(ASSET_KEYS).size).toBe(20);
+  it("is exactly the 21 supported keys", () => {
+    expect(ASSET_KEYS).toHaveLength(21);
+    expect(new Set(ASSET_KEYS).size).toBe(21);
     expect(ASSET_KEYS).toContain("piece.robber");
     expect(ASSET_KEYS).toContain("dice.die");
     expect(ASSET_KEYS).toContain("harbor.generic");
     expect(ASSET_KEYS).toContain("prop.boat");
+    expect(ASSET_KEYS).toContain("prop.jetty");
   });
 });
 
