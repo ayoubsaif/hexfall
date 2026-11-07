@@ -5,6 +5,10 @@ export const play = {
     players: "Players",
     you: "you",
     offline: "offline",
+    openSeat: "open seat",
+    openSeatHint: "A bot plays this seat until someone joins with the room code",
+    bot: "Bot",
+    botHint: "Played by the computer",
     stat: {
       vp: "Victory points",
       cards: "Resource cards",

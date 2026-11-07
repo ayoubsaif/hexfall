@@ -347,6 +347,9 @@ describe("GameCard layouts", () => {
     const cards = [...document.querySelectorAll<HTMLElement>('[role="dialog"] [data-card]')];
     expect(cards.length).toBeGreaterThan(0);
     expect(cards.every((c) => c.dataset.layout === "default")).toBe(true);
+    // The classic hand face (corner icon, leather border) stays in the hand (specs/hand-cards).
+    expect(cards.some((c) => c.querySelector("[data-corner-icon]"))).toBe(false);
+    expect(cards.some((c) => c.className.includes("bg-leather"))).toBe(false);
   });
 });
 

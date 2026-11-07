@@ -3,6 +3,7 @@
 // the ui store's `tradeDraft`. The server stays the judge: this only gates Send offer.
 import type { ResourceBundle, ResourceCounts, Seat } from "@hexfall/engine";
 import { RESOURCES } from "@hexfall/engine/geometry";
+import { Bot } from "lucide-react";
 import { useState } from "react";
 import { useTranslation } from "react-i18next";
 import { Button } from "@/components/ui/button.tsx";
@@ -15,7 +16,7 @@ import { type TradeDraft, openDialog, useUiStore } from "../store/ui.ts";
 import { GameCard } from "./cards/GameCard.tsx";
 import { Counter } from "./cards/Stepper.tsx";
 import { SeatAvatar } from "./Avatar.tsx";
-import { useNames } from "./names.ts";
+import { useHumanCount, useNames, useServerSeat } from "./names.ts";
 import { useInFlight, useLegal, useOwn, useView } from "./state.ts";
 
 /** Sets one side of a resource; any count on the other side of that resource goes to zero. */
@@ -30,6 +31,16 @@ function setSide(
   next[side][r] = n;
   if (n > 0) next[other][r] = 0;
   return next;
+}
+
+/** Robot icon after a bot recipient's name. */
+function BotMark({ label }: { label: string }) {
+  return (
+    <span data-testid="trade-bot-mark" title={label} className="inline-flex align-middle">
+      <Bot aria-hidden="true" className="ml-0.5 size-3.5 text-muted-foreground" />
+      <span className="sr-only">{` (${label})`}</span>
+    </span>
+  );
 }
 
 function Composer({
@@ -58,6 +69,9 @@ function Composer({
   const get = compact(sides.get);
   const ok = isValidOffer(hand, give, get) && to.length > 0 && !!legal?.proposeTrade && !inFlight;
   const complete = total(give) > 0 && total(get) > 0;
+  const isBot = useServerSeat();
+  // Bots only trade when at most one human is in the room (specs/bots).
+  const botsWontTrade = useHumanCount() > 1 && to.some(isBot);
 
   return (
     <DialogContent
@@ -133,6 +147,7 @@ function Composer({
                 >
                   <SeatAvatar seat={seat} size="sm" />
                   {names(seat)}
+                  {isBot(seat) && <BotMark label={t("play.panels.bot")} />}
                 </button>
               );
             })}
@@ -140,10 +155,16 @@ function Composer({
         ) : (
           <p className="text-sm" data-testid="trade-recipient-fixed">
             {t("dialogs.trade.onlyTo", { name: names(active) })}
+            {isBot(active) && <BotMark label={t("play.panels.bot")} />}
           </p>
         )}
         {isActive && to.length === 0 && (
           <p className="mt-1 text-xs text-muted-foreground">{t("dialogs.trade.recipientsHint")}</p>
+        )}
+        {botsWontTrade && (
+          <p className="mt-1 text-xs text-muted-foreground" data-testid="trade-bots-wont-trade">
+            {t("dialogs.trade.botsWontTrade")}
+          </p>
         )}
       </fieldset>
 

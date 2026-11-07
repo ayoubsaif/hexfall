@@ -31,6 +31,9 @@ export function resourceIconUrl(resource: Resource): string {
   return `${APP_BASE.endsWith("/") ? APP_BASE : `${APP_BASE}/`}ui/resources/${resource}.webp`;
 }
 
+/** URL of the shared parchment texture (the classic HUD paper, public/ui). */
+const PARCHMENT_URL = `${APP_BASE.endsWith("/") ? APP_BASE : `${APP_BASE}/`}ui/parchment.jpg`;
+
 /** URL of a development card's painted art (public/cards/dev, made by tools/dev-cards-gen.mjs). */
 export function devCardArtUrl(card: DevCard): string {
   return `${APP_BASE.endsWith("/") ? APP_BASE : `${APP_BASE}/`}cards/dev/${card}.webp`;
@@ -49,6 +52,20 @@ const DEV_FRAME = "#4b4f7a";
 
 /** Most ghost cards drawn when a stack fans out; the count badge still shows the exact number. */
 const MAX_FAN = 8;
+/** Cards behind the front one that peek above it while the stack is at rest. */
+const REST_GHOSTS = 2;
+
+/**
+ * Hand (peek) resource face in the classic HUD style (specs/hand-cards): parchment with an inner
+ * rim in the resource color and a thin dark line inside it.
+ */
+const PEEK_RESOURCE_FACE: CSSProperties = {
+  backgroundColor: "var(--color-paper)",
+  backgroundImage: `linear-gradient(rgb(247 237 213 / 20%), rgb(236 220 188 / 15%)), url(${PARCHMENT_URL})`,
+  backgroundSize: "100% 100%, 170% 170%",
+  boxShadow:
+    "inset 0 0 0 3px var(--frame), inset 0 0 0 4px rgb(0 0 0 / 35%), inset 0 0 10px rgb(135 98 53 / 40%)",
+};
 
 const SIZE: Record<CardSize, string> = {
   sm: "w-7 rounded-md p-px",
@@ -116,84 +133,104 @@ export function GameCard(props: GameCardProps) {
   const frame = props.resource ? RESOURCE_FRAME[props.resource] : DEV_FRAME;
   const label = props.label ?? cardLabel(name, count, t);
   const interactive = onClick !== undefined;
-  const stacked = count !== undefined && count >= 2 && size !== "sm";
   const showBadge = count !== undefined && (count >= 2 || (alwaysShowCount && count >= 1));
   const uid = useId();
   const descId = description ? `${uid}-desc` : undefined;
   const peek = layout === "peek";
 
-  const style = {
-    "--frame": frame,
-    // Up to three offset card edges behind the face card for a stack (decision 6).
-    boxShadow: stacked
-      ? count >= 3
-        ? "3px -3px 0 -1px var(--frame), 6px -6px 0 -2px color-mix(in srgb, var(--frame) 80%, black)"
-        : "3px -3px 0 -1px var(--frame)"
-      : undefined,
-  } as CSSProperties;
+  const style = { "--frame": frame } as CSSProperties;
 
   const faceStyle: CSSProperties = props.resource
-    ? {
-        // Tinted face in the resource color; the icon sits on top (no terrain art).
-        backgroundImage: `radial-gradient(circle at 50% 38%, color-mix(in srgb, var(--frame) 55%, white) 0%, var(--frame) 70%, color-mix(in srgb, var(--frame) 70%, black) 100%)`,
-      }
+    ? peek
+      ? PEEK_RESOURCE_FACE
+      : {
+          // Tinted face in the resource color; the icon sits on top (no terrain art).
+          backgroundImage: `radial-gradient(circle at 50% 38%, color-mix(in srgb, var(--frame) 55%, white) 0%, var(--frame) 70%, color-mix(in srgb, var(--frame) 70%, black) 100%)`,
+        }
     : { backgroundImage: `url(${devCardArtUrl(props.dev)})` };
-  // Peek cards held in twos or more fan out upward when their hand slot is hovered or focused:
-  // one ghost per extra card, each rising a further 20 % of the card height behind the one in front.
+
+  /** The card face: art or parchment, icons and the name strip. Ghosts repeat it in full. */
+  const face = (front: boolean) => (
+    <span
+      aria-hidden="true"
+      data-card-art={front || undefined}
+      className={cn(
+        "relative flex aspect-[5/7] w-full justify-center overflow-hidden bg-black/40 bg-cover bg-center",
+        // Peek: icon centered in the upper half, below the top name strip.
+        peek ? "items-start pt-[24%] max-sm:pt-[28%] short:pt-[28%]" : "items-center",
+        size === "sm" ? "rounded-[5px]" : "rounded-lg",
+      )}
+      style={faceStyle}
+    >
+      {props.resource && peek && (
+        // Playing-card index: a small copy of the icon in the top-left corner.
+        <img
+          src={resourceIconUrl(props.resource)}
+          alt=""
+          width={128}
+          height={128}
+          draggable={false}
+          data-corner-icon
+          className="pointer-events-none absolute top-[5%] left-[7%] w-[28%] drop-shadow-[0_1px_1px_rgb(0_0_0/50%)]"
+        />
+      )}
+      {props.resource && (
+        <img
+          src={resourceIconUrl(props.resource)}
+          alt=""
+          width={128}
+          height={128}
+          draggable={false}
+          data-resource-icon={front || undefined}
+          className={cn(
+            "pointer-events-none drop-shadow-[0_2px_2px_rgb(0_0_0/45%)]",
+            peek ? "mt-[6%] w-[66%]" : "w-[78%]",
+          )}
+        />
+      )}
+      <span
+        className={cn(
+          "absolute inset-x-0 bg-hud-solid/90 py-px text-center leading-tight font-semibold tracking-wide text-hud-fg uppercase",
+          peek ? "top-0" : "bottom-0",
+          hideName ? "hidden" : NAME[size],
+        )}
+        data-card-name={front || undefined}
+      >
+        {name}
+      </span>
+    </span>
+  );
+
+  // Peek stacks (specs/hand-cards): the cards behind are full cards. At rest the first two
+  // peek straight up above the front card (6 % of its height each); on slot hover or focus
+  // all of them (up to MAX_FAN) rise a further 10 % each.
   const ghosts = peek && count !== undefined ? Math.min(Math.max(count - 1, 0), MAX_FAN) : 0;
 
   const body = (
     <>
-      {Array.from({ length: ghosts }, (_, i) => (
-        <span
-          key={i}
-          aria-hidden="true"
-          data-card-ghost
-          className="pointer-events-none absolute inset-0 -z-10 translate-y-0 rounded-xl bg-[var(--frame)] p-1 opacity-0 shadow-md shadow-black/30 transition-[translate,opacity] duration-200 group-focus-within/slot:translate-y-[calc(var(--k)*-20%)] group-focus-within/slot:opacity-100 group-hover/slot:translate-y-[calc(var(--k)*-20%)] group-hover/slot:opacity-100 motion-reduce:transition-none max-sm:p-[3px]"
-          style={{ "--k": i + 1, transitionDelay: `${i * 25}ms` } as CSSProperties}
-        >
+      {Array.from({ length: ghosts }, (_, i) => {
+        const rest = i < REST_GHOSTS;
+        return (
           <span
-            className="block aspect-[5/7] w-full rounded-lg bg-black/40 bg-cover bg-center"
-            style={faceStyle}
-          />
-        </span>
-      ))}
-      <span
-        aria-hidden="true"
-        data-card-art
-        className={cn(
-          "relative flex aspect-[5/7] w-full justify-center overflow-hidden bg-black/40 bg-cover bg-center",
-          // Peek: icon centered in the upper half, below the top name strip.
-          peek ? "items-start pt-[24%] max-sm:pt-[28%] short:pt-[28%]" : "items-center",
-          size === "sm" ? "rounded-[5px]" : "rounded-lg",
-        )}
-        style={faceStyle}
-      >
-        {props.resource && (
-          <img
-            src={resourceIconUrl(props.resource)}
-            alt=""
-            width={128}
-            height={128}
-            draggable={false}
-            data-resource-icon
+            key={i}
+            aria-hidden="true"
+            data-card-ghost
+            data-rest={rest || undefined}
             className={cn(
-              "pointer-events-none w-[78%] drop-shadow-[0_2px_2px_rgb(0_0_0/45%)]",
-              peek && "mt-0",
+              "pointer-events-none absolute inset-0 rounded-xl bg-leather p-1 shadow-md shadow-black/30 transition-[translate,opacity] duration-200 motion-reduce:transition-none",
+              rest ? "translate-y-[calc(var(--k)*-6%)] opacity-100" : "translate-y-0 opacity-0",
+              "group-focus-within/slot:translate-y-[calc(var(--k)*-10%)] group-focus-within/slot:opacity-100 group-hover/slot:translate-y-[calc(var(--k)*-10%)] group-hover/slot:opacity-100",
             )}
-          />
-        )}
-        <span
-          className={cn(
-            "absolute inset-x-0 bg-hud-solid/90 py-px text-center leading-tight font-semibold tracking-wide text-hud-fg uppercase",
-            peek ? "top-0" : "bottom-0",
-            hideName ? "hidden" : NAME[size],
-          )}
-          data-card-name
-        >
-          {name}
-        </span>
-      </span>
+            // Nearest card on top: later ghosts sit further back, so each one's top band stays visible.
+            style={
+              { "--k": i + 1, zIndex: -(i + 1), transitionDelay: `${i * 25}ms` } as CSSProperties
+            }
+          >
+            {face(false)}
+          </span>
+        );
+      })}
+      {face(true)}
       <span className="sr-only">{label}</span>
       {showBadge && (
         <Badge
@@ -215,7 +252,9 @@ export function GameCard(props: GameCardProps) {
 
   const classes = cn(
     tabIndex !== undefined && "outline-none focus-visible:ring-2 focus-visible:ring-ring",
-    "relative inline-block shrink-0 bg-[var(--frame)] align-top shadow-md shadow-black/30 select-none",
+    "relative inline-block shrink-0 align-top shadow-md shadow-black/30 select-none",
+    // Hand cards: classic leather border (specs/hand-cards); elsewhere the resource color.
+    peek ? "bg-leather" : "bg-[var(--frame)]",
     SIZE[size],
     dimmed && "opacity-35 saturate-50",
     animationClass(animation),

@@ -1,5 +1,6 @@
 // Heuristic bot: one legal action per call, decided from the bot's own view.
-// No trading: every offer is rejected and none is proposed (specs/bots).
+// Never proposes trades. Offers are rejected unless `trade` is on (one-human rooms), when
+// each is judged on its merits (trade.ts, specs/bots).
 import {
   COSTS,
   RESOURCES,
@@ -14,6 +15,7 @@ import {
 } from "@hexfall/engine";
 import { pips, producedBy, roadValue, total, vertexPips, vertexValue } from "./eval.ts";
 import type { BotRng } from "./rng.ts";
+import { judgeOffer } from "./trade.ts";
 
 type Target = "city" | "settlement" | "devCard";
 const COST: Readonly<Record<keyof typeof COSTS, ResourceBundle>> = COSTS;
@@ -138,11 +140,21 @@ function ownsHexBuilding(view: PlayerView, seat: Seat, hex: number): boolean {
   return TOPOLOGY.hexes[hex]!.vertices.some((v) => view.vertices[v]?.owner === seat);
 }
 
+export interface ChooseOptions {
+  /** Answer offers on their merits instead of rejecting them all. */
+  trade: boolean;
+}
+
 /**
  * Picks one action for `seat`, or null when the bot has nothing to do.
  * `rng` is the bot's own generator; the game RNG is never used.
  */
-export function chooseAction(view: PlayerView, legal: LegalActions, rng: BotRng): Action | null {
+export function chooseAction(
+  view: PlayerView,
+  legal: LegalActions,
+  rng: BotRng,
+  options: ChooseOptions = { trade: false },
+): Action | null {
   const seat = view.viewer;
   if (seat === null) return null;
   const me = view.players[seat]!;
@@ -170,9 +182,22 @@ export function chooseAction(view: PlayerView, legal: LegalActions, rng: BotRng)
     return { type: "buildRoad", seat, edge };
   }
 
-  // No trading: turn every offer down.
-  const reject = legal.rejectTrade[0];
-  if (reject !== undefined) return { type: "rejectTrade", seat, offerId: reject };
+  // Withdraw an offer left by a human who held this seat, then answer the oldest open offer.
+  const cancel = legal.cancelTrade[0];
+  if (cancel !== undefined) return { type: "cancelTrade", seat, offerId: cancel };
+  const answer = legal.rejectTrade[0];
+  if (answer !== undefined) {
+    const offer = view.offers.find((o) => o.id === answer);
+    if (
+      options.trade &&
+      offer &&
+      legal.acceptTrade.includes(answer) &&
+      judgeOffer(view, seat, offer)
+    ) {
+      return { type: "acceptTrade", seat, offerId: answer };
+    }
+    return { type: "rejectTrade", seat, offerId: answer };
+  }
 
   if (legal.rollDice) {
     // A Knight before the roll moves the robber off our own hex.

@@ -11,6 +11,8 @@ import { DEFAULT_DOCK, setDiceDock } from "../../src/store/dock.ts";
 import { createGame } from "@hexfall/engine";
 import { useConnectionStore } from "../../src/store/connection.ts";
 import { useGameStore } from "../../src/store/game.ts";
+import { useRoomStore } from "../../src/store/room.ts";
+import { i18n } from "../../src/i18n/index.ts";
 import { give, playState, put } from "../game/fixtures.ts";
 import {
   actions,
@@ -248,24 +250,20 @@ describe("DiceTray", () => {
     expect(dice().disabled).toBe(true);
   });
 
-  it("shows a snapshot roll to everyone at once, with its total", () => {
+  it("announces a snapshot roll to everyone at once", () => {
     seatRoom(2);
     showGame(playState(), 2, {
       log: [{ type: "diceRolled", seat: 0, dice: [3, 4], total: 7 }],
     });
     m = mount(<DiceTray />);
     expect(dice().getAttribute("aria-label")).toBe("Rolled 3 and 4, total 7");
-    expect(m.container.querySelector('[data-testid="dice-total"]')?.textContent).toBe("7");
-    expect(
-      m.container.querySelector('[data-testid="dice-total"]')?.hasAttribute("data-seven"),
-    ).toBe(true);
     expect(m.container.querySelector('[data-testid="dice-announce"]')?.textContent).toBe(
       "Rolled 3 and 4, total 7",
     );
     expect(m.container.querySelector("[data-rolling]")).toBeNull();
   });
 
-  it("throws an update roll, then shows the total once the dice settle", () => {
+  it("throws an update roll, then announces it once the dice settle", () => {
     vi.useFakeTimers();
     vi.stubGlobal("matchMedia", (q: string) => ({ matches: false, media: q }));
     seatRoom(2);
@@ -278,11 +276,9 @@ describe("DiceTray", () => {
       }),
     );
     expect(m.container.querySelector("[data-rolling]")).not.toBeNull();
-    expect(m.container.querySelector('[data-testid="dice-total"]')?.textContent).toBe("");
     expect(m.container.querySelector('[data-testid="dice-announce"]')?.textContent).toBe("");
     // The board dice come to rest (spec board-dice: Announced on rest).
     act(() => setDiceSettled(0));
-    expect(m.container.querySelector('[data-testid="dice-total"]')?.textContent).toBe("7");
     expect(m.container.querySelector('[data-testid="dice-announce"]')?.textContent).toBe(
       "Rolled 5 and 2, total 7",
     );
@@ -305,12 +301,56 @@ describe("DiceTray", () => {
     act(() => {
       vi.advanceTimersByTime(THROW_MS - 100);
     });
-    expect(m.container.querySelector('[data-testid="dice-total"]')?.textContent).toBe("");
+    expect(m.container.querySelector('[data-testid="dice-announce"]')?.textContent).toBe("");
     act(() => {
       vi.advanceTimersByTime(400);
     });
-    expect(m.container.querySelector('[data-testid="dice-total"]')?.textContent).toBe("4");
+    expect(m.container.querySelector('[data-testid="dice-announce"]')?.textContent).toBe(
+      "Rolled 1 and 3, total 4",
+    );
     vi.unstubAllGlobals();
+  });
+
+  const visual = () =>
+    m.container.querySelector<HTMLElement>('[data-testid="dice-tray"] > div')!;
+
+  it("is drawn only while the viewer has a roll to make", () => {
+    seatRoom(0);
+    showGame(playState({ rolled: false }), 0);
+    m = mount(<DiceTray />);
+    expect(visual().hidden).toBe(false);
+    expect(m.container.querySelector('[data-testid="dice-total"]')).toBeNull(); // no number
+    m.unmount();
+    // Own turn after the roll: nothing left to roll, the 3D dice show the values.
+    showGame(playState({ rolled: true }), 0, {
+      log: [{ type: "diceRolled", seat: 0, dice: [2, 3], total: 5 }],
+    });
+    m = mount(<DiceTray />);
+    expect(visual().hidden).toBe(true);
+    expect(m.container.querySelector('[data-testid="dice-announce"]')?.textContent).toBe(
+      "Rolled 2 and 3, total 5",
+    );
+  });
+
+  it("is hidden on another player's turn but still announces the roll (the 3D dice show it)", () => {
+    seatRoom(2);
+    showGame(playState(), 2, {
+      log: [{ type: "diceRolled", seat: 0, dice: [6, 1], total: 7 }],
+    });
+    m = mount(<DiceTray />);
+    expect(visual().hidden).toBe(true);
+    const tray = m.container.querySelector('[data-testid="dice-tray"]')!;
+    expect(tray.hasAttribute("data-shown")).toBe(false);
+    expect(m.container.querySelector('[data-testid="dice-announce"]')?.textContent).toBe(
+      "Rolled 6 and 1, total 7",
+    );
+  });
+
+  it("is drawn for the viewer's own roll for order", () => {
+    seatRoom(0);
+    showGame(createGame({ seed: 1, playerCount: 4, mode: "beginner" }), 0);
+    m = mount(<DiceTray />);
+    expect(visual().hidden).toBe(false);
   });
 
   it("docks where the HUD says", () => {
@@ -393,5 +433,58 @@ describe("feed", () => {
     expect(first?.textContent).toContain("incl. 1 VP card");
     click(byText(document.body, "button", "Back to start"));
     expect(calls).toEqual([{ fn: "backToStart", args: [] }]);
+  });
+});
+
+describe("bot badge (trade-with-bots)", () => {
+  /** Marks seats as bots; `open` seats are also open seats. */
+  function bots(seats: number[], open: number[] = []) {
+    act(() =>
+      useRoomStore.setState((st) => ({
+        seats: st.seats.map((x) =>
+          seats.includes(x.seat)
+            ? { ...x, bot: true, ...(open.includes(x.seat) ? { open: true } : {}) }
+            : x,
+        ),
+      })),
+    );
+  }
+  const badgeOf = (i: number) =>
+    m.container
+      .querySelectorAll('[data-testid="player-panel"]')
+      [i]?.querySelector('[data-testid="bot-seat"]');
+
+  afterEach(async () => {
+    await act(() => i18n.changeLanguage("en"));
+  });
+
+  it("marks bot seats and not the human", () => {
+    seatRoom(0, 3);
+    bots([1, 2]);
+    showGame(playState({ playerCount: 3 }), 0);
+    m = mount(<PlayerPanels />);
+    expect(badgeOf(0)).toBeNull();
+    expect(badgeOf(1)?.textContent).toContain("Bot");
+    expect(badgeOf(2)?.getAttribute("title")).toBe("Played by the computer");
+  });
+
+  it("keeps the open-seat badge instead of the bot badge", () => {
+    seatRoom(0, 3);
+    bots([1, 2], [1]);
+    showGame(playState({ playerCount: 3 }), 0);
+    m = mount(<PlayerPanels />);
+    const panel = m.container.querySelectorAll('[data-testid="player-panel"]')[1];
+    expect(panel?.querySelector('[data-testid="open-seat"]')).not.toBeNull();
+    expect(badgeOf(1)).toBeNull();
+    expect(badgeOf(2)).not.toBeNull();
+  });
+
+  it("has a Spanish tooltip", async () => {
+    await act(() => i18n.changeLanguage("es"));
+    seatRoom(0, 3);
+    bots([1]);
+    showGame(playState({ playerCount: 3 }), 0);
+    m = mount(<PlayerPanels />);
+    expect(badgeOf(1)?.getAttribute("title")).toBe("Lo juega el ordenador");
   });
 });

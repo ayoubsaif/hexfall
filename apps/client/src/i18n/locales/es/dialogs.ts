@@ -59,6 +59,7 @@ export const dialogs: Catalog["dialogs"] = {
     have: "tienes {{count}}",
     recipients: "Enviar a",
     recipientsHint: "Elige al menos un jugador.",
+    botsWontTrade: "Los bots solo comercian en partidas con un único jugador humano.",
     onlyTo: "Oferta para {{name}}",
     summary: "Das {{give}} y recibes {{get}}.",
     incomplete: "Elige al menos una carta en cada lado.",
@@ -69,6 +70,8 @@ export const dialogs: Catalog["dialogs"] = {
     empty: "Aún no hay mensajes. ¡Saluda!",
     placeholder: "Escribe un mensaje",
     send: "Enviar",
+    left: "{{name}} se ha ido; un bot juega con {{color}}",
+    tookOver: "{{name}} ha tomado el puesto de {{color}}",
   },
   feed: {
     log: "Registro de la partida",

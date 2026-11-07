@@ -1,5 +1,6 @@
 // One compact panel per seat (specs/compact-player-panels). Never shows others' hands.
 // Stats are icon + number chips; the words live in sr-only text and tooltips.
+import { Bot } from "lucide-react";
 import { useTranslation } from "react-i18next";
 import { Badge } from "@/components/ui/badge.tsx";
 import { seatColor, seatColorName } from "../game/colors.ts";
@@ -7,7 +8,7 @@ import { SeatAvatar } from "./Avatar.tsx";
 import { CountdownText } from "./actions/CountdownText.tsx";
 import { useCountdown } from "./countdown.ts";
 import { type GameIconName, gameIcon } from "./GameIcon.tsx";
-import { useConnected, useNames } from "./names.ts";
+import { useBotSeat, useConnected, useNames, useOpenSeat } from "./names.ts";
 import { useView } from "./state.ts";
 
 /** A seat's color square. */
@@ -57,6 +58,8 @@ export function PlayerPanels() {
   const view = useView();
   const names = useNames();
   const connected = useConnected();
+  const openSeat = useOpenSeat();
+  const botSeat = useBotSeat();
   const countdown = useCountdown();
   const { t } = useTranslation();
   if (!view) return null;
@@ -129,6 +132,27 @@ export function PlayerPanels() {
                     countdown={waiting}
                     className="ml-auto text-[11px] font-semibold max-sm:text-[10px] short:text-[10px]"
                   />
+                )}
+                {botSeat(p.seat) && (
+                  <Badge
+                    variant="muted"
+                    data-testid="bot-seat"
+                    title={t("play.panels.botHint")}
+                    className="shrink-0 gap-0.5"
+                  >
+                    <Bot aria-hidden="true" className="size-3.5 max-sm:size-3 short:size-3" />
+                    <span className="max-sm:sr-only short:sr-only">{t("play.panels.bot")}</span>
+                    <span className="sr-only">{`, ${t("play.panels.botHint")}`}</span>
+                  </Badge>
+                )}
+                {openSeat(p.seat) && (
+                  <Badge
+                    variant="muted"
+                    data-testid="open-seat"
+                    title={t("play.panels.openSeatHint")}
+                  >
+                    {t("play.panels.openSeat")}
+                  </Badge>
                 )}
                 {!online && (
                   <Badge variant="muted" className="text-bad" data-testid="offline">

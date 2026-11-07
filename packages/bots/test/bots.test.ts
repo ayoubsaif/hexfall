@@ -22,21 +22,21 @@ function checkInvariants(s: GameState): void {
 }
 
 /** Seats are polled in order; the first with a move acts (as the server driver does). */
-function botMove(s: GameState, rngs: BotRng[]): Action | null {
+function botMove(s: GameState, rngs: BotRng[], trade = false): Action | null {
   for (let seat = 0; seat < s.playerCount; seat++) {
-    const a = chooseAction(playerView(s, seat), legalActions(s, seat), rngs[seat]!);
+    const a = chooseAction(playerView(s, seat), legalActions(s, seat), rngs[seat]!, { trade });
     if (a) return a;
   }
   return null;
 }
 
-function playGame(seed: number, n: 3 | 4, mode: "beginner" | "variable") {
+function playGame(seed: number, n: 3 | 4, mode: "beginner" | "variable", trade = false) {
   let s = createGame({ seed, playerCount: n, mode });
   const rngs = Array.from({ length: n }, (_, i) => new BotRng(seed * 31 + i));
   const actions: Action[] = [];
   let steps = 0;
   while (s.phase.kind !== "ended" && steps < 20000) {
-    const a = botMove(s, rngs);
+    const a = botMove(s, rngs, trade);
     if (!a) throw new Error(`stall at step ${steps} in ${s.phase.kind}`);
     const r = applyAction(s, a);
     if (!r.ok) throw new Error(`rejected ${JSON.stringify(a)}: ${r.code} ${r.message}`);
@@ -56,6 +56,14 @@ describe("bots play full games", () => {
       const { s } = playGame(seed, n, mode);
       expect(s.phase.kind).toBe("ended");
       expect(s.winner).not.toBeNull();
+    });
+  }
+
+  for (const seed of [2, 5, 11]) {
+    it(`seed ${seed} with trading on still finishes`, () => {
+      const { s, actions } = playGame(seed, seed % 2 ? 4 : 3, "variable", true);
+      expect(s.phase.kind).toBe("ended");
+      expect(actions.some((a) => a.type === "proposeTrade")).toBe(false);
     });
   }
 

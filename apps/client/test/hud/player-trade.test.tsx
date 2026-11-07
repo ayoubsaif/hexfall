@@ -12,6 +12,7 @@ import { ActionButtons } from "../../src/hud/actions/ActionButtons.tsx";
 import { namesFrom } from "../../src/hud/names.ts";
 import { fixedT, i18n } from "../../src/i18n/index.ts";
 import { useGameStore } from "../../src/store/game.ts";
+import { useRoomStore } from "../../src/store/room.ts";
 import { bindUiToGame, openTrade, useUiStore } from "../../src/store/ui.ts";
 import { give, playState, seen, step } from "../game/fixtures.ts";
 import {
@@ -404,5 +405,35 @@ describe("Spanish tray", () => {
     expect(entry.querySelector('[data-testid="offer-text"]')?.textContent).toMatch(
       /^Das .* y recibes /,
     );
+  });
+});
+
+describe("bot recipients (trade-with-bots)", () => {
+  function bots(seats: number[]) {
+    act(() =>
+      useRoomStore.setState((st) => ({
+        seats: st.seats.map((x) => (seats.includes(x.seat) ? { ...x, bot: true } : x)),
+      })),
+    );
+  }
+  const hint = () => document.querySelector('[data-testid="trade-bots-wont-trade"]');
+  const marks = () => [...document.querySelectorAll('[data-testid="trade-bot-mark"]')];
+
+  it("solo game: bot recipients show the robot icon and no hint", () => {
+    openComposer(table(), 0, [1, 2, 3]);
+    bots([1, 2, 3]);
+    expect(marks()).toHaveLength(3);
+    expect(hint()).toBeNull();
+  });
+
+  it("two humans: a selected bot shows the hint until it is deselected", () => {
+    openComposer(table(), 0, [1, 2, 3]);
+    bots([2, 3]);
+    expect(marks()).toHaveLength(2);
+    expect(hint()?.textContent).toBe("Bots only trade in games with one human player.");
+    click(recipient(2)!);
+    expect(hint()).not.toBeNull();
+    click(recipient(3)!);
+    expect(hint()).toBeNull();
   });
 });

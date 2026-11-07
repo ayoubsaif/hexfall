@@ -192,11 +192,55 @@ describe("cards (specs/hud-presentation)", () => {
       { resource: "ore", label: "Ore, 2", dimmed: false, badge: "2" },
       { resource: "wool", label: "Wool, 0", dimmed: true, badge: null },
     ]);
-    // Stacks draw offset card edges behind the face card.
-    const brick = m.container.querySelector<HTMLElement>('li[data-resource="brick"] [data-card]');
-    expect(brick?.style.boxShadow).toContain("var(--frame)");
-    const lumber = m.container.querySelector<HTMLElement>('li[data-resource="lumber"] [data-card]');
-    expect(lumber?.style.boxShadow).toBe("");
+    // Stacks draw full cards behind the face card (specs/hand-cards "Stack at rest").
+    const ghosts = (r: string) => [
+      ...m.container.querySelectorAll<HTMLElement>(`li[data-resource="${r}"] [data-card-ghost]`),
+    ];
+    expect(ghosts("brick")).toHaveLength(2);
+    expect(ghosts("ore")).toHaveLength(1);
+    expect(ghosts("lumber")).toHaveLength(0);
+  });
+
+  it("Hand cards use the classic face with a corner icon (specs/hand-cards)", () => {
+    const s = playState();
+    give(s, 0, { wool: 1 });
+    seatRoom(0);
+    showGame(s, 0);
+    m = mount(<Hand />);
+    const wool = m.container.querySelector<HTMLElement>('li[data-resource="wool"] [data-card]')!;
+    expect(wool.className).toContain("bg-leather");
+    const art = wool.querySelector<HTMLElement>("[data-card-art]")!;
+    expect(art.style.backgroundImage).toContain("parchment.jpg");
+    expect(art.style.boxShadow).toContain("var(--frame)");
+    expect(art.querySelector("img[data-corner-icon]")?.getAttribute("src")).toContain("wool.webp");
+  });
+
+  it("stacks: two visible at rest, all fan by 10 % on hover, drawn in full and hidden from readers", () => {
+    const s = playState();
+    give(s, 0, { brick: 5, wool: 4, ore: 2 });
+    seatRoom(0);
+    showGame(s, 0);
+    m = mount(<Hand />);
+    const slot = (r: string) => m.container.querySelector<HTMLElement>(`li[data-resource="${r}"]`)!;
+    const ghosts = (r: string) => [...slot(r).querySelectorAll<HTMLElement>("[data-card-ghost]")];
+    expect(ghosts("ore").filter((g) => g.dataset.rest)).toHaveLength(1);
+    const brick = ghosts("brick");
+    expect(brick).toHaveLength(4);
+    expect(brick.filter((g) => g.dataset.rest)).toHaveLength(2);
+    expect(brick[0]!.className).toContain("translate-y-[calc(var(--k)*-6%)]");
+    expect(brick[3]!.className).toContain("opacity-0");
+    for (const g of brick) {
+      expect(g.className).toContain("group-hover/slot:translate-y-[calc(var(--k)*-10%)]");
+      expect(g.className).toContain("group-hover/slot:opacity-100");
+      expect(g.getAttribute("aria-hidden")).toBe("true");
+      // Full card details, not just a background.
+      expect(g.querySelector("img[data-corner-icon]")).not.toBeNull();
+      expect(g.querySelectorAll("img")).toHaveLength(2);
+    }
+    expect(brick.map((g) => g.style.getPropertyValue("--k"))).toEqual(["1", "2", "3", "4"]);
+    // The nearest card is drawn on top, so every card behind keeps its top band visible.
+    expect(brick.map((g) => g.style.zIndex)).toEqual(["-1", "-2", "-3", "-4"]);
+    expect(slot("wool").querySelector(".sr-only")?.textContent).toBe("Wool, 4");
   });
 
   it("Knight bought this turn is disabled and says when it becomes playable", () => {

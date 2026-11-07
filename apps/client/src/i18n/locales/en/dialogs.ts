@@ -59,6 +59,7 @@ export const dialogs = {
     have: "you have {{count}}",
     recipients: "Send to",
     recipientsHint: "Pick at least one player.",
+    botsWontTrade: "Bots only trade in games with one human player.",
     onlyTo: "Offer to {{name}}",
     summary: "You give {{give}}, you get {{get}}.",
     incomplete: "Pick at least one card on each side.",
@@ -69,6 +70,8 @@ export const dialogs = {
     empty: "No messages yet. Say hello!",
     placeholder: "Write a message",
     send: "Send",
+    left: "{{name}} left; a bot is playing {{color}}",
+    tookOver: "{{name}} took over {{color}}",
   },
   feed: {
     log: "Game log",

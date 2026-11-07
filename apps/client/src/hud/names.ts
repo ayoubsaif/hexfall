@@ -26,6 +26,38 @@ export function useConnected(): (seat: number) => boolean {
   }, [seats]);
 }
 
+/** Whether a seat is open: its player left and a bot plays it until someone takes it over. */
+export function useOpenSeat(): (seat: number) => boolean {
+  const seats = useRoomStore((s) => s.seats);
+  return useMemo(() => {
+    const open = new Set(seats.filter((s) => s.open === true).map((s) => s.seat));
+    return (seat: number) => open.has(seat);
+  }, [seats]);
+}
+
+/** Whether a seat is a bot that is not an open seat (open seats have their own badge). */
+export function useBotSeat(): (seat: number) => boolean {
+  const seats = useRoomStore((s) => s.seats);
+  return useMemo(() => {
+    const bots = new Set(seats.filter((s) => s.bot && s.open !== true).map((s) => s.seat));
+    return (seat: number) => bots.has(seat);
+  }, [seats]);
+}
+
+/** Whether a seat is played by the server (a bot or an open seat). */
+export function useServerSeat(): (seat: number) => boolean {
+  const seats = useRoomStore((s) => s.seats);
+  return useMemo(() => {
+    const bots = new Set(seats.filter((s) => s.bot).map((s) => s.seat));
+    return (seat: number) => bots.has(seat);
+  }, [seats]);
+}
+
+/** Human seats in the room (bots and open seats excluded). */
+export function useHumanCount(): number {
+  return useRoomStore((s) => s.seats.filter((x) => !x.bot).length);
+}
+
 /** A seat's avatar id from the room store (undefined when the seat is not listed). */
 export function useAvatars(): (seat: number) => AvatarId | undefined {
   const seats = useRoomStore((s) => s.seats);

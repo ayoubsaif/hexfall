@@ -6,6 +6,10 @@ export const play: Catalog["play"] = {
     players: "Jugadores",
     you: "tú",
     offline: "desconectado",
+    openSeat: "puesto libre",
+    openSeatHint: "Un bot juega este puesto hasta que alguien entre con el código de la sala",
+    bot: "Bot",
+    botHint: "Lo juega el ordenador",
     stat: {
       vp: "Puntos de victoria",
       cards: "Cartas de recurso",

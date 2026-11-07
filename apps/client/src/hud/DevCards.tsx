@@ -61,8 +61,8 @@ export function blockedReason(group: CardGroup, playable: boolean, t: T): string
   return t("play.dev.notPlayable");
 }
 
-/** Tooltip gap above a slot so it clears the fanned-out stack (20 % of a ~100 px card per extra card). */
-export const fanOffset = (count: number): number => 4 + Math.min(Math.max(count - 1, 0), 8) * 20;
+/** Tooltip gap above a slot so it clears the fanned-out stack (10 % of a ~100 px card per extra card). */
+export const fanOffset = (count: number): number => 4 + Math.min(Math.max(count - 1, 0), 8) * 10;
 
 /** Hand slot: 80 % visible above the screen edge, rising fully on hover or keyboard focus. */
 export const HAND_SLOT =
