@@ -130,6 +130,9 @@ void main() {
 export class WaterSimulation {
   readonly stepper = new WaterStepper();
   readonly bed: DataTexture;
+  /** The same seabed, linearly filtered, for drawing: smooth waterlines and rock contact
+   * instead of the solver's square cells. The solver itself must read exact cells (`bed`). */
+  readonly bedSmooth: DataTexture;
   private read: WebGLRenderTarget;
   private write: WebGLRenderTarget;
   private readonly scene = new Scene();
@@ -145,6 +148,9 @@ export class WaterSimulation {
     this.bed = new DataTexture(half, SIM_SIZE, SIM_SIZE, RGBAFormat, HalfFloatType);
     this.bed.minFilter = this.bed.magFilter = NearestFilter;
     this.bed.needsUpdate = true;
+    this.bedSmooth = new DataTexture(half, SIM_SIZE, SIM_SIZE, RGBAFormat, HalfFloatType);
+    this.bedSmooth.minFilter = this.bedSmooth.magFilter = LinearFilter;
+    this.bedSmooth.needsUpdate = true;
     const options = {
       type: HalfFloatType,
       minFilter: LinearFilter,
@@ -209,6 +215,7 @@ export class WaterSimulation {
     this.read.dispose();
     this.write.dispose();
     this.bed.dispose();
+    this.bedSmooth.dispose();
     this.geometry.dispose();
     this.material.dispose();
   }

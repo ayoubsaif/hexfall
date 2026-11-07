@@ -1,5 +1,5 @@
 import { describe, expect, it } from "vite-plus/test";
-import { QualitySampler, type QualityTier } from "../../src/scene/graphicsQuality.ts";
+import { QUALITY, QualitySampler, SEA, type QualityTier } from "../../src/scene/graphicsQuality.ts";
 import { readPrefs } from "../../src/store/prefs.ts";
 
 describe("graphics preferences", () => {
@@ -53,5 +53,27 @@ describe("automatic quality", () => {
   });
   it("still lowers quality when a very slow device renders below four FPS", () => {
     expect(run(new QualitySampler(), 2, 12, "high")).toBe("medium");
+  });
+});
+
+describe("quality tiers (specs/graphics-quality)", () => {
+  it("caps Low at 1.5x density so chip labels stay sharp, still without shadows", () => {
+    expect(QUALITY.low.dpr).toBe(1.5);
+    expect(QUALITY.low.shadows).toBe(false);
+    expect(QUALITY.medium.dpr).toBe(1.5);
+    expect(QUALITY.high.dpr).toBe(2);
+  });
+
+  it("keeps the sea out of the tiers: one sea with High's waves and rock collisions", () => {
+    for (const tier of ["low", "medium", "high"] as const) {
+      expect(Object.keys(QUALITY[tier]).sort()).toEqual(["dpr", "shadowSize", "shadows"]);
+    }
+    expect(SEA).toMatchObject({
+      segments: 256,
+      waves: 7,
+      low: false,
+      rockDetail: 3,
+      physical: true,
+    });
   });
 });

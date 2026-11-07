@@ -74,3 +74,7 @@ loaded caustic/sand textures, eight fully textured rocks, and no shader errors a
 visible-footprint optimization. Final screenshot: `/tmp/hexfall-final-low-coast.png`.
 The earlier hardware performance tasks remain unmeasured; triangle-count savings do not
 constitute a hardware frame-time benchmark.
+
+## 9. Superseded by uniform-sea-and-sharp-low-chips
+
+- [ ] 9.1 Before archiving, remove or mark superseded the `sea-coast-rendering` requirement "Physical High-quality coast": `graphics-quality` "Uniform sea across quality levels" (change `uniform-sea-and-sharp-low-chips`) now runs that physical coast (simulation, rock collisions, raised beach) at every quality level, not only High

@@ -5,14 +5,16 @@ import { CHIP_HEIGHT, TOKEN_RADIUS } from "../theme/index.ts";
 
 export const CHIP_YELLOW = "#fff0a6";
 
-let paper: CanvasTexture | null | undefined;
+const papers = new Map<string, CanvasTexture | null>();
 
 /** Circular version of the player cards' .paper surface: warm grain, cream light,
- * leather edge and two fine gold inset rules. Shared by every chip. */
-function paperTexture() {
-  if (paper !== undefined) return paper;
-  paper = makeLabelTexture((ctx, size) => {
-    ctx.fillStyle = CHIP_YELLOW;
+ * leather edge and two fine gold inset rules. One texture per base colour, shared by every
+ * chip of that colour (number chips: yellow; resource harbors: their resource tint). */
+function paperTexture(base: string) {
+  const cached = papers.get(base);
+  if (cached !== undefined) return cached;
+  const paper = makeLabelTexture((ctx, size) => {
+    ctx.fillStyle = base;
     ctx.fillRect(0, 0, size, size);
     const glow = ctx.createRadialGradient(
       size * 0.5,
@@ -45,19 +47,20 @@ function paperTexture() {
       ctx.stroke();
     }
   });
+  papers.set(base, paper);
   return paper;
 }
 
-/** Unlit face keeps the pale yellow readable at every camera angle. */
-export function ChipDisc() {
-  const map = useMemo(paperTexture, []);
+/** Unlit face keeps the paper colour readable at every camera angle. */
+export function ChipDisc({ base = CHIP_YELLOW }: { base?: string }) {
+  const map = useMemo(() => paperTexture(base), [base]);
   return (
     <mesh position={[0, CHIP_HEIGHT / 2, 0]}>
       <cylinderGeometry args={[TOKEN_RADIUS, TOKEN_RADIUS, CHIP_HEIGHT, 64]} />
       <meshStandardMaterial attach="material-0" color="#bd963e" roughness={0.8} />
       <meshBasicMaterial
         attach="material-1"
-        color={map ? "#ffffff" : CHIP_YELLOW}
+        color={map ? "#ffffff" : base}
         map={map}
         toneMapped={false}
       />

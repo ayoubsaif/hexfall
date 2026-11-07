@@ -3,10 +3,23 @@ import { usePrefsStore, type GraphicsQuality } from "../store/prefs.ts";
 import { isLowPower } from "./waterTextures.ts";
 
 export type QualityTier = Exclude<GraphicsQuality, "auto">;
+/** What each tier changes: pixel density cap and shadows (specs/graphics-quality). Low caps at
+ * 1.5 rather than 1 so chip labels stay sharp on high-density screens. */
 export const QUALITY = {
-  low: { dpr: 1, segments: 1, waves: 3, shadows: false, shadowSize: 512 },
-  medium: { dpr: 1.5, segments: 160, waves: 5, shadows: true, shadowSize: 1024 },
-  high: { dpr: 2, segments: 256, waves: 7, shadows: true, shadowSize: 2048 },
+  low: { dpr: 1.5, shadows: false, shadowSize: 512 },
+  medium: { dpr: 1.5, shadows: true, shadowSize: 1024 },
+  high: { dpr: 2, shadows: true, shadowSize: 2048 },
+} as const;
+
+/** One sea for every tier ("Uniform sea across quality levels"): High's sea. 7 wave octaves on
+ * a fine mesh, full shading, detailed rocks, and the GPU water simulation (waves reflect off
+ * the rocks and foam where they hit; raised beach) wherever float render targets work. */
+export const SEA = {
+  segments: 256,
+  waves: 7,
+  low: false,
+  rockDetail: 3,
+  physical: true as boolean,
 } as const;
 
 export const useAutoQuality = create<{ tier: QualityTier }>(() => ({

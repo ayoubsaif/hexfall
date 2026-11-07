@@ -1,4 +1,4 @@
-// Harbor marker: one edge-aligned wooden pier with a chip resting directly on its deck, like the
+// Harbor marker: one edge-aligned stone pier with a chip resting directly on its deck, like the
 // number tokens showing the resource icon and the trade rate (specs/board-view "Harbor markers").
 import type { HarborType } from "@hexfall/engine";
 import { useTexture } from "@react-three/drei";
@@ -10,7 +10,7 @@ import { LabelQuad } from "./LabelQuad.tsx";
 import { HarborDock, HARBOR_DECK_TOP } from "./HarborDock.tsx";
 import type { HarborItem } from "./layout.ts";
 
-import { ChipDisc } from "./ChipDisc.tsx";
+import { CHIP_YELLOW, ChipDisc } from "./ChipDisc.tsx";
 
 const SANS = "'Cormorant Garamond Variable', 'Cormorant Garamond', Georgia, serif";
 
@@ -22,6 +22,17 @@ export const HARBOR_COLORS: Readonly<Record<HarborType, string>> = {
   lumber: "#3d6e36",
   ore: "#5f6b78",
   wool: "#7fa046",
+};
+/** Paper colour of each harbor chip: a light tint of its resource colour, so the resource reads
+ * from afar while the icon and the dark rate text stay legible. The plain 3:1 chip keeps the
+ * number chips' yellow. */
+export const HARBOR_CHIP_BASE: Readonly<Record<HarborType, string>> = {
+  generic: CHIP_YELLOW,
+  brick: "#eab8a2",
+  grain: "#f3d98c",
+  lumber: "#b9d4a6",
+  ore: "#c6ced8",
+  wool: "#d8e8b0",
 };
 /** The plain 3:1 chip is a small, icon-free disc showing only the rate. */
 const GENERIC_SCALE = 0.7;
@@ -86,7 +97,7 @@ function HarborChip({
   return (
     <group position={[0, y, 0]}>
       <group ref={chipRef} name="chip" scale={special ? 1 : GENERIC_SCALE}>
-        <ChipDisc />
+        <ChipDisc base={HARBOR_CHIP_BASE[item.type]} />
         {special && (
           <group position={[0, 0, -0.08]}>
             <LabelQuad texture={icon} size={0.34} y={CHIP.label + 0.001} />

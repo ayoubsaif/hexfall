@@ -25,7 +25,7 @@ export const settings: Catalog["settings"] = {
     realistic: "Realista",
     quality: "Calidad gráfica",
     qualityHint:
-      "Auto reduce el detalle si el juego va lento. Baja reduce la resolución, las olas y las sombras. Los cambios se aplican al instante y se guardan en este dispositivo.",
+      "Auto reduce el detalle si el juego va lento. Baja quita las sombras y reduce un poco la nitidez. El mar se ve igual en todos los niveles. Los cambios se aplican al instante y se guardan en este dispositivo.",
     auto: "Auto",
     low: "Baja",
     medium: "Media",

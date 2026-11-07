@@ -23,7 +23,7 @@ export const settings = {
     realistic: "Realistic",
     quality: "Graphics quality",
     qualityHint:
-      "Auto lowers detail if the game runs slowly. Low reduces resolution, waves and shadows. Changes apply immediately and are remembered on this device.",
+      "Auto lowers detail if the game runs slowly. Low turns off shadows and lowers sharpness a little. The sea looks the same at every level. Changes apply immediately and are remembered on this device.",
     auto: "Auto",
     low: "Low",
     medium: "Medium",

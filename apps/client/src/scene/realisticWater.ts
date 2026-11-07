@@ -93,8 +93,8 @@ void main() {
   float bed = min(-0.005 - uSeaLevel, beachHeight(d));
   if (uPhysical > 0.5) {
     depth = max(0.0, vWorld.y - uSeaLevel - bed);
-    // Actual geometry supplies exposed sand, rather than painting it on the sea.
-    if (vWorld.y - uSeaLevel < bed || d < -0.18) discard;
+    // The raised beach geometry hides water below the sand; only drop the sea under the land.
+    if (d < -0.18) discard;
   }
   #if WAVE_COUNT > 3
     slope += vec2(sin(p.x * 32.0 + p.y * 19.0 - uTime * 2.0),
@@ -129,6 +129,10 @@ void main() {
   vec3 beach = sand * mix(1.18, 0.68, wet);
   float sea = smoothstep(tide - 0.03, tide + 0.14, d);
   if (uPhysical < 0.5) col = mix(beach, col, sea);
+  // Physical coast: the water thins out onto the raised sand instead of ending in a hard line.
+  // Measured against the real beach surface (not the capped bed), so it reaches 0 at the sand.
+  float shoreDepth = max(0.0, vWorld.y - uSeaLevel - beachHeight(d));
+  if (uPhysical > 0.5) col = mix(beach, col, smoothstep(0.0, 0.06, shoreDepth));
 
   // Advancing surf fades in the backwash. Noise breaks the crest into lace, not drawn rings.
   float phase = d * 5.0 + field.b * 2.0 + uTime * 0.95;
@@ -142,7 +146,7 @@ void main() {
     float breaking = texture2D(uSimulation, uv).b;
     float obstacleBed = texture2D(uBed, uv).r;
     float contact = min(depth, max(0.0, vWorld.y - uSeaLevel - obstacleBed));
-    wash = (1.0 - smoothstep(0.005, 0.065, contact)) * (0.35 + lace * 0.65);
+    wash = (1.0 - smoothstep(0.0, 0.11, min(contact, shoreDepth))) * (0.3 + lace * 0.7);
     foam = breaking * (0.4 + lace * 0.6);
   }
   col = mix(col, vec3(0.88, 0.95, 0.89), clamp(foam * 0.65 + wash * 0.45, 0.0, 0.8));

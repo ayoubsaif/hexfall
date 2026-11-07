@@ -15,7 +15,7 @@ import { useReducedMotion } from "./motion.ts";
 import { loadWaterTextures, waterTime, syncWaterUniforms } from "./waterTextures.ts";
 
 import { usePrefsStore } from "../store/prefs.ts";
-import { QUALITY, useGraphicsQuality } from "./graphicsQuality.ts";
+import { SEA } from "./graphicsQuality.ts";
 import { visibleSeaHalf } from "./seaBounds.ts";
 import { CoastTerrain } from "./CoastTerrain.tsx";
 import { coastRocks } from "./coastTerrain.ts";
@@ -189,10 +189,9 @@ export function Water({
   const [simulation, setSimulation] = useState<WaterSimulation | null>(null);
   const reduced = useReducedMotion();
   const mode = usePrefsStore((s) => s.graphicsMode);
-  const tier = useGraphicsQuality();
-  const quality = QUALITY[tier];
   const realistic = mode === "realistic";
-  const physical = realistic && tier === "high" && supportsWaterSimulation(renderer);
+  // The sea ignores the quality tier (specs/graphics-quality "Uniform sea across quality levels").
+  const physical = realistic && SEA.physical && supportsWaterSimulation(renderer);
   const rocks = useMemo(() => coastRocks(land, harbors), [land, harbors]);
   useEffect(() => {
     if (!physical) {
@@ -203,7 +202,7 @@ export function Water({
     setSimulation(solver);
     return () => solver.dispose();
   }, [physical, land, rocks, y]);
-  const defines = useMemo(() => ({ WAVE_COUNT: quality.waves }), [quality.waves]);
+  const defines = useMemo(() => ({ WAVE_COUNT: SEA.waves }), []);
   const { theme } = useTheme();
   // The island's shore distance, baked once (the board's land hexes never move).
   const field = useMemo<DataTexture>(() => coastFieldTexture(land), [land]);
@@ -223,7 +222,7 @@ export function Water({
       uTime: { value: 0 },
       uHasNoise: { value: 0 },
       uHasSand: { value: 0 },
-      uLow: { value: 0 },
+      uLow: { value: SEA.low ? 1 : 0 },
       uDeep: { value: new Color(WATER_DEEP) },
       uMid: { value: new Color(WATER_MID) },
       uShallow: { value: new Color(WATER_SHALLOW) },
@@ -233,9 +232,6 @@ export function Water({
     [field, blank, y],
   );
   useEffect(() => () => blank.dispose(), [blank]);
-  useEffect(() => {
-    uniforms.uLow.value = tier === "low" ? 1 : 0;
-  }, [tier, uniforms]);
   // Textures arrive whenever they arrive; each layer switches on independently.
   useEffect(() => {
     const owned: Texture[] = [];
@@ -271,7 +267,7 @@ export function Water({
     if (physical && simulation) {
       simulation.advance(renderer, delta, reduced);
       uniforms.uSimulation.value = simulation.texture;
-      uniforms.uBed.value = simulation.bed;
+      uniforms.uBed.value = simulation.bedSmooth;
     }
     // Reduced motion: a still sea (waves, caustics and tide frozen), never an animation.
     uniforms.uTime.value = waterTime(reduced, clock.elapsedTime);
@@ -285,7 +281,7 @@ export function Water({
           rocks={rocks}
           y={y}
           raisedBeach={physical && !!simulation}
-          detail={tier === "low" ? 1 : tier === "medium" ? 2 : 3}
+          detail={SEA.rockDetail}
         />
       )}
       <mesh
@@ -295,11 +291,11 @@ export function Water({
         position={[0, y, 0]}
       >
         <planeGeometry
-          args={[200, 200, realistic ? quality.segments : 1, realistic ? quality.segments : 1]}
+          args={[200, 200, realistic ? SEA.segments : 1, realistic ? SEA.segments : 1]}
         />
         <shaderMaterial
           ref={material}
-          key={`${mode}-${tier}`}
+          key={mode}
           defines={defines}
           uniforms={uniforms}
           vertexShader={realistic ? realisticVertex : vertex}

@@ -1,7 +1,7 @@
 import { PerspectiveCamera, Plane, Raycaster, Vector2, Vector3, PlaneGeometry } from "three";
 import { describe, expect, it } from "vite-plus/test";
 import { visibleSeaHalf } from "../../src/scene/seaBounds.ts";
-import { QUALITY } from "../../src/scene/graphicsQuality.ts";
+import { SEA } from "../../src/scene/graphicsQuality.ts";
 
 describe("visible sea footprint", () => {
   it("covers all corners during orbit, tilt, zoom and portrait/landscape framing", () => {
@@ -32,14 +32,14 @@ describe("visible sea footprint", () => {
       }
     }
   });
-  it("uses a smaller surface at the default view and only two triangles on Low", () => {
+  it("uses a smaller surface at the default view and one fine mesh at every quality", () => {
     const camera = new PerspectiveCamera(45, 16 / 9, 0.1, 1000);
     camera.position.set(0, 12, 8);
     camera.lookAt(0, 0, 0);
     camera.updateMatrixWorld();
     expect(visibleSeaHalf(camera, -0.16)).toBeLessThan(25);
-    const geometry = new PlaneGeometry(200, 200, QUALITY.low.segments, QUALITY.low.segments);
-    expect(geometry.index!.count / 3).toBe(2);
+    const geometry = new PlaneGeometry(200, 200, SEA.segments, SEA.segments);
+    expect(geometry.index!.count / 3).toBe(2 * SEA.segments * SEA.segments);
     geometry.dispose();
   });
 });
