@@ -45,8 +45,8 @@ export function beachGeometry(land: readonly XZ[], seaLevel: number): BufferGeom
         b = a + 1;
       const c = a + BEACH_SEGMENTS + 1,
         d = c + 1;
-      // Omit distant sea and the interior; the join remains hidden beneath the land tiles.
-      if ([a, b, c, d].every((i) => distances[i]! < -0.4 || distances[i]! > 2.2)) continue;
+      // Omit only distant sea. The interior stays: it is the sand that shows between land tiles.
+      if ([a, b, c, d].every((i) => distances[i]! > 2.2)) continue;
       indices.push(a, c, b, b, c, d);
     }
   }

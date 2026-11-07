@@ -34,6 +34,8 @@ import {
   pixelUv,
 } from "./relief.ts";
 import { useLandRelief } from "./useLandRelief.ts";
+import { useTheme } from "./context.ts";
+import { resolveWaterUrls } from "./resolve.ts";
 
 /** Hex circumradius: tiles and sea are pointy-top hexes with corners at ±Z. */
 export const HEX_RADIUS = 1;
@@ -58,6 +60,11 @@ export const MARKER_OUTLINE_WIDTH = 0.018;
  * which softens the busy tile art so roads, settlements and cities stand out.
  */
 export const LAND_OPACITY = 0.86;
+
+/** Flat land tiles are drawn at this fraction of a hex, so a strip of sand shows between them. */
+export const LAND_TILE_SCALE = 0.94;
+/** Width (hex units, before scaling) over which a land tile fades into the sand at its edge. */
+export const LAND_EDGE_FADE = 0.1;
 
 export const FLAT_LAYER = {
   tile: 0,
@@ -157,7 +164,9 @@ function roundedSquare(size: number, radius: number): Shape {
 }
 
 /** Lazily built, shared geometries (never disposed: they live as long as the page). */
-let cache: Record<FlatShapeKind, { fill: BufferGeometry; outline: BufferGeometry }> | undefined;
+let cache:
+  | Record<FlatShapeKind, { fill: BufferGeometry; outline: BufferGeometry }>
+  | undefined;
 
 export function flatGeometry(shape: FlatShapeKind): {
   fill: BufferGeometry;
@@ -181,7 +190,13 @@ function buildGeometries() {
     hex: {
       fill: onBoardPlane(new CircleGeometry(HEX_RADIUS, 6, Math.PI / 2)),
       outline: onBoardPlane(
-        new RingGeometry(HEX_RADIUS - HEX_OUTLINE_WIDTH, HEX_RADIUS, 6, 1, Math.PI / 2),
+        new RingGeometry(
+          HEX_RADIUS - HEX_OUTLINE_WIDTH,
+          HEX_RADIUS,
+          6,
+          1,
+          Math.PI / 2,
+        ),
       ),
     },
     token: {
@@ -193,7 +208,10 @@ function buildGeometries() {
     badge: {
       fill: onBoardPlane(
         squareUvs(
-          new ShapeGeometry(roundedSquare(HARBOR_BADGE_SIZE, HARBOR_BADGE_CORNER), 6),
+          new ShapeGeometry(
+            roundedSquare(HARBOR_BADGE_SIZE, HARBOR_BADGE_CORNER),
+            6,
+          ),
           HARBOR_BADGE_SIZE,
         ),
       ),
@@ -226,7 +244,8 @@ export function isoGeometry(): { top: BufferGeometry; sides: BufferGeometry } {
   const top = flatGeometry("hex").fill.clone();
   const pos = top.getAttribute("position");
   const uv = top.getAttribute("uv");
-  for (let i = 0; i < pos.count; i++) uv.setXY(i, ...isoTopUv(pos.getX(i), pos.getZ(i)));
+  for (let i = 0; i < pos.count; i++)
+    uv.setXY(i, ...isoTopUv(pos.getX(i), pos.getZ(i)));
   uv.needsUpdate = true;
 
   const positions: number[] = [];
@@ -240,7 +259,9 @@ export function isoGeometry(): { top: BufferGeometry; sides: BufferGeometry } {
     const [bx, bz] = corner((i + 1) % 6);
     // Faces 5→0 and 0→1 face +Z (the camera); the rest borrow face 0→1's band.
     const visible = i === 5 || i === 0;
-    const [ux, uz, vx, vz] = visible ? [ax, az, bx, bz] : [...corner(0), ...corner(1)];
+    const [ux, uz, vx, vz] = visible
+      ? [ax, az, bx, bz]
+      : [...corner(0), ...corner(1)];
     const t = -ISO_THICKNESS;
     const quad: [number, number, number, [number, number]][] = [
       [ax, 0, az, band(ux, uz, false)],
@@ -266,7 +287,10 @@ export function isoGeometry(): { top: BufferGeometry; sides: BufferGeometry } {
 const SOIL_TILES_PER_UNIT = 0.9;
 export const SOIL_URL = "/textures/soil.webp";
 
-const blockCache = new Map<string, { top: BufferGeometry; sides: BufferGeometry }>();
+const blockCache = new Map<
+  string,
+  { top: BufferGeometry; sides: BufferGeometry }
+>();
 
 /** Hex ring of `inset` units inside the hex outline, at height y (corner i, mitred). */
 function ring(inset: number, y: number): [number, number, number][] {
@@ -306,7 +330,9 @@ export function landBlockGeometry(
   const uv: number[] = [];
   // Isometric art squashes the top face; top-down art spans the hex corners.
   const topUv = (x: number, z: number): [number, number] =>
-    iso ? isoTopUv(x, z) : [0.5 + x / (2 * HEX_RADIUS), 0.5 - z / (2 * HEX_RADIUS)];
+    iso
+      ? isoTopUv(x, z)
+      : [0.5 + x / (2 * HEX_RADIUS), 0.5 - z / (2 * HEX_RADIUS)];
   const push = (x: number, y: number, z: number) => {
     pos.push(x, y, z);
     uv.push(...topUv(x, z));
@@ -409,7 +435,13 @@ function SoilWalls({ geometry }: { geometry: BufferGeometry }) {
   });
   return (
     <mesh geometry={geometry} castShadow receiveShadow>
-      <meshStandardMaterial vertexColors map={map} roughness={1} metalness={0} side={DoubleSide} />
+      <meshStandardMaterial
+        vertexColors
+        map={map}
+        roughness={1}
+        metalness={0}
+        side={DoubleSide}
+      />
     </mesh>
   );
 }
@@ -430,10 +462,159 @@ const softenLandMaterial = (shader: { fragmentShader: string }): void => {
     }`,
   );
 };
-const SOFTEN_PROPS = {
-  onBeforeCompile: softenLandMaterial,
-  customProgramCacheKey: () => "land-soften",
+/**
+ * Fades a flat land tile to transparent over its last LAND_EDGE_FADE before the hex edge, so
+ * the tile art blends into the sand between tiles instead of ending in a hard line. Distance to
+ * the edge of a pointy-top hex (flat sides at ±X): apothem minus the largest projection on the
+ * three edge normals.
+ */
+const fadeLandEdge = (shader: {
+  vertexShader: string;
+  fragmentShader: string;
+}): void => {
+  shader.vertexShader = shader.vertexShader
+    .replace("#include <common>", "#include <common>\nvarying vec2 vHexP;")
+    .replace(
+      "#include <begin_vertex>",
+      "#include <begin_vertex>\nvHexP = position.xz;",
+    );
+  shader.fragmentShader = shader.fragmentShader
+    .replace("#include <common>", "#include <common>\nvarying vec2 vHexP;")
+    .replace(
+      "#include <alphatest_fragment>",
+      `{
+        // The hex is symmetric in x and z, so |p| on two edge normals covers all six edges.
+        vec2 q = abs(vHexP);
+        float reach = max(q.x, dot(q, vec2(0.5, 0.8660254)));
+        float edge = ${(HEX_RADIUS * Math.cos(Math.PI / 6)).toFixed(7)} - reach;
+        diffuseColor.a *= smoothstep(0.0, ${LAND_EDGE_FADE.toFixed(3)}, edge);
+      }
+      #include <alphatest_fragment>`,
+    );
 };
+
+/** Beach sand colour multiplier (matches the coast mesh's sand tint) and its fallback colour. */
+const SAND_TINT = "vec3(0.937, 0.886, 0.741)";
+const SAND_PLAIN = "vec3(0.84, 0.74, 0.52)";
+/** World units per sand texture repeat, as on the beach mesh (uv = xz * 0.7). */
+const SAND_UV_SCALE = 0.7;
+
+/**
+ * Raised land tops: the tile art is drawn at LAND_TILE_SCALE about the tile centre, and the band
+ * outside it (including the rounded rim) is beach sand sampled in world space, so the strips
+ * between hexes read as one continuous sand path that joins the beach. The art fades into the
+ * sand over LAND_EDGE_FADE. Isometric art keeps its own UVs (no shrink), only the fade.
+ */
+function sandRimProps(sand: Texture | null, soften: boolean, iso: boolean) {
+  const apothem = HEX_RADIUS * Math.cos(Math.PI / 6);
+  const gap = (apothem * (1 - LAND_TILE_SCALE)).toFixed(4);
+  const fadeEnd = (apothem * (1 - LAND_TILE_SCALE) + LAND_EDGE_FADE).toFixed(4);
+  const artUv = iso
+    ? "vMapUv"
+    : `(0.5 + (vMapUv - 0.5) / ${LAND_TILE_SCALE.toFixed(4)})`;
+  return {
+    onBeforeCompile: (shader: {
+      vertexShader: string;
+      fragmentShader: string;
+      uniforms: Record<string, { value: unknown }>;
+    }) => {
+      shader.uniforms.uSandMap = { value: sand };
+      shader.vertexShader = shader.vertexShader
+        .replace(
+          "#include <common>",
+          "#include <common>\nvarying vec2 vHexP;\nvarying vec2 vSandP;",
+        )
+        .replace(
+          "#include <begin_vertex>",
+          "#include <begin_vertex>\nvHexP = position.xz;\nvSandP = (modelMatrix * vec4(transformed, 1.0)).xz;",
+        );
+      shader.fragmentShader = shader.fragmentShader.replace(
+        "#include <common>",
+        "#include <common>\nvarying vec2 vHexP;\nvarying vec2 vSandP;\nuniform sampler2D uSandMap;",
+      );
+      if (soften) softenLandMaterial(shader);
+      shader.fragmentShader = shader.fragmentShader
+        .replace(
+          "#include <map_fragment>",
+          `#ifdef USE_MAP
+            diffuseColor *= texture2D(map, ${artUv});
+          #endif`,
+        )
+        .replace(
+          "#include <color_fragment>",
+          `#include <color_fragment>
+          {
+            vec2 q = abs(vHexP);
+            float reach = max(q.x, dot(q, vec2(0.5, 0.8660254)));
+            float edge = ${apothem.toFixed(7)} - reach;
+            float art = smoothstep(${gap}, ${fadeEnd}, edge);
+            vec3 sandC = ${sand ? `texture2D(uSandMap, vSandP * ${SAND_UV_SCALE.toFixed(2)}).rgb * ${SAND_TINT}` : SAND_PLAIN};
+            diffuseColor.rgb = mix(sandC, diffuseColor.rgb, art);
+          }`,
+        );
+    },
+    customProgramCacheKey: () =>
+      `land-sand-rim${soften ? "-soften" : ""}${iso ? "-iso" : ""}${sand ? "-tex" : ""}`,
+  };
+}
+
+/** The theme's beach sand texture (tiled, sRGB), or null when the theme declares none. */
+function useSandTexture(): Texture | null {
+  const { theme } = useTheme();
+  const url = theme ? resolveWaterUrls(theme).sand : undefined;
+  // useTexture needs a URL; the soil texture stands in and is ignored when no sand is declared.
+  const tex = useTexture(url ?? SOIL_URL, (t) => {
+    const x = t as Texture;
+    x.wrapS = x.wrapT = MirroredRepeatWrapping;
+    x.colorSpace = SRGBColorSpace;
+    x.anisotropy = 4;
+  }) as Texture;
+  return url ? tex : null;
+}
+
+/** Top of a raised land block: tile art inside, sand rim around it. */
+function RaisedLandTop({
+  geometry,
+  color,
+  map,
+  soften,
+  iso,
+}: {
+  geometry: BufferGeometry;
+  color: string;
+  map: Texture | undefined;
+  soften: boolean;
+  iso: boolean;
+}) {
+  const sand = useSandTexture();
+  return (
+    <mesh geometry={geometry} castShadow receiveShadow>
+      <meshStandardMaterial
+        key={`${map ? "map" : "color"}${soften ? "-soft" : ""}${sand ? "-sand" : ""}`}
+        color={map ? "#ffffff" : color}
+        map={map ?? null}
+        roughness={1}
+        metalness={0}
+        side={DoubleSide}
+        {...sandRimProps(sand, !!map && soften, iso)}
+      />
+    </mesh>
+  );
+}
+
+/** Land material hooks: the edge fade, plus the optional contrast softening. */
+function landProps(soften: boolean) {
+  return {
+    onBeforeCompile: (shader: {
+      vertexShader: string;
+      fragmentShader: string;
+    }) => {
+      fadeLandEdge(shader);
+      if (soften) softenLandMaterial(shader);
+    },
+    customProgramCacheKey: () => (soften ? "land-fade-soften" : "land-fade"),
+  };
+}
 
 export interface FlatShapeProps {
   assetKey: FlatAssetKey;
@@ -449,12 +630,18 @@ export interface FlatShapeProps {
  * Draws a flat key's shape on its layer. Fallback and themed rendering both go through
  * this component; only the material's color/map differ.
  */
-export function FlatShape({ assetKey, color, map, projection = "top" }: FlatShapeProps) {
+export function FlatShape({
+  assetKey,
+  color,
+  map,
+  projection = "top",
+}: FlatShapeProps) {
   const softTiles = useViewStore((s) => s.softTiles);
   const relief = useLandRelief();
   const shape = FLAT_SHAPE[assetKey];
   const { fill: hexFill, outline } = flatGeometry(shape);
-  const iso = shape === "hex" && projection === "isometric" && map !== undefined;
+  const iso =
+    shape === "hex" && projection === "isometric" && map !== undefined;
   const fill = iso ? isoGeometry().top : hexFill;
   const marker = shape !== "hex";
   // On a raised island the sea and the harbors on it sit at sea level; land tops stay at 0.
@@ -462,7 +649,9 @@ export function FlatShape({ assetKey, color, map, projection = "top" }: FlatShap
   const base = onSea ? relief.seaLevel : 0;
   const land = shape === "hex" && assetKey !== "sea";
   const chip = shape === "token";
-  const y = chip ? CHIP.face : base + (marker ? FLAT_LAYER.marker : FLAT_LAYER.tile);
+  const y = chip
+    ? CHIP.face
+    : base + (marker ? FLAT_LAYER.marker : FLAT_LAYER.tile);
   // A raised land block draws its own textured top and rounded rim, so no flat fill/outline.
   const block = land && relief.raised;
   const outlineY = chip
@@ -473,26 +662,36 @@ export function FlatShape({ assetKey, color, map, projection = "top" }: FlatShap
       {land && relief.raised && (
         <>
           <SoilWalls geometry={landBlockGeometry(assetKey, iso).sides} />
-          <mesh geometry={landBlockGeometry(assetKey, iso).top} castShadow receiveShadow>
-            <meshStandardMaterial
-              key={`${map ? "map" : "color"}${softTiles ? "-soft" : ""}`}
-              color={map ? "#ffffff" : color}
-              map={map ?? null}
-              roughness={1}
-              metalness={0}
-              side={DoubleSide}
-              {...(map && softTiles ? SOFTEN_PROPS : {})}
-            />
-          </mesh>
+          <RaisedLandTop
+            geometry={landBlockGeometry(assetKey, iso).top}
+            color={color}
+            map={map}
+            soften={softTiles}
+            iso={iso}
+          />
         </>
       )}
       {chip && (
-        <mesh geometry={chipSideGeometry()} name="chip-side" castShadow receiveShadow>
-          <meshStandardMaterial color={CHIP_EDGE} roughness={0.9} metalness={0} />
+        <mesh
+          geometry={chipSideGeometry()}
+          name="chip-side"
+          castShadow
+          receiveShadow
+        >
+          <meshStandardMaterial
+            color={CHIP_EDGE}
+            roughness={0.9}
+            metalness={0}
+          />
         </mesh>
       )}
       {!block && (
-        <mesh geometry={fill} position={[0, y, 0]} receiveShadow>
+        <mesh
+          geometry={fill}
+          position={[0, y, 0]}
+          scale={land ? [LAND_TILE_SCALE, 1, LAND_TILE_SCALE] : 1}
+          receiveShadow
+        >
           <meshStandardMaterial
             key={`${map ? "map" : "color"}${land ? "-land" : ""}${softTiles ? "-soft" : ""}`}
             color={map ? "#ffffff" : color}
@@ -502,14 +701,15 @@ export function FlatShape({ assetKey, color, map, projection = "top" }: FlatShap
             transparent={land}
             opacity={land ? LAND_OPACITY : 1}
             depthWrite={!land}
-            {...(map && land && softTiles ? SOFTEN_PROPS : {})}
+            {...(land ? landProps(!!map && softTiles) : {})}
             polygonOffset={marker}
             polygonOffsetFactor={marker ? -2 : 0}
             polygonOffsetUnits={marker ? -2 : 0}
           />
         </mesh>
       )}
-      {!block && hasOutline(assetKey) && (
+      {/* Land tiles blend into the sand between them, so only markers keep a hard outline. */}
+      {!block && !land && hasOutline(assetKey) && (
         <mesh geometry={outline} position={[0, outlineY, 0]} renderOrder={1}>
           <meshBasicMaterial
             color={OUTLINE_COLOR}

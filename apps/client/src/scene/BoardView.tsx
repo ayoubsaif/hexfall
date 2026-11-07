@@ -1,5 +1,6 @@
 // Draws a board value: a thin map over the pure layout model (specs/board-view).
 // A live game passes the robber hex and the hexes that just produced (board-interaction).
+import { IslandGround, useIslandTextureUrls } from "./IslandGround.tsx";
 import type { Board, HexId } from "@hexfall/engine";
 import { useFrame } from "@react-three/fiber";
 import { useCallback, useMemo, useRef, useState } from "react";
@@ -46,7 +47,12 @@ function Robber({
   const ref = useRef<Group>(null);
   const reduced = useReducedMotion();
   const prev = useRef<{ hex: HexId; position: XZ } | null>(null);
-  const tween = useRef<{ from: XZ; to: XZ; start: number | null; ms: number } | null>(null);
+  const tween = useRef<{
+    from: XZ;
+    to: XZ;
+    start: number | null;
+    ms: number;
+  } | null>(null);
 
   if (prev.current?.hex !== hex) {
     const ms = motionDurations(reduced).robber;
@@ -99,7 +105,11 @@ function Glow({ ms }: { ms: number }) {
   });
   if (done) return null;
   return (
-    <mesh rotation={[-Math.PI / 2, 0, 0]} position={[0, 0.02, 0]} renderOrder={5}>
+    <mesh
+      rotation={[-Math.PI / 2, 0, 0]}
+      position={[0, 0.02, 0]}
+      renderOrder={5}
+    >
       <ringGeometry args={[0.32, 0.62, 32]} />
       <meshBasicMaterial
         ref={mat}
@@ -138,37 +148,80 @@ export function BoardView({
   glowKey = 0,
   source = null,
 }: BoardViewProps) {
-  const layout = useMemo(() => boardLayout(board, robberHex), [board, robberHex]);
+  const layout = useMemo(
+    () => boardLayout(board, robberHex),
+    [board, robberHex],
+  );
   const reduced = useReducedMotion();
   const glowMs = motionDurations(reduced).glow;
   const glowing = useMemo(() => new Set(glowHexes ?? []), [glowHexes]);
   const chipRef = useChipFacing();
   // Domed land lifts each hex's token to the top of its dome.
   const relief = useLandRelief();
-  const terrainOf = useMemo(() => new Map(layout.tiles.map((t) => [t.hex, t.assetKey])), [layout]);
-  const lift = (hex: number) => (relief.raised ? domeHeight(terrainOf.get(hex) ?? "", 0) : 0);
+  const terrainOf = useMemo(
+    () => new Map(layout.tiles.map((t) => [t.hex, t.assetKey])),
+    [layout],
+  );
+  const lift = (hex: number) =>
+    relief.raised ? domeHeight(terrainOf.get(hex) ?? "", 0) : 0;
+  // Image themes draw the land as one continuous island surface (IslandGround) instead of
+  // one block per tile. Keyed on tile positions and terrains, so moving the robber (which
+  // rebuilds the layout) does not rebuild the island mesh.
+  const islandUrls = useIslandTextureUrls();
+  const islandKey = layout.tiles
+    .map((t) => `${t.assetKey}@${t.position.join(",")}`)
+    .join("|");
+  const islandTiles = useMemo(
+    () =>
+      layout.tiles.map((t) => ({ position: t.position, assetKey: t.assetKey })),
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+    [islandKey],
+  );
+  const islandLand = useMemo(
+    () => islandTiles.map((t) => t.position),
+    [islandTiles],
+  );
+  const island = relief.raised && islandUrls !== null;
   const robber = layout.robber;
-  const robberCenter = layout.tiles.find((t) => t.hex === robber.hex)?.position ?? robber.position;
+  const robberCenter =
+    layout.tiles.find((t) => t.hex === robber.hex)?.position ?? robber.position;
   const robberLift = relief.raised
     ? domeHeight(
         terrainOf.get(robber.hex) ?? "",
-        Math.hypot(robber.position[0] - robberCenter[0], robber.position[1] - robberCenter[1]),
+        Math.hypot(
+          robber.position[0] - robberCenter[0],
+          robber.position[1] - robberCenter[1],
+        ),
       )
     : 0;
   return (
     <>
       {/* The sea itself is the procedural Water plane in Scene (no sea tile images). */}
-      {layout.tiles.map((t) => (
-        <group key={t.key} position={[t.position[0], 0, t.position[1]]}>
-          <Asset assetKey={t.assetKey} />
-        </group>
-      ))}
+      {island ? (
+        <IslandGround
+          tiles={islandTiles}
+          land={islandLand}
+          seaLevel={relief.seaLevel}
+          urls={islandUrls}
+        />
+      ) : (
+        layout.tiles.map((t) => (
+          <group key={t.key} position={[t.position[0], 0, t.position[1]]}>
+            <Asset assetKey={t.assetKey} />
+          </group>
+        ))
+      )}
       {layout.tokens.map((t) => (
-        <group key={t.key} position={[t.position[0], lift(t.hex), t.position[1]]}>
+        <group
+          key={t.key}
+          position={[t.position[0], lift(t.hex), t.position[1]]}
+        >
           <group ref={chipRef} name="chip">
             <NumberToken value={t.value} />
           </group>
-          {glowMs > 0 && glowing.has(t.hex) && <Glow key={glowKey} ms={glowMs} />}
+          {glowMs > 0 && glowing.has(t.hex) && (
+            <Glow key={glowKey} ms={glowMs} />
+          )}
         </group>
       ))}
       {layout.harbors.map((h) => (
