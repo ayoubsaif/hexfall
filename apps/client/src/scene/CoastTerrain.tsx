@@ -96,6 +96,7 @@ export function CoastTerrain({
       {beach && (
         <mesh raycast={() => {}} geometry={beach} receiveShadow>
           <meshStandardMaterial
+            key={maps[0] ? "sand-map" : "sand-plain"}
             map={maps[0] ?? null}
             color={maps[0] ? "#efe2bd" : "#d7bd85"}
             vertexColors
@@ -122,6 +123,7 @@ export function CoastTerrain({
           receiveShadow
         >
           <meshStandardMaterial
+            key={`${maps[1] ? "c" : "-"}${maps[2] ? "b" : "-"}${maps[3] ? "r" : "-"}`}
             map={maps[1] ?? null}
             bumpMap={maps[2] ?? null}
             bumpScale={0.035}
