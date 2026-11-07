@@ -77,6 +77,11 @@ export function audioOutput(): { ctx: AudioContext; out: AudioNode } | null {
   return { ctx: c, out: master };
 }
 
+/** The shared context even while still locked (decoding works before the unlock), or null. */
+export function audioContext(): AudioContext | null {
+  return context();
+}
+
 /** Resumes the context now (from a user gesture, e.g. "Test sound"); true when audio can play. */
 export async function resumeAudio(): Promise<boolean> {
   const c = context();

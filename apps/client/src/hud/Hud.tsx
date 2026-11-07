@@ -23,6 +23,7 @@ import { ViewControls } from "./ViewControls.tsx";
 import type { GameMode } from "./GameModeButtons.tsx";
 import { Welcome, dismissWelcome, welcomeDismissed } from "./Welcome.tsx";
 import { GameAlerts } from "./GameAlerts.tsx";
+import { GameSounds } from "./GameSounds.tsx";
 import {
   ActionButtons,
   CountdownAnnouncer,
@@ -240,6 +241,7 @@ function GameHud({ corner }: { corner: HTMLElement | null }) {
       <DiceTray />
       <TurnFocus />
       <GameAlerts />
+      <GameSounds />
       <CountdownAnnouncer />
     </>
   );

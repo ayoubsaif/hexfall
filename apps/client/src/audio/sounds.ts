@@ -1,8 +1,16 @@
-// Turn chime and dice rattle, synthesized with Web Audio (specs/game-audio). No files.
+// Game sounds (specs/game-audio): turn chime and dice rattle are synthesized with Web Audio;
+// building sounds play a recorded file (samples.ts).
 import { usePrefsStore } from "../store/prefs.ts";
-import { audioOutput } from "./engine.ts";
+import { audioContext, audioOutput } from "./engine.ts";
+import { loadSample, playSample } from "./samples.ts";
 
-export type SoundName = "chime" | "dice" | "turnSoft";
+export type SoundName =
+  | "chime"
+  | "dice"
+  | "turnSoft"
+  | "buildRoad"
+  | "buildSettlement"
+  | "buildCity";
 
 /** Rattle length in seconds: a bit under the dice throw (DiceTray THROW_MS = 980). */
 export const RATTLE_S = 0.9;
@@ -85,11 +93,32 @@ function diceRattle(ctx: AudioContext, out: AudioNode): void {
   }
 }
 
+/** One file for every piece: a road is lighter and quicker, a city deeper and fuller. */
+const buildRoad = (ctx: AudioContext, out: AudioNode) =>
+  playSample(ctx, out, "build", { gain: 0.55, rate: 1.15 });
+const buildSettlement = (ctx: AudioContext, out: AudioNode) =>
+  playSample(ctx, out, "build", { gain: 0.8 });
+const buildCity = (ctx: AudioContext, out: AudioNode) =>
+  playSample(ctx, out, "build", { gain: 1, rate: 0.85 });
+
 const SOUNDS: Record<SoundName, (ctx: AudioContext, out: AudioNode) => void> = {
   chime,
   dice: diceRattle,
   turnSoft,
+  buildRoad,
+  buildSettlement,
+  buildCity,
 };
+
+/** Starts decoding the sound files so the first one plays on time. Never throws. */
+export function preloadSounds(): void {
+  try {
+    const ctx = audioContext();
+    if (ctx) void loadSample(ctx, "build");
+  } catch {
+    // Preloading is only an optimisation.
+  }
+}
 
 /** Plays a sound now, or does nothing when muted, unsupported or still locked. Never throws. */
 export function playSound(name: SoundName): void {

@@ -45,7 +45,7 @@ const CODE = /^[A-Z0-9]{1,16}$/;
 const CACHE = "hexfall-v1";
 const SHELL = ["/", "/manifest.webmanifest", ICON, "/icons/icon-512.png", "/favicon.ico"];
 // Static files that rarely change but are not content-hashed: serve cached, refresh behind.
-const SWR = /^\/(textures|themes|cards|avatars|ui|icons|fonts)\//;
+const SWR = /^\/(textures|themes|cards|avatars|ui|icons|fonts|sounds)\//;
 
 self.addEventListener("install", (event) => {
   event.waitUntil(
