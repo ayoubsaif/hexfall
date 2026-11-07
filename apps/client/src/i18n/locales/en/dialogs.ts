@@ -65,6 +65,11 @@ export const dialogs = {
     close: "Close",
     send: "Send offer",
   },
+  chat: {
+    empty: "No messages yet. Say hello!",
+    placeholder: "Write a message",
+    send: "Send",
+  },
   feed: {
     log: "Game log",
     empty: "No events yet.",
@@ -79,6 +84,7 @@ export const dialogs = {
     endedByHost: "Ended by the host",
     winTogether: "{{names}} share the win!",
     tabLog: "Log",
+    tabChat: "Chat",
     tabDice: "Dice",
     diceTitle: "Dice rolls",
     diceEmpty: "No rolls yet.",

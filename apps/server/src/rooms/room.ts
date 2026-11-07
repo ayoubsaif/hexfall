@@ -13,8 +13,11 @@ import {
 import { BotRng, chooseAction } from "@hexfall/bots";
 import { chooseAvatar, resolveAvatars } from "./avatars.ts";
 import {
+  CHAT_HISTORY,
+  CHAT_MAX_LENGTH,
   CloseCode,
   type AvatarId,
+  type ChatEntry,
   type ClientAction,
   type RoomStatus,
   type TimerInfo,
@@ -266,6 +269,42 @@ export class Room {
     return this.conns.findIndex((c) => c?.id === conn.id);
   }
 
+  // ---- chat (held in memory only: never stored, gone with the room or a restart)
+
+  private chatLog: ChatEntry[] = [];
+  private chatId = 0;
+
+  /** A seated player's chat line, cleaned and sent to every connected seat. */
+  chat(req: Request, raw: string): ServiceResult {
+    const seat = this.seatOf(req.conn);
+    const name = this.meta.seats[seat]?.name;
+    if (seat < 0 || name === undefined) return fail("no_seat", "this connection holds no seat");
+    // eslint-disable-next-line no-control-regex
+    const text = raw
+      .replace(/[\u0000-\u001f\u007f]+/g, " ")
+      .replace(/ {2,}/g, " ")
+      .trim();
+    if (text.length === 0) return OK;
+    const entry: ChatEntry = {
+      id: this.chatId++,
+      seat,
+      name,
+      text: Array.from(text).slice(0, CHAT_MAX_LENGTH).join(""),
+      at: this.deps.now(),
+    };
+    this.chatLog.push(entry);
+    if (this.chatLog.length > CHAT_HISTORY) this.chatLog.shift();
+    for (const c of this.conns) if (c) this.send(c, { type: "chatLine", payload: { entry } });
+    return OK;
+  }
+
+  /** The recent chat to one connection (a seat that just joined or resumed). */
+  private sendChatHistory(conn: Conn): void {
+    if (this.chatLog.length > 0) {
+      this.send(conn, { type: "chatHistory", payload: { entries: [...this.chatLog] } });
+    }
+  }
+
   connectedCount(): number {
     return this.conns.filter((c) => c !== null).length;
   }
@@ -299,6 +338,7 @@ export class Room {
     this.deps.bind(req.conn, this);
     this.send(req.conn, { type: "roomJoined", payload: { room: this.code, seat: 0, token } }, req);
     this.broadcastRoomState(req);
+    this.sendChatHistory(req.conn);
   }
 
   join(req: Request, rawName: string, avatar?: AvatarId): Promise<ServiceResult> {
@@ -330,6 +370,7 @@ export class Room {
       this.deps.bind(req.conn, this);
       this.send(req.conn, { type: "roomJoined", payload: { room: this.code, seat, token } }, req);
       this.broadcastRoomState(req);
+      this.sendChatHistory(req.conn);
       return OK;
     });
   }
@@ -355,6 +396,7 @@ export class Room {
       this.deps.bind(req.conn, this);
       this.send(req.conn, { type: "roomJoined", payload: { room: this.code, seat } }, req);
       this.broadcastRoomState(req);
+      this.sendChatHistory(req.conn);
       if (this.state) this.sendSnapshot(seat, req);
       return OK;
     });

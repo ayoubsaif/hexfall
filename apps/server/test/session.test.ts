@@ -36,6 +36,7 @@ function fakeService() {
     leaveRoom: record("leaveRoom"),
     startGame: record("startGame"),
     setAvatar: record("setAvatar"),
+    chat: record("chat"),
     addBot: record("addBot"),
     removeBot: record("removeBot"),
     gameAction: record("gameAction"),

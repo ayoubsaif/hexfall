@@ -17,6 +17,7 @@ import {
 import { cleanName, SEAT_LOST_NOTICE, type SessionController } from "../../src/net/session.ts";
 import { createSessionConnection } from "../../src/net/useConnection.ts";
 import type { Connection } from "../../src/net/connection.ts";
+import { useChatStore } from "../../src/store/chat.ts";
 import { initialConnectionState, useConnectionStore } from "../../src/store/connection.ts";
 import { resetGame, useGameStore } from "../../src/store/game.ts";
 import { resetRoom, useRoomStore } from "../../src/store/room.ts";
@@ -346,6 +347,31 @@ describe("lobby", () => {
     snapshot(0);
     expect(useGameStore.getState()).toMatchObject({ version: 0, source: "snapshot" });
     expect(useGameStore.getState().view?.phase.kind).toBe("setup");
+  });
+});
+
+describe("chat", () => {
+  it("collects lines and history, counts others' lines unread, sends chat, and clears on leave", () => {
+    boot();
+    welcome();
+    createRoom("Ana");
+    send("roomJoined", { room: "K7QX2M", seat: 0, token: "secret" });
+    roomState("lobby", 3);
+    send("chatHistory", {
+      entries: [{ id: 0, seat: 1, name: "Ben", text: "hi", at: 1 }],
+    });
+    expect(useChatStore.getState()).toMatchObject({ unread: 0 });
+    expect(useChatStore.getState().entries).toHaveLength(1);
+    send("chatLine", { entry: { id: 1, seat: 1, name: "Ben", text: "ready?", at: 2 } });
+    send("chatLine", { entry: { id: 2, seat: 0, name: "Ana", text: "yes", at: 3 } });
+    expect(useChatStore.getState().entries.map((e) => e.text)).toEqual(["hi", "ready?", "yes"]);
+    expect(useChatStore.getState().unread).toBe(1);
+    expect(session.chat("hello")).toBe(true);
+    expect(sent()).toContainEqual(
+      expect.objectContaining({ type: "chat", payload: { text: "hello" } }),
+    );
+    send("roomLeft", { room: "K7QX2M" });
+    expect(useChatStore.getState().entries).toEqual([]);
   });
 });
 

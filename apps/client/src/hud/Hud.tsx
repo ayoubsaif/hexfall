@@ -11,6 +11,8 @@ import { TooltipProvider } from "@/components/ui/tooltip.tsx";
 import { cn } from "@/lib/utils.ts";
 import type { ConnectionStatus } from "../net/connection.ts";
 import { useConnectionStore } from "../store/connection.ts";
+import { ChatPanel } from "./ChatPanel.tsx";
+import { useChatStore } from "../store/chat.ts";
 import { useGameStore } from "../store/game.ts";
 import { DEFAULT_DOCK, hudLayout, setDiceDock } from "../store/dock.ts";
 import { useRoomStore } from "../store/room.ts";
@@ -171,6 +173,7 @@ function useHudLayout(corner: HTMLElement | null) {
 function LogDrawer() {
   const { t } = useTranslation();
   const label = t("session.hud.log");
+  const unread = useChatStore((s) => s.unread);
   return (
     <Sheet>
       <SheetTrigger asChild>
@@ -180,9 +183,16 @@ function LogDrawer() {
           data-interactive
           aria-label={label}
           title={label}
-          className="pointer-events-auto grid size-10 cursor-pointer place-items-center hud-leather-round outline-none transition-[filter] duration-150 focus-visible:ring-2 focus-visible:ring-ring max-sm:size-11 short:size-11 pointer-coarse:size-11 motion-reduce:transition-none"
+          className="pointer-events-auto relative grid size-10 cursor-pointer place-items-center hud-leather-round outline-none transition-[filter] duration-150 focus-visible:ring-2 focus-visible:ring-ring max-sm:size-11 short:size-11 pointer-coarse:size-11 motion-reduce:transition-none"
         >
           <ScrollText aria-hidden className="size-6" />
+          {unread > 0 && (
+            <span
+              aria-hidden="true"
+              data-testid="chat-unread"
+              className="absolute top-0 right-0 size-3 rounded-full border border-cream bg-accent"
+            />
+          )}
         </button>
       </SheetTrigger>
       <SheetContent title={t("session.hud.eventLog")} side="right">
@@ -244,12 +254,16 @@ function LogTabs() {
       <TabsList>
         <TabsTrigger value="log">{t("dialogs.feed.tabLog")}</TabsTrigger>
         <TabsTrigger value="dice">{t("dialogs.feed.tabDice")}</TabsTrigger>
+        <TabsTrigger value="chat">{t("dialogs.feed.tabChat")}</TabsTrigger>
       </TabsList>
       <TabsContent value="log">
         <EventLog />
       </TabsContent>
       <TabsContent value="dice">
         <DiceStats />
+      </TabsContent>
+      <TabsContent value="chat" className="flex min-h-0 flex-1 flex-col">
+        <ChatPanel />
       </TabsContent>
     </Tabs>
   );

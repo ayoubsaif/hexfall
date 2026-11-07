@@ -141,6 +141,12 @@ export const EndSavedGameMessage = msg(
   z.object({ room: RoomCode, token: z.string().min(1).max(128) }),
 );
 
+/** Longest chat message (characters, after trimming) and how many the server keeps per room. */
+export const CHAT_MAX_LENGTH = 300;
+export const CHAT_HISTORY = 50;
+/** A seated player says something to the room (in-game chat). Held in memory only. */
+export const ChatMessage = msg("chat", z.object({ text: z.string().max(CHAT_MAX_LENGTH * 4) }));
+
 export const ClientMessage = z.discriminatedUnion("type", [
   HelloMessage,
   PingMessage,
@@ -161,6 +167,7 @@ export const ClientMessage = z.discriminatedUnion("type", [
   EndGameMessage,
   LookupSeatsMessage,
   EndSavedGameMessage,
+  ChatMessage,
 ]);
 export type ClientMessage = z.infer<typeof ClientMessage>;
 
@@ -307,6 +314,21 @@ export const ActionRejectedMessage = msg(
   z.object({ code: z.custom<RuleErrorCode>((v) => typeof v === "string"), message: z.string() }),
 );
 
+/** One chat line: `seat` and `name` are the sender's when it was said. */
+export const ChatEntry = z.object({
+  id: z.number().int().nonnegative(),
+  seat: Seat,
+  name: z.string(),
+  text: z.string(),
+  /** Server ms. */
+  at: z.number(),
+});
+export type ChatEntry = z.infer<typeof ChatEntry>;
+/** A new chat line, to every connected seat. */
+export const ChatLineMessage = msg("chatLine", z.object({ entry: ChatEntry }));
+/** The room's recent chat (up to `CHAT_HISTORY`), to a seat when it joins or resumes. */
+export const ChatHistoryMessage = msg("chatHistory", z.object({ entries: z.array(ChatEntry) }));
+
 export const ServerMessage = z.discriminatedUnion("type", [
   WelcomeMessage,
   PongMessage,
@@ -318,6 +340,8 @@ export const ServerMessage = z.discriminatedUnion("type", [
   GameUpdateMessage,
   ActionRejectedMessage,
   SeatsInfoMessage,
+  ChatLineMessage,
+  ChatHistoryMessage,
 ]);
 export type ServerMessage = z.infer<typeof ServerMessage>;
 

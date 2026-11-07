@@ -146,6 +146,9 @@ export function createSession(opts: SessionOptions): Session {
       case "gameAction":
         result = await service.gameAction(req, msg.payload.action);
         break;
+      case "chat":
+        result = await service.chat(req, msg.payload.text);
+        break;
       case "pushSubscribe":
         result = await service.pushSubscribe(req, msg.payload.subscription, msg.payload.lang);
         break;

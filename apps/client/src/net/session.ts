@@ -12,6 +12,7 @@ import {
   type ServerMessage,
   type TurnTimerPreset,
 } from "@hexfall/protocol";
+import { addChatLine, resetChat, setChatHistory } from "../store/chat.ts";
 import { resetGame, useGameStore } from "../store/game.ts";
 import { isFrozen, resetRoom, useRoomStore, type RoomRequest } from "../store/room.ts";
 import { sortSaved, useSavedGamesStore, type SavedGame } from "../store/savedGames.ts";
@@ -182,6 +183,14 @@ export class SessionController implements SessionApi {
         // Paused or ended by the host: no move can be sent until a playing snapshot arrives.
         if (isFrozen({ status, result })) this.freeze();
         if (this.roomRequest && REQUEST_DONE[this.roomRequest] === status) this.endRoomRequest();
+        break;
+      }
+      case "chatLine": {
+        addChatLine(msg.payload.entry, useRoomStore.getState().seat);
+        break;
+      }
+      case "chatHistory": {
+        setChatHistory(msg.payload.entries);
         break;
       }
       case "seatsInfo": {
@@ -377,6 +386,11 @@ export class SessionController implements SessionApi {
     return sent;
   }
 
+  chat(text: string): boolean {
+    if (useRoomStore.getState().room === null || this.conn.status !== "open") return false;
+    return this.conn.send("chat", { text });
+  }
+
   addBot(): boolean {
     if (useRoomStore.getState().room === null || this.conn.status !== "open") return false;
     return this.conn.send("addBot", {});
@@ -525,5 +539,6 @@ export class SessionController implements SessionApi {
     resetRoom();
     resetGame();
     resetUi();
+    resetChat();
   }
 }

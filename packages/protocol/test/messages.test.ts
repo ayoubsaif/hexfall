@@ -18,8 +18,8 @@ const frame = (obj: unknown) => JSON.stringify(obj);
 type Assignable<A, B> = [A] extends [B] ? true : false;
 
 describe("protocol v3", () => {
-  it("is version 7 and has the Replaced close code", () => {
-    expect(PROTOCOL_VERSION).toBe(7);
+  it("is version 8 and has the Replaced close code", () => {
+    expect(PROTOCOL_VERSION).toBe(8);
     expect(CloseCode.Replaced).toBe(4001);
   });
 

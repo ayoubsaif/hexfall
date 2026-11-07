@@ -1,4 +1,5 @@
 // Component test helpers: render into happy-dom, record session intents, seed stores.
+import { resetChat } from "../../src/store/chat.ts";
 import type { GameState, Seat } from "@hexfall/engine";
 import { AVATAR_IDS, type AvatarId, type ClientAction } from "@hexfall/protocol";
 import { act, type ReactNode } from "react";
@@ -52,6 +53,7 @@ export function recordSession(): Call[] {
     setAvatar: rec("setAvatar") as SessionApi["setAvatar"],
     leaveRoom: rec("leaveRoom") as SessionApi["leaveRoom"],
     startGame: rec("startGame") as SessionApi["startGame"],
+    chat: rec("chat") as SessionApi["chat"],
     addBot: rec("addBot") as SessionApi["addBot"],
     removeBot: rec("removeBot") as SessionApi["removeBot"],
     playSolo: rec("playSolo") as SessionApi["playSolo"],
@@ -117,6 +119,7 @@ export function resetAll(): void {
     resetRoom({ prefillRoom: null, notice: null });
     resetUi();
     resetDice();
+    resetChat();
     useConnectionStore.setState({ ...initialConnectionState, status: "open" });
   });
   setSessionApi();

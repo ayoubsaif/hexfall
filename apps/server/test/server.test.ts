@@ -21,6 +21,7 @@ function fakeService() {
   const ok = async () => ({ ok: true }) as const;
   const service: RoomService = {
     setAvatar: ok,
+    chat: ok,
     async createRoom(req: Request, name: string) {
       events.push(`createRoom:${name}:${req.seq}`);
       req.conn.send({

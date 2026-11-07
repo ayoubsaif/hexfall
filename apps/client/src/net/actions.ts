@@ -14,6 +14,8 @@ export interface SessionApi {
   setAvatar(avatar: AvatarId): boolean;
   leaveRoom(): boolean;
   startGame(mode: BoardModeChoice, startingPlayer?: number, turnTimer?: TurnTimerPreset): boolean;
+  /** Says something to the room (in-game chat). False when not sent. */
+  chat(text: string): boolean;
   /** Host only, lobby: seat a bot / remove the bot in `seat`. */
   addBot(): boolean;
   removeBot(seat: number): boolean;
@@ -44,6 +46,7 @@ const offline: SessionApi = {
   setAvatar: () => false,
   leaveRoom: () => false,
   startGame: () => false,
+  chat: () => false,
   addBot: () => false,
   removeBot: () => false,
   playSolo: () => false,
@@ -77,6 +80,7 @@ export const startGame = (
   startingPlayer?: number,
   turnTimer?: TurnTimerPreset,
 ): boolean => api.startGame(mode, startingPlayer, turnTimer);
+export const sendChat = (text: string): boolean => api.chat(text);
 export const addBot = (): boolean => api.addBot();
 export const removeBot = (seat: number): boolean => api.removeBot(seat);
 export const playSolo = (name: string, opponents: 2 | 3, avatar?: AvatarId): boolean =>

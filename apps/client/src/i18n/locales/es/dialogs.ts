@@ -65,6 +65,11 @@ export const dialogs: Catalog["dialogs"] = {
     close: "Cerrar",
     send: "Enviar oferta",
   },
+  chat: {
+    empty: "Aún no hay mensajes. ¡Saluda!",
+    placeholder: "Escribe un mensaje",
+    send: "Enviar",
+  },
   feed: {
     log: "Registro de la partida",
     empty: "Aún no hay eventos.",
@@ -79,6 +84,7 @@ export const dialogs: Catalog["dialogs"] = {
     endedByHost: "Terminada por el anfitrión",
     winTogether: "¡{{names}} comparten la victoria!",
     tabLog: "Registro",
+    tabChat: "Chat",
     tabDice: "Dados",
     diceTitle: "Tiradas de dados",
     diceEmpty: "Aún no hay tiradas.",

@@ -96,6 +96,8 @@ export interface RoomService {
   addBot(req: Request): Promise<ServiceResult>;
   removeBot(req: Request, seat: number): Promise<ServiceResult>;
   gameAction(req: Request, action: ClientAction): Promise<ServiceResult>;
+  /** In-game chat line from a seated connection (memory only). */
+  chat(req: Request, text: string): Promise<ServiceResult>;
   /** Host only: pause / resume / end the game early (pause-and-resume-games). */
   pauseGame(req: Request): Promise<ServiceResult>;
   resumeGame(req: Request): Promise<ServiceResult>;
@@ -421,6 +423,10 @@ export function createRoomService(opts: RoomServiceOptions): RoomService {
 
     gameAction(req, action) {
       return seated("gameAction", req.conn, (room) => room.act(req, action));
+    },
+
+    chat(req, text) {
+      return seated("chat", req.conn, async (room) => room.chat(req, text));
     },
 
     pauseGame(req) {
