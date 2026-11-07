@@ -97,3 +97,15 @@ describe("Install prompt", () => {
     expect(q("install-app")).toBeNull();
   });
 });
+
+describe("Support button", () => {
+  it("links straight to Buy Me a Coffee in a new tab (the page cannot be embedded)", () => {
+    m = mount(<Hud />);
+    const link = q("support-button") as HTMLAnchorElement;
+    expect(link.tagName).toBe("A");
+    expect(link.href).toBe("https://buymeacoffee.com/ayoubsaif");
+    expect(link.target).toBe("_blank");
+    expect(link.rel).toContain("noopener");
+    expect(link.textContent).toContain("Buy me a coffee");
+  });
+});

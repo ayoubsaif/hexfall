@@ -5,6 +5,7 @@ import type { ResourceBundle } from "@hexfall/engine";
 import { Download } from "lucide-react";
 import { useTranslation } from "react-i18next";
 import { GameModeButtons, type GameMode } from "./GameModeButtons.tsx";
+import { SupportButton } from "./SupportButton.tsx";
 import { promptInstall, useCanInstall } from "../pwa/install.ts";
 import { CostCards } from "./actions/ActionButtons.tsx";
 
@@ -60,6 +61,8 @@ export function Welcome({ onPlay }: { onPlay: (mode: GameMode) => void }) {
         </div>
         <GameModeButtons onSelect={onPlay} />
       </div>
+
+      <SupportButton />
 
       {canInstall && (
         <button

@@ -35,6 +35,9 @@ export const session: Catalog["session"] = {
       description: "¿Tienes un código? Tu mesa te espera.",
     },
   },
+  support: {
+    button: "Invítame a un café",
+  },
   welcome: {
     eyebrow: "Tu próxima noche de juegos empieza aquí",
     headline: "Una pequeña isla. Una gran rivalidad.",

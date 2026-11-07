@@ -34,6 +34,9 @@ export const session = {
       description: "Have a code? Your table is waiting.",
     },
   },
+  support: {
+    button: "Buy me a coffee",
+  },
   welcome: {
     eyebrow: "Your next game night starts here",
     headline: "A little island. A great rivalry.",
