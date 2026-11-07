@@ -14,7 +14,7 @@ import { controlsOf, latestRoll, type DiceRoll } from "../../game/status.ts";
 import type { T } from "../../i18n/index.ts";
 import { act } from "../../net/actions.ts";
 import { useGameStore } from "../../store/game.ts";
-import { useDiceStore } from "../../store/dice.ts";
+import { setDiceRolling, useDiceStore } from "../../store/dice.ts";
 import { useDockStore } from "../../store/dock.ts";
 import { setTurnFocus, useUiStore } from "../../store/ui.ts";
 import { hotkeyLabel } from "../../hotkeys/registry.ts";
@@ -71,6 +71,12 @@ export function DiceTray({ onSettled = closeFocusOnOwnRoll }: DiceTrayProps = {}
   const rollIndex = roll?.index ?? null;
   // The roll present at mount is already at rest: only later rolls report settling.
   const reported = useRef(rollIndex);
+
+  // Block every game action while the throw plays (specs/board-dice "No actions while the
+  // dice roll"); the timeout below ends it even if the board dice never report rest.
+  const rolling = thrown.mode === "animate" && !settled;
+  useEffect(() => setDiceRolling(rolling), [rolling]);
+  useEffect(() => () => setDiceRolling(false), []);
 
   // Fallback if the board dice never report rest (hidden tab, no WebGL).
   useEffect(() => {
@@ -141,11 +147,7 @@ export function DiceTray({ onSettled = closeFocusOnOwnRoll }: DiceTrayProps = {}
       )}
       style={centered ? undefined : { right: dock.right, bottom: dock.bottom }}
     >
-      <div
-        ref={moveRef}
-        hidden={!shown}
-        className="relative motion-reduce:transition-none"
-      >
+      <div ref={moveRef} hidden={!shown} className="relative motion-reduce:transition-none">
         <button
           type="button"
           data-testid="dice"

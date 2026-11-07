@@ -88,7 +88,7 @@ A listed saved game SHALL mark bot seats in its player names, and a room SHALL b
 ### Requirement: Bots trade with a lone human
 When at most one seat in the room is a human seat (open seats count as bots), a bot holding an open offer SHALL either accept or reject it; it SHALL NOT leave it unanswered. The bot SHALL accept only when all of these hold:
 - the offer id is in its legal `acceptTrade` list (it holds the cards asked of it);
-- after the trade it is strictly closer to building something it can still build (a city, a settlement, a development card or a road), counting the cards it would receive and give;
+- after the trade its hand is worth more by a small margin, where a hand's worth counts its progress towards the best thing it can still build (a city, a settlement, a development card or a road), a smaller share of its progress towards each other such build, and a little for each card held (so a generous offer is worth more than a fair one);
 - the trade does not take away a card it needs for something it could already build before the trade;
 - the proposer has fewer than 8 public victory points.
 
@@ -136,3 +136,14 @@ The offer composer SHALL mark each bot recipient with the robot icon used on pla
 #### Scenario: Mixed game composer
 - **WHEN** a room has two humans and a bot, and the bot is a selected recipient
 - **THEN** the composer shows the hint that bots will not trade
+
+### Requirement: Bot pacing
+While at least one human is connected, the server SHALL wait at least 2 seconds before each bot move and at least 3 seconds before a bot starts its turn. Right after any action that rolled dice (a turn roll, a roll for order, or a roll made by the turn timer), the next bot move SHALL wait for the full dice throw plus 1 second. With nobody connected, bots MAY move without these delays.
+
+#### Scenario: Bot after a roll
+- **WHEN** a player rolls the dice and a bot moves next
+- **THEN** the bot does not move until the dice throw has finished and 1 more second has passed
+
+#### Scenario: Readable bot turn
+- **WHEN** a bot builds twice in its turn while a human watches
+- **THEN** at least 2 seconds pass between the two builds

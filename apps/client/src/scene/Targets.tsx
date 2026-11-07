@@ -6,6 +6,7 @@ import { useEffect, useMemo, useState } from "react";
 import { currentPick } from "../game/pick.ts";
 import { act } from "../net/actions.ts";
 import { useConnectionStore } from "../store/connection.ts";
+import { useDiceStore } from "../store/dice.ts";
 import { setOverTarget } from "../store/cursor.ts";
 import { useGameStore } from "../store/game.ts";
 import { chooseBuild, setVictimHex, useUiStore } from "../store/ui.ts";
@@ -80,7 +81,8 @@ export function Targets() {
   const legal = useGameStore((s) => s.legal);
   // Nothing is pickable while an action is in flight or the connection is down.
   const connected = useConnectionStore((s) => s.status === "open");
-  const inFlight = useGameStore((s) => s.inFlight) || !connected;
+  const rolling = useDiceStore((s) => s.rolling);
+  const inFlight = useGameStore((s) => s.inFlight) || !connected || rolling;
   const build = useUiStore((s) => s.build);
   const victimHex = useUiStore((s) => s.victimHex);
   const relief = useLandRelief();

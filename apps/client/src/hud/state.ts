@@ -1,6 +1,7 @@
 // Small selectors over the game store, shared by HUD components.
 import type { PlayerSummary } from "@hexfall/engine";
 import { useConnectionStore } from "../store/connection.ts";
+import { useDiceStore } from "../store/dice.ts";
 import { useGameStore } from "../store/game.ts";
 
 export const useView = () => useGameStore((s) => s.view);
@@ -12,7 +13,9 @@ export const useLegal = () => useGameStore((s) => s.legal);
 export function useInFlight(): boolean {
   const inFlight = useGameStore((s) => s.inFlight);
   const open = useConnectionStore((s) => s.status === "open");
-  return inFlight || !open;
+  // Nothing may be played while a dice throw is still playing (specs/board-dice).
+  const rolling = useDiceStore((s) => s.rolling);
+  return inFlight || !open || rolling;
 }
 
 /** The viewer's own player summary (with hand contents), or null. */

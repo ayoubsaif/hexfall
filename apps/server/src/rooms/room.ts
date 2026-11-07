@@ -16,6 +16,7 @@ import {
   CHAT_HISTORY,
   CHAT_MAX_LENGTH,
   CloseCode,
+  DICE_THROW_MS,
   type AvatarId,
   type ChatEntry,
   type ClientAction,
@@ -54,9 +55,14 @@ export const MIN_PLAYERS = 3;
 /** Delay before retrying a timeout whose store write failed. */
 export const TIMEOUT_RETRY_MS = 5_000;
 /** Pause before each bot move while someone is connected, so humans can follow. */
-export const BOT_DELAY_MS = 1_200;
+export const BOT_DELAY_MS = 2_000;
 /** Longer pause before a bot starts its turn (its roll), so the previous turn can be read. */
-export const BOT_TURN_DELAY_MS = 2_200;
+export const BOT_TURN_DELAY_MS = 3_000;
+/**
+ * Pause before a bot moves right after any roll: the dice throw plays on every client first,
+ * then a moment to read the result (specs/bots "Bot pacing").
+ */
+export const BOT_ROLL_DELAY_MS = DICE_THROW_MS + 1_000;
 /** Pause before a bot moves when nobody is connected. */
 export const BOT_FAST_MS = 25;
 
@@ -192,6 +198,8 @@ export class Room {
   private armedVersion = -1;
   /** Pending bot move timer, if any. */
   private botHandle: unknown = null;
+  /** `version` of the last commit that rolled dice (its throw is playing on the clients). */
+  private rolledVersion = -1;
   /** `version` when the bot timer was armed; a fire at any other version is dropped. */
   private botVersion = -1;
 
@@ -828,6 +836,9 @@ export class Room {
     const oldLen = state.log.length;
     this.state = next;
     this.version = version;
+    if (next.log.slice(oldLen).some((e) => e.type === "diceRolled" || e.type === "orderRolled")) {
+      this.rolledVersion = version;
+    }
     this.anchor = anchor;
     if (ended && this.meta.status === "playing") {
       const meta: RoomMeta = { ...this.meta, rev: this.meta.rev + 1, status: "ended" };
@@ -909,8 +920,15 @@ export class Room {
     if (state.phase.kind === "ended" || this.pendingBots(state).length === 0) return;
     this.botVersion = this.version;
     const newTurn = state.phase.kind === "turn" && !state.turn.rolled;
+    // Nobody watching: fast. After a roll: wait for the dice throw. Otherwise a readable pause.
     const ms =
-      this.connectedCount() === 0 ? BOT_FAST_MS : newTurn ? BOT_TURN_DELAY_MS : BOT_DELAY_MS;
+      this.connectedCount() === 0
+        ? BOT_FAST_MS
+        : this.rolledVersion === this.version
+          ? BOT_ROLL_DELAY_MS
+          : newTurn
+            ? BOT_TURN_DELAY_MS
+            : BOT_DELAY_MS;
     this.botHandle = this.deps.setTimer(() => {
       this.botHandle = null;
       return this.botFire();

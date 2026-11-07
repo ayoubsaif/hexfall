@@ -4,6 +4,8 @@ import { act } from "react";
 import { afterEach, beforeEach, describe, expect, it, vi } from "vite-plus/test";
 import { DiceTray, THROW_MS } from "../../src/hud/dice/DiceTray.tsx";
 import { TurnFocus } from "../../src/hud/TurnFocus.tsx";
+import { ActionButtons } from "../../src/hud/actions/ActionButtons.tsx";
+import { useDiceStore } from "../../src/store/dice.ts";
 import { localNow } from "../../src/hud/countdown.ts";
 import { setDiceDock, DEFAULT_DOCK } from "../../src/store/dock.ts";
 import { useUiStore } from "../../src/store/ui.ts";
@@ -142,6 +144,51 @@ describe("DiceTray centered mode", () => {
     });
     m = mount(<DiceTray onSettled={onSettled} />);
     expect(onSettled).not.toHaveBeenCalled();
+  });
+});
+
+describe("no actions while the dice roll (pace-bots-and-dice)", () => {
+  const endTurn = () =>
+    [...document.querySelectorAll<HTMLButtonElement>("button")].find((b) =>
+      (b.getAttribute("aria-label") ?? b.textContent ?? "").includes("End turn"),
+    )!;
+
+  it("blocks the viewer's controls until the throw ends", () => {
+    seatRoom(0);
+    showGame(playState({ seat: 0, rolled: false }), 0, { log: [] });
+    m = mount(
+      <>
+        <DiceTray />
+        <ActionButtons />
+      </>,
+    );
+    rolledUpdate();
+    expect(useDiceStore.getState().rolling).toBe(true);
+    expect(endTurn().disabled).toBe(true);
+    act(() => {
+      vi.advanceTimersByTime(THROW_MS + 300);
+    });
+    expect(useDiceStore.getState().rolling).toBe(false);
+    expect(endTurn().disabled).toBe(false);
+  });
+
+  it("never blocks for a roll already in the snapshot", () => {
+    seatRoom(0);
+    showGame(playState({ seat: 0 }), 0, {
+      log: [{ type: "diceRolled", seat: 0, dice: [3, 4], total: 7 }],
+    });
+    m = mount(<DiceTray />);
+    expect(useDiceStore.getState().rolling).toBe(false);
+  });
+
+  it("clears the block when the tray unmounts mid-throw", () => {
+    seatRoom(0);
+    showGame(playState({ seat: 0, rolled: false }), 0, { log: [] });
+    m = mount(<DiceTray />);
+    rolledUpdate();
+    expect(useDiceStore.getState().rolling).toBe(true);
+    m.unmount();
+    expect(useDiceStore.getState().rolling).toBe(false);
   });
 });
 

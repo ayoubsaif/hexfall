@@ -1,6 +1,7 @@
 // Bots in the room layer (specs/bots): seats, auto-fill, the driver, pause and recovery.
 import { afterEach, describe, expect, it } from "vite-plus/test";
-import { BOT_DELAY_MS, BOT_TURN_DELAY_MS } from "../src/rooms/room.ts";
+import { DICE_THROW_MS } from "@hexfall/protocol";
+import { BOT_DELAY_MS, BOT_ROLL_DELAY_MS, BOT_TURN_DELAY_MS } from "../src/rooms/room.ts";
 import { createRoomService, type RoomService } from "../src/rooms/service.ts";
 import {
   fakeClock,
@@ -56,8 +57,23 @@ async function play(
 
 describe("bot pacing", () => {
   it("waits longer before a bot starts its turn than between its moves", () => {
-    expect(BOT_DELAY_MS).toBeGreaterThanOrEqual(1_000);
+    expect(BOT_DELAY_MS).toBeGreaterThanOrEqual(2_000);
     expect(BOT_TURN_DELAY_MS).toBeGreaterThan(BOT_DELAY_MS);
+    // After a roll, a bot waits for the dice throw to finish on the clients.
+    expect(BOT_ROLL_DELAY_MS).toBeGreaterThan(DICE_THROW_MS);
+  });
+
+  it("waits for the dice throw before the next bot move after a roll", async () => {
+    const t = setup();
+    const { conns } = await makeLobby(t.svc, ["Ana"]);
+    const ana = conns[0] as FakeConn;
+    await t.svc.startGame(req(ana), { mode: "variable" });
+    expect(await t.svc.gameAction(req(ana), { type: "rollForOrder" })).toEqual({ ok: true });
+    const rolled = ana.game()?.version ?? 0;
+    await t.clock.advance(BOT_ROLL_DELAY_MS - 100);
+    expect(ana.game()?.version).toBe(rolled);
+    await t.clock.advance(200);
+    expect(ana.game()?.version).toBeGreaterThan(rolled);
   });
 });
 
