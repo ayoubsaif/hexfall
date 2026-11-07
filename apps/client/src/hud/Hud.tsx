@@ -21,7 +21,7 @@ import { useHotkeys } from "../hotkeys/useHotkeys.ts";
 import { SettingsButton, SettingsHost } from "../settings/SettingsButton.tsx";
 import { ViewControls } from "./ViewControls.tsx";
 import type { GameMode } from "./GameModeButtons.tsx";
-import { AdGutters, Welcome, dismissWelcome, welcomeDismissed } from "./Welcome.tsx";
+import { Welcome, dismissWelcome, welcomeDismissed } from "./Welcome.tsx";
 import { GameAlerts } from "./GameAlerts.tsx";
 import {
   ActionButtons,
@@ -321,7 +321,6 @@ export function Hud() {
             <ConnectionBadge />
           </div>
           {room === null && <FirstScreen />}
-          {room === null && <AdGutters />}
           {room !== null && status === "lobby" && <Lobby />}
           {inGame && <GameHud corner={corner} />}
           <div className="absolute top-24 left-1/2 flex w-[min(420px,calc(100%-32px))] -translate-x-1/2 flex-col items-center gap-1.5 max-sm:top-auto max-sm:bottom-[58%] short:top-auto short:bottom-[58%]">

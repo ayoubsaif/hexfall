@@ -1,6 +1,5 @@
-// First screen: game-mode choices, with an optional guide to rules and building costs. Ad slots sit
-// in the left and right margins on wide screens (AdGutters). Shown once per visit before the
-// start screen, unless an invite link, a notice or a returning player skips it.
+// First screen: game-mode choices, with an optional guide to rules and building costs. Shown once
+// per visit before the start screen, unless an invite link, a notice or a returning player skips it.
 import { COSTS } from "@hexfall/engine/geometry";
 import type { ResourceBundle } from "@hexfall/engine";
 import { Download } from "lucide-react";
@@ -30,33 +29,6 @@ const EXAMPLES: { key: "road" | "settlement" | "city" | "devCard"; cost: Resourc
   { key: "city", cost: COSTS.city },
   { key: "devCard", cost: COSTS.devCard },
 ];
-
-/** Ad slots in the side margins; only on screens wide enough to keep the card clear. */
-export function AdGutters() {
-  const { t } = useTranslation();
-  const slot =
-    "pointer-events-auto absolute top-1/2 hidden h-[min(600px,70%)] w-[160px] -translate-y-1/2 flex-col items-center justify-center rounded-none border border-dashed border-gold/50 bg-black/10 text-[11px] tracking-widest text-cream/70 uppercase backdrop-blur-[2px] min-[1180px]:flex";
-  return (
-    <>
-      <aside
-        data-testid="ad-slot-left"
-        data-ad-slot="left"
-        aria-label={t("session.welcome.ad")}
-        className={`${slot} left-3`}
-      >
-        {t("session.welcome.ad")}
-      </aside>
-      <aside
-        data-testid="ad-slot-right"
-        data-ad-slot="right"
-        aria-label={t("session.welcome.ad")}
-        className={`${slot} right-3`}
-      >
-        {t("session.welcome.ad")}
-      </aside>
-    </>
-  );
-}
 
 export function Welcome({ onPlay }: { onPlay: (mode: GameMode) => void }) {
   const { t } = useTranslation();

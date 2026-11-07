@@ -44,7 +44,6 @@ export const session: Catalog["session"] = {
     guide: "¿Primera vez en la isla? Guía rápida",
     install: "Instalar la app",
     play: "Jugar",
-    ad: "Publicidad",
     howTitle: "Cómo se juega",
     steps: {
       s1: "Tira los dados: las casillas con ese número dan recursos.",

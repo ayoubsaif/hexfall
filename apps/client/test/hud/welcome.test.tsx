@@ -29,15 +29,17 @@ describe("Welcome screen", () => {
     m = mount(<Hud />);
     expect(q("welcome")).not.toBeNull();
     expect(m.container.querySelectorAll('[data-testid="welcome-example"]')).toHaveLength(4);
-    expect(q("ad-slot-left")).not.toBeNull();
-    expect(q("ad-slot-right")).not.toBeNull();
+    // Ad slots are off for now.
+    expect(q("ad-slot-left")).toBeNull();
+    expect(q("ad-slot-right")).toBeNull();
     expect(q("welcome-host")?.textContent).toContain("Play with friends");
-    expect(q("welcome")?.querySelector("svg")).toBeNull();
+    // No drawn island: the only icons are the buttons' own.
+    expect(q("welcome")?.querySelector("svg:not([data-icon])")).toBeNull();
     click(q("welcome-host")!);
     expect(q("welcome")).toBeNull();
     expect(m.container.querySelector("h1")?.textContent).toBe("Hexfall");
     expect(m.container.querySelector("input")).not.toBeNull();
-    expect(q("ad-slot-left")).not.toBeNull();
+    expect(q("ad-slot-left")).toBeNull();
   });
 
   it.each([

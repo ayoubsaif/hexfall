@@ -43,7 +43,6 @@ export const session = {
     guide: "New to the island? A quick guide",
     install: "Install the app",
     play: "Play Game",
-    ad: "Advertisement",
     howTitle: "How to play",
     steps: {
       s1: "Roll the dice: hexes with that number pay out resources.",
