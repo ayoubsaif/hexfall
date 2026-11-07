@@ -72,3 +72,7 @@
 - [x] 11.1 Hand slots rest at 80 % visible (was half hidden) and still rise fully on hover or focus
 - [x] 11.2 Development cards drop their name strip like resource cards; the name (and why a card is blocked) moves to a tooltip
 - [x] 11.3 Stacks of two or more fan out upward on hover or focus, one ghost per extra card (up to 8), each showing 20 % behind the one in front; the tooltip clears the fan
+
+## 12. Splash waits for the board (owner request)
+
+- [x] 12.1 The splash stays until the theme manifest resolved, the canvas drew a frame and the three.js loading manager (textures, models, water and coast maps) has been idle for 600 ms; a hung load is released after 20 s; the progress bar follows the loading manager; leaving the room resets it

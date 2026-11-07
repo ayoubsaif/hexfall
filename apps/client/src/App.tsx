@@ -3,15 +3,20 @@ import { Hud } from "./hud/Hud.tsx";
 import { MapSketch } from "./hud/MapSketch.tsx";
 import { useConnection } from "./net/useConnection.ts";
 import { useRoomStore } from "./store/room.ts";
+import { useSceneReady } from "./store/sceneReady.ts";
 import { bindUiToGame } from "./store/ui.ts";
 import { Splash } from "./hud/Splash.tsx";
 import { ThemeProvider, useTheme } from "./theme/index.ts";
 
 const BoardCanvas = lazy(() => import("./scene/BoardCanvas.tsx"));
 
-/** Parchment splash until the theme manifest resolves; it never delays a ready app. */
+/** Parchment splash until the theme manifest resolves and the board has loaded its assets. */
 function SplashGate() {
-  return useTheme().status === "loading" ? <Splash /> : null;
+  const themeLoading = useTheme().status === "loading";
+  const { ready, progress } = useSceneReady();
+  return themeLoading || !ready ? (
+    <Splash {...(progress === undefined ? {} : { progress })} />
+  ) : null;
 }
 
 // Wiring only. net/ runs the session (server -> stores); scene/ draws the board and picks;

@@ -1,6 +1,7 @@
 import { Canvas } from "@react-three/fiber";
 import { AdaptiveGraphics } from "./AdaptiveGraphics.tsx";
 import { QUALITY, useGraphicsQuality } from "./graphicsQuality.ts";
+import { ReadyProbe } from "./ReadyProbe.tsx";
 import { Scene } from "./Scene.tsx";
 
 /** Load the 3D board only after entering a room; the welcome needs no WebGL context. */
@@ -15,6 +16,7 @@ export default function BoardCanvas() {
       gl={{ alpha: true }}
     >
       <AdaptiveGraphics />
+      <ReadyProbe />
       <Scene />
     </Canvas>
   );

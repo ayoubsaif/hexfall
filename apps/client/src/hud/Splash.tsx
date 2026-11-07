@@ -1,5 +1,5 @@
 // Splash screen (openspec settlecoast-parchment-ui, "Splash screen"): shown while the theme
-// manifest and models load. Never delays a ready app: App unmounts it as soon as loading ends.
+// manifest, models and textures load. App unmounts it once the board reports it is ready.
 import { Pause, Play, ArrowRight } from "lucide-react";
 import { useEffect, useState } from "react";
 import { useTranslation } from "react-i18next";
