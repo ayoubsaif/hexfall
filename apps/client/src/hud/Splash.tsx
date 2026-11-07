@@ -7,7 +7,7 @@ import { useReducedMotion } from "../store/motion.ts";
 
 export const TIP_COUNT = 5;
 export const TIP_INTERVAL_MS = 6000;
-
+export const GAME_NAME = process.env.VITE_GAME_NAME || "Hexfall"
 /** The favicon as the logotype, gently pulsing unless motion is reduced. */
 function Logo() {
   return (
@@ -18,7 +18,7 @@ function Logo() {
       width={96}
       height={96}
       data-testid="splash-logo"
-      className="size-24 rounded-2xl shadow-lg shadow-black/30 motion-safe:animate-pulse"
+      className="size-24 motion-safe:animate-pulse"
     />
   );
 }
@@ -48,7 +48,7 @@ export function Splash({ progress }: { progress?: number }) {
         {t("session.splash.eyebrow")}
         <span className="h-px w-10 bg-gold/70" />
       </p>
-      <h1 className="font-serif text-6xl font-semibold text-forest max-sm:text-5xl">Hexfall</h1>
+      <h1 className="font-serif text-6xl font-semibold text-forest max-sm:text-5xl">{GAME_NAME}</h1>
       <p className="font-serif text-xl text-ink-muted">{t("session.splash.tagline")}</p>
       <Logo />
       <p className="text-sm font-semibold">{t("session.splash.loading")}</p>
