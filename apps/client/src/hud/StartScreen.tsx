@@ -33,7 +33,10 @@ export function checkName(raw: string): string | null {
 }
 
 /** Shown while not in a room (mount when `room === null`). */
-export function StartScreen({ mode, onBack }: { mode?: GameMode | undefined; onBack?: () => void } = {}) {
+export function StartScreen({
+  mode,
+  onBack,
+}: { mode?: GameMode | undefined; onBack?: () => void } = {}) {
   const { t } = useTranslation();
   const online = useConnectionStore((s) => s.status === "open");
   const prefill = useRoomStore((s) => s.prefillRoom);
@@ -70,12 +73,16 @@ export function StartScreen({ mode, onBack }: { mode?: GameMode | undefined; onB
           </p>
         )}
         {onBack && !invited && (
-        <Button variant="link" className="self-start" onClick={onBack} disabled={busy}>
-          {t("session.modes.back")}
-        </Button>
-      )}
-      {mode && <h2 className="my-2 font-serif text-xl text-forest">{t(`session.modes.${mode}.title`)}</h2>}
-      <SavedGames busy={busy} />
+          <Button variant="link" className="self-start" onClick={onBack} disabled={busy}>
+            {t("session.modes.back")}
+          </Button>
+        )}
+        {mode && (
+          <h2 className="my-2 font-serif text-xl text-forest">
+            {t(`session.modes.${mode}.title`)}
+          </h2>
+        )}
+        <SavedGames busy={busy} />
         <label className={fieldClass}>
           <span>{t("session.start.yourName")}</span>
           <input
@@ -133,27 +140,29 @@ export function StartScreen({ mode, onBack }: { mode?: GameMode | undefined; onB
           </div>
         )}
 
-        {(invited || !mode || mode === "join") && <div className="flex items-end gap-2">
-          <label className={`${fieldClass} flex-1`}>
-            <span>{t("session.start.roomCode")}</span>
-            <input
-              className={`${inputClass} tracking-[0.12em] uppercase tabular-nums`}
-              value={code}
-              maxLength={16}
-              autoCapitalize="characters"
-              spellCheck={false}
-              onChange={(e) => setCode(e.target.value)}
-            />
-          </label>
-          <Button
-            className="mb-1.5"
-            variant={invited ? "default" : "secondary"}
-            disabled={!canJoin}
-            onClick={() => valid && joinRoom(code.trim(), valid, avatar)}
-          >
-            {t("session.start.joinRoom")}
-          </Button>
-        </div>}
+        {(invited || !mode || mode === "join") && (
+          <div className="flex items-end gap-2">
+            <label className={`${fieldClass} flex-1`}>
+              <span>{t("session.start.roomCode")}</span>
+              <input
+                className={`${inputClass} tracking-[0.12em] uppercase tabular-nums`}
+                value={code}
+                maxLength={16}
+                autoCapitalize="characters"
+                spellCheck={false}
+                onChange={(e) => setCode(e.target.value)}
+              />
+            </label>
+            <Button
+              className="mb-1.5"
+              variant={invited ? "default" : "secondary"}
+              disabled={!canJoin}
+              onClick={() => valid && joinRoom(code.trim(), valid, avatar)}
+            >
+              {t("session.start.joinRoom")}
+            </Button>
+          </div>
+        )}
         {invited && (
           <Button
             variant="link"

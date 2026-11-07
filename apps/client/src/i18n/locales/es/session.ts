@@ -20,21 +20,21 @@ export const session: Catalog["session"] = {
     waitingForServer: "Esperando al servidor…",
   },
   modes: {
-    "title": "Elige tu aventura",
-    "back": "← Elegir otro modo de juego",
-    "host": {
-        "title": "Jugar con amigos",
-        "description": "Crea una mesa e invita a los tuyos."
+    title: "Elige tu aventura",
+    back: "← Elegir otro modo de juego",
+    host: {
+      title: "Jugar con amigos",
+      description: "Crea una mesa e invita a los tuyos.",
     },
-    "solo": {
-        "title": "Practicar con bots",
-        "description": "Descubre tu estrategia a tu ritmo."
+    solo: {
+      title: "Practicar con bots",
+      description: "Descubre tu estrategia a tu ritmo.",
     },
-    "join": {
-        "title": "Unirse a una sala",
-        "description": "¿Tienes un código? Tu mesa te espera."
-    }
-},
+    join: {
+      title: "Unirse a una sala",
+      description: "¿Tienes un código? Tu mesa te espera.",
+    },
+  },
   welcome: {
     eyebrow: "Tu próxima noche de juegos empieza aquí",
     headline: "Una pequeña isla. Una gran rivalidad.",

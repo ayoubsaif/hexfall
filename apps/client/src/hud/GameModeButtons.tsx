@@ -29,7 +29,9 @@ export function GameModeButtons({ onSelect }: { onSelect: (mode: GameMode) => vo
               {t(`session.modes.${mode}.description`)}
             </span>
           </span>
-          <span aria-hidden className="game-mode-arrow">›</span>
+          <span aria-hidden className="game-mode-arrow">
+            ›
+          </span>
         </Button>
       ))}
     </nav>

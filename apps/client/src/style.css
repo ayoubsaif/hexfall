@@ -231,9 +231,18 @@ body,
   animation: map-sketch-draw 16s ease-in-out var(--draw-delay) infinite;
 }
 @keyframes map-sketch-draw {
-  0%, 8% { stroke-dashoffset: 1; }
-  38%, 62% { stroke-dashoffset: 0; }
-  90%, 100% { stroke-dashoffset: -1; }
+  0%,
+  8% {
+    stroke-dashoffset: 1;
+  }
+  38%,
+  62% {
+    stroke-dashoffset: 0;
+  }
+  90%,
+  100% {
+    stroke-dashoffset: -1;
+  }
 }
 .map-sketch[data-still] path {
   animation: none;
@@ -636,7 +645,12 @@ body,
 }
 
 /* Large menu actions reuse the painted gold HUD icons and leather palette. */
-.game-mode-menu { display: flex; flex-direction: column; gap: 12px; min-width: 0; }
+.game-mode-menu {
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+  min-width: 0;
+}
 .game-mode-button {
   width: 100%;
   min-height: 108px;
@@ -648,30 +662,95 @@ body,
   color: var(--color-cream);
   border: 1px solid var(--color-gold);
   background: linear-gradient(145deg, #6b4228, var(--color-leather));
-  box-shadow: inset 0 0 0 3px var(--color-leather), inset 0 0 0 4px var(--color-gold), 0 3px 6px rgb(74 44 26 / 20%);
+  box-shadow:
+    inset 0 0 0 3px var(--color-leather),
+    inset 0 0 0 4px var(--color-gold),
+    0 3px 6px rgb(74 44 26 / 20%);
 }
-.game-mode-button:hover { filter: brightness(1.12); }
-.game-mode-icon { width: 52px; height: 52px; flex-shrink: 0; object-fit: contain; }
-.game-mode-copy { display: flex; flex: 1; flex-direction: column; gap: 4px; min-width: 0; }
-.game-mode-title { font-family: var(--font-serif); font-size: 20px; line-height: 1.1; }
-.game-mode-hint { font-size: 12px; line-height: 1.35; font-weight: 500; }
-.game-mode-arrow { font-size: 28px; }
+.game-mode-button:hover {
+  filter: brightness(1.12);
+}
+.game-mode-icon {
+  width: 52px;
+  height: 52px;
+  flex-shrink: 0;
+  object-fit: contain;
+}
+.game-mode-copy {
+  display: flex;
+  flex: 1;
+  flex-direction: column;
+  gap: 4px;
+  min-width: 0;
+}
+.game-mode-title {
+  font-family: var(--font-serif);
+  font-size: 20px;
+  line-height: 1.1;
+}
+.game-mode-hint {
+  font-size: 12px;
+  line-height: 1.35;
+  font-weight: 500;
+}
+.game-mode-arrow {
+  font-size: 28px;
+}
 @media (max-width: 639px) {
-  .welcome-sheet { padding: 22px; }
-  .welcome-hero { gap: 18px; padding-block: 20px; }
-  .welcome-eyebrow, .welcome-intro { display: none; }
-  .welcome-message h2 { font-size: 25px; }
-  .welcome-reassurance { margin-top: 8px; font-size: 12px; }
-  .game-mode-button { min-height: 84px; padding: 12px; gap: 12px; }
-  .game-mode-icon { width: 42px; height: 42px; }
-  .game-mode-title { font-size: 18px; }
+  .welcome-sheet {
+    padding: 22px;
+  }
+  .welcome-hero {
+    gap: 18px;
+    padding-block: 20px;
+  }
+  .welcome-eyebrow,
+  .welcome-intro {
+    display: none;
+  }
+  .welcome-message h2 {
+    font-size: 25px;
+  }
+  .welcome-reassurance {
+    margin-top: 8px;
+    font-size: 12px;
+  }
+  .game-mode-button {
+    min-height: 84px;
+    padding: 12px;
+    gap: 12px;
+  }
+  .game-mode-icon {
+    width: 42px;
+    height: 42px;
+  }
+  .game-mode-title {
+    font-size: 18px;
+  }
 }
 @media (max-height: 599px) and (min-width: 640px) {
-  .welcome-hero { grid-template-columns: 1fr 1.2fr; }
-  .welcome-intro { display: none; }
-  .game-mode-menu { gap: 8px; }
-  .game-mode-button { min-height: 68px; padding: 10px; gap: 10px; }
-  .game-mode-icon { width: 36px; height: 36px; }
-  .game-mode-title { font-size: 16px; }
-  .game-mode-hint { font-size: 11px; }
+  .welcome-hero {
+    grid-template-columns: 1fr 1.2fr;
+  }
+  .welcome-intro {
+    display: none;
+  }
+  .game-mode-menu {
+    gap: 8px;
+  }
+  .game-mode-button {
+    min-height: 68px;
+    padding: 10px;
+    gap: 10px;
+  }
+  .game-mode-icon {
+    width: 36px;
+    height: 36px;
+  }
+  .game-mode-title {
+    font-size: 16px;
+  }
+  .game-mode-hint {
+    font-size: 11px;
+  }
 }

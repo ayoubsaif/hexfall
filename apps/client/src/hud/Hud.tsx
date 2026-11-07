@@ -260,7 +260,8 @@ function FirstScreen() {
   const invited = useRoomStore((s) => s.prefillRoom !== null || s.notice !== null);
   const [shown, setShown] = useState(() => !welcomeDismissed() && !invited);
   const [mode, setMode] = useState<GameMode | undefined>(undefined);
-  if (!shown || invited) return <StartScreen mode={invited ? "join" : mode} onBack={() => setShown(true)} />;
+  if (!shown || invited)
+    return <StartScreen mode={invited ? "join" : mode} onBack={() => setShown(true)} />;
   return (
     <Welcome
       onPlay={(selected) => {

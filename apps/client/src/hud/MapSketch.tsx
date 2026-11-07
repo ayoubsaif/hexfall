@@ -18,7 +18,9 @@ for (let row = -2; row <= 2; row++) {
     for (let i = 0; i < 6; i++) {
       const [ax, ay] = corners[i]!;
       const [bx, by] = corners[(i + 1) % 6]!;
-      const key = [`${Math.round(ax)},${Math.round(ay)}`, `${Math.round(bx)},${Math.round(by)}`].sort().join("/");
+      const key = [`${Math.round(ax)},${Math.round(ay)}`, `${Math.round(bx)},${Math.round(by)}`]
+        .sort()
+        .join("/");
       if (seen.has(key)) continue;
       seen.add(key);
       const bend = seen.size % 2 === 0 ? 0.6 : -0.6;
@@ -41,7 +43,12 @@ export function MapSketch() {
       focusable="false"
     >
       {strokes.map((d, i) => (
-        <path key={i} d={d} pathLength={1} style={{ "--draw-delay": `${i * 0.12}s` } as CSSProperties} />
+        <path
+          key={i}
+          d={d}
+          pathLength={1}
+          style={{ "--draw-delay": `${i * 0.12}s` } as CSSProperties}
+        />
       ))}
     </svg>
   );

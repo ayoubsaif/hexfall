@@ -3,7 +3,14 @@ import { afterEach, beforeEach, describe, expect, it } from "vite-plus/test";
 import { Hud } from "../../src/hud/Hud.tsx";
 import { resetWelcome } from "../../src/hud/Welcome.tsx";
 import { useRoomStore } from "../../src/store/room.ts";
-import { click, mount, resetAll, recordSession, type as enterText, type Mounted } from "./helpers.tsx";
+import {
+  click,
+  mount,
+  resetAll,
+  recordSession,
+  type as enterText,
+  type Mounted,
+} from "./helpers.tsx";
 
 let m: Mounted;
 beforeEach(() => {
@@ -33,7 +40,6 @@ describe("Welcome screen", () => {
     expect(q("ad-slot-left")).not.toBeNull();
   });
 
-
   it.each([
     ["host", "Create room", "createRoom"],
     ["solo", "Play solo vs bots", "playSolo"],
@@ -44,17 +50,21 @@ describe("Welcome screen", () => {
     click(q(`welcome-${mode}`)!);
     enterText(m.container.querySelector("input"), "Ana");
     if (mode === "join") enterText(m.container.querySelectorAll("input")[1], "ABC234");
-    const button = [...m.container.querySelectorAll("button")].find(b => b.textContent === label)!;
+    const button = [...m.container.querySelectorAll("button")].find(
+      (b) => b.textContent === label,
+    )!;
     expect(button.disabled).toBe(false);
     click(button);
-    expect(calls.some(c => c.fn === fn)).toBe(true);
+    expect(calls.some((c) => c.fn === fn)).toBe(true);
     if (mode !== "join") expect(m.container.querySelectorAll("input")).toHaveLength(1);
   });
 
   it("allows returning to the mode menu", () => {
     m = mount(<Hud />);
     click(q("welcome-solo")!);
-    const back = [...m.container.querySelectorAll("button")].find(b => b.textContent?.includes("Choose another game mode"))!;
+    const back = [...m.container.querySelectorAll("button")].find((b) =>
+      b.textContent?.includes("Choose another game mode"),
+    )!;
     click(back);
     expect(q("welcome-host")).not.toBeNull();
   });

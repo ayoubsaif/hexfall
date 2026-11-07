@@ -19,21 +19,21 @@ export const session = {
     waitingForServer: "Waiting for the server…",
   },
   modes: {
-    "title": "Choose your adventure",
-    "back": "← Choose another game mode",
-    "host": {
-        "title": "Play with friends",
-        "description": "Host a table and invite your crew."
+    title: "Choose your adventure",
+    back: "← Choose another game mode",
+    host: {
+      title: "Play with friends",
+      description: "Host a table and invite your crew.",
     },
-    "solo": {
-        "title": "Practice with bots",
-        "description": "Find your strategy at your own pace."
+    solo: {
+      title: "Practice with bots",
+      description: "Find your strategy at your own pace.",
     },
-    "join": {
-        "title": "Join a room",
-        "description": "Have a code? Your table is waiting."
-    }
-},
+    join: {
+      title: "Join a room",
+      description: "Have a code? Your table is waiting.",
+    },
+  },
   welcome: {
     eyebrow: "Your next game night starts here",
     headline: "A little island. A great rivalry.",
