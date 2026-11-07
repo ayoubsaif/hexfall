@@ -14,6 +14,7 @@ import {
   MessageGroup,
   MessageHeader,
 } from "@/components/ui/message.tsx";
+import { seatColorName } from "../game/colors.ts";
 import { sendChat } from "../net/actions.ts";
 import { markChatRead, useChatStore } from "../store/chat.ts";
 import { useConnectionStore } from "../store/connection.ts";
@@ -74,6 +75,21 @@ export function ChatPanel() {
         ) : (
           <MessageGroup>
             {entries.map((entry) => {
+              if (entry.system) {
+                // A server notice (leave-game): someone left, or took over a seat.
+                return (
+                  <p
+                    key={entry.id}
+                    data-testid="chat-notice"
+                    className="m-0 px-1.5 py-1 text-center text-sm text-muted-foreground"
+                  >
+                    {t(`dialogs.chat.${entry.system}`, {
+                      name: entry.name,
+                      color: seatColorName(entry.seat, t),
+                    })}
+                  </p>
+                );
+              }
               const own = entry.seat === mine;
               return (
                 <Message key={entry.id} align={own ? "end" : "start"} data-testid="chat-line">

@@ -4,12 +4,7 @@ import type { EarlyResult } from "@hexfall/protocol";
 import { act } from "react";
 import { afterEach, beforeEach, describe, expect, it } from "vite-plus/test";
 import { GameOver } from "../../src/hud/Feed.tsx";
-import {
-  HostGameMenu,
-  PAUSED_KEEP_MS,
-  PausedNotice,
-  formatDate,
-} from "../../src/hud/GamePause.tsx";
+import { GameMenu, PAUSED_KEEP_MS, PausedNotice, formatDate } from "../../src/hud/GamePause.tsx";
 import { SavedGames } from "../../src/hud/SavedGames.tsx";
 import { useRoomStore } from "../../src/store/room.ts";
 import { sortSaved, useSavedGamesStore, type SavedGame } from "../../src/store/savedGames.ts";
@@ -47,20 +42,83 @@ const button = (text: string | RegExp) => byText(body(), "button", text);
 const dialog = (id: string) => body().querySelector(`[data-testid="${id}"]`);
 const intents = () => calls.filter((c) => c.fn !== "lookupSeats");
 
-describe("host game menu", () => {
-  it("is shown only to the host while the game runs", () => {
+describe("game menu", () => {
+  const menuButton = () => m?.container.querySelector('[data-testid="game-menu-button"]');
+
+  it("is shown to every seated player while the game runs, with the leave icon", () => {
     seatRoom(1);
-    m = mount(<HostGameMenu />);
-    expect(m.container.querySelector('[data-testid="game-menu-button"]')).toBeNull();
-    act(() => useRoomStore.setState({ seat: 0 }));
-    expect(m.container.querySelector('[data-testid="game-menu-button"]')).not.toBeNull();
+    m = mount(<GameMenu />);
+    expect(menuButton()).not.toBeNull();
+    expect(menuButton()?.querySelector("img")?.getAttribute("data-icon")).toBe("leave");
     act(() => useRoomStore.setState({ status: "paused" }));
-    expect(m.container.querySelector('[data-testid="game-menu-button"]')).toBeNull();
+    expect(menuButton()).toBeNull();
+    act(() => useRoomStore.setState({ status: "playing", seat: null }));
+    expect(menuButton()).toBeNull();
+  });
+
+  it("Non-host menu contents: Leave game and the invite link, no host controls", () => {
+    seatRoom(1);
+    m = mount(<GameMenu />);
+    click(menuButton());
+    const menu = dialog("game-menu");
+    expect(button(/Leave game/)).toBeDefined();
+    expect(button(/Close game for now/)).toBeUndefined();
+    expect(button(/End game now/)).toBeUndefined();
+    expect(menu?.querySelector("input")?.value).toContain("room=K7QX2M");
+  });
+
+  it("Host menu keeps pause and end next to Leave game; pause icon only on Close", () => {
+    seatRoom(0);
+    m = mount(<GameMenu />);
+    click(menuButton());
+    expect(
+      button(/Close game for now/)
+        ?.querySelector("img")
+        ?.getAttribute("data-icon"),
+    ).toBe("pause");
+    expect(button(/End game now/)).toBeDefined();
+    expect(
+      button(/Leave game/)
+        ?.querySelector("img")
+        ?.getAttribute("data-icon"),
+    ).toBe("leave");
+  });
+
+  it("Non-host leaves from the menu: confirm sends leaveRoom once", () => {
+    seatRoom(2);
+    m = mount(<GameMenu />);
+    click(menuButton());
+    click(button(/Leave game/));
+    expect(dialog("leave-confirm")?.textContent).toContain("A bot will play your seat");
+    const confirm = byText(dialog("leave-confirm")!, "button", "Leave game");
+    click(confirm);
+    expect(intents()).toEqual([{ fn: "leaveRoom", args: [] }]);
+    act(() => useRoomStore.setState({ pending: "leave" }));
+    click(confirm);
+    expect(intents()).toHaveLength(1);
+  });
+
+  it("Cancel: nothing is sent; a failed leave shows its error", () => {
+    seatRoom(1);
+    m = mount(<GameMenu />);
+    click(menuButton());
+    click(button(/Leave game/));
+    click(button("Cancel"));
+    expect(dialog("leave-confirm")).toBeNull();
+    expect(intents()).toEqual([]);
+    click(menuButton());
+    click(button(/Leave game/));
+    act(() =>
+      useRoomStore.setState({
+        error: { request: "leave", code: "unavailable", message: "store down" },
+      }),
+    );
+    expect(dialog("leave-confirm")?.querySelector('[role="alert"]')).not.toBeNull();
   });
 
   it("Host closes the game: confirm sends pauseGame once", () => {
     seatRoom(0);
-    m = mount(<HostGameMenu />);
+    m = mount(<GameMenu />);
     click(m.container.querySelector('[data-testid="game-menu-button"]'));
     click(button(/Close game for now/));
     expect(dialog("pause-confirm")?.textContent).toContain("7 days");
@@ -75,7 +133,7 @@ describe("host game menu", () => {
 
   it("Host cancels the end: nothing is sent; confirming sends endGame once", () => {
     seatRoom(0);
-    m = mount(<HostGameMenu />);
+    m = mount(<GameMenu />);
     click(m.container.querySelector('[data-testid="game-menu-button"]'));
     click(button(/End game now/));
     expect(dialog("end-confirm")?.textContent).toContain("cannot be undone");
@@ -99,6 +157,15 @@ describe("paused notice", () => {
     expect(notice?.textContent).toContain(formatDate(1_000 + PAUSED_KEEP_MS, "en"));
     expect(notice?.getAttribute("role")).toBe("alertdialog");
     expect(button("Resume game")).toBeUndefined();
+  });
+
+  it("Anyone can leave from the paused notice", () => {
+    seatRoom(2);
+    act(() => useRoomStore.setState({ status: "paused", pausedAt: 1_000 }));
+    m = mount(<PausedNotice />);
+    click(byText(dialog("paused-notice")!, "button", /Leave game/));
+    click(byText(dialog("leave-confirm")!, "button", "Leave game"));
+    expect(intents()).toEqual([{ fn: "leaveRoom", args: [] }]);
   });
 
   it("Host resumes from the notice; it closes when the playing state arrives", () => {

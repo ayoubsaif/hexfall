@@ -17,6 +17,7 @@
     U+0000-00FF, U+0131, U+0152-0153, U+02BB-02BC, U+02C6, U+02DA, U+02DC, U+2000-206F, U+20AC,
     U+2122;
 }
+
 @font-face {
   font-family: "Cormorant Garamond Variable";
   font-style: normal;
@@ -90,16 +91,19 @@
       transform: translateY(8px);
     }
   }
+
   @keyframes card-out {
     50% {
       opacity: 0.35;
     }
   }
+
   @keyframes fade-in {
     from {
       opacity: 0;
     }
   }
+
   /* Scale only: Tailwind's centering uses the separate "translate" property. */
   @keyframes dialog-in {
     from {
@@ -107,11 +111,13 @@
       scale: 0.96;
     }
   }
+
   @keyframes sheet-in-right {
     from {
       transform: translateX(100%);
     }
   }
+
   @keyframes sheet-in-bottom {
     from {
       transform: translateY(100%);
@@ -133,16 +139,19 @@
   :root[data-motion="reduce"] & {
     @slot;
   }
+
   @media (prefers-reduced-motion: reduce) {
     :root:not([data-motion="reduce"], [data-motion="full"]) & {
       @slot;
     }
   }
 }
+
 @custom-variant motion-safe {
   :root[data-motion="full"] & {
     @slot;
   }
+
   @media (prefers-reduced-motion: no-preference) {
     :root:not([data-motion="reduce"], [data-motion="full"]) & {
       @slot;
@@ -157,7 +166,9 @@
   transition: none !important;
   animation: none !important;
 }
+
 @media (prefers-reduced-motion: reduce) {
+
   :root:not([data-motion="reduce"], [data-motion="full"]) .hud *,
   :root:not([data-motion="reduce"], [data-motion="full"]) .hud *::before,
   :root:not([data-motion="reduce"], [data-motion="full"]) .hud *::after {
@@ -184,6 +195,7 @@
   --sidebar-border: var(--color-border);
   --sidebar-ring: var(--color-ring);
 }
+
 html,
 body,
 #root {
@@ -191,6 +203,7 @@ body,
   height: 100%;
   background: #0c1a1c;
 }
+
 .app {
   position: relative;
   width: 100%;
@@ -198,6 +211,7 @@ body,
   /* clip, not hidden: a hidden box can still be scrolled by focus changes. */
   overflow: clip;
 }
+
 .canvas {
   position: absolute;
   inset: 0;
@@ -219,6 +233,7 @@ body,
   color: #a7c8bb;
   opacity: 0.19;
 }
+
 .map-sketch path {
   fill: none;
   stroke: currentColor;
@@ -230,20 +245,25 @@ body,
   stroke-dashoffset: 1;
   animation: map-sketch-draw 16s ease-in-out var(--draw-delay) infinite;
 }
+
 @keyframes map-sketch-draw {
+
   0%,
   8% {
     stroke-dashoffset: 1;
   }
+
   38%,
   62% {
     stroke-dashoffset: 0;
   }
+
   90%,
   100% {
     stroke-dashoffset: -1;
   }
 }
+
 .map-sketch[data-still] path {
   animation: none;
   stroke-dashoffset: 0;
@@ -264,15 +284,18 @@ body,
     inset 0 0 0 1px rgb(135 98 53 / 30%),
     0 12px 32px rgb(28 23 14 / 22%);
 }
+
 /* Paper surfaces have quiet edges rather than stone or metal corner plates. */
 .paper.frame::before {
   display: none;
 }
+
 /* Scrolling panels keep their corner plates: the plates sit on the fixed outer box while an
    inner element scrolls, so the corners stay on the border instead of scrolling away. */
 .paper.frame.frame-corners::before {
   display: block;
 }
+
 .welcome-sheet {
   position: absolute;
   inset: 32px 0 80px;
@@ -283,11 +306,13 @@ body,
   overflow: auto;
   padding: clamp(24px, 4vw, 44px);
 }
+
 .welcome-brand {
   display: flex;
   align-items: center;
   gap: 14px;
 }
+
 .welcome-hero {
   display: grid;
   grid-template-columns: 1fr 1.15fr;
@@ -295,6 +320,7 @@ body,
   gap: 24px;
   padding-block: 32px;
 }
+
 .welcome-eyebrow {
   color: var(--color-gold);
   font-size: 12px;
@@ -302,6 +328,7 @@ body,
   letter-spacing: 0.13em;
   margin-bottom: 12px;
 }
+
 .welcome-message h2 {
   font-family: var(--font-serif);
   color: var(--color-forest);
@@ -309,48 +336,54 @@ body,
   line-height: 1.04;
   text-wrap: balance;
 }
+
 .welcome-intro {
   font-size: 17px;
   line-height: 1.5;
   margin-block: 18px 22px;
 }
+
 .welcome-reassurance {
   color: var(--color-ink-muted);
   font-size: 13px;
   margin-top: 14px;
 }
-.welcome-guide {
-  border-top: 1px solid var(--color-border);
-}
+
 .welcome-guide summary {
   padding-block: 16px;
   cursor: pointer;
   font-size: 16px;
   color: var(--color-forest);
 }
+
 .welcome-guide summary:focus-visible {
   outline: 2px solid var(--color-ring);
   outline-offset: 2px;
 }
+
 .welcome-guide-content {
   display: flex;
   flex-direction: column;
   gap: 20px;
   font-size: 15px;
 }
+
 @media (max-width: 639px) {
   .welcome-hero {
     grid-template-columns: 1fr;
     gap: 16px;
     padding-block: 24px;
   }
+
   .welcome-map {
     display: none;
   }
+
   .welcome-message [data-slot="button"] {
     width: 100%;
   }
 }
+
 /* Active player's card (openspec highlight-active-player-card): gold inset ring, warm glow and a
    tinted paper; inset so the card's overflow-hidden never clips it. */
 .player-card[data-active] {
@@ -361,11 +394,13 @@ body,
     inset 0 0 16px 2px rgb(232 188 74 / 55%),
     0 0 10px 1px rgb(232 188 74 / 55%);
 }
+
 @media (prefers-reduced-motion: no-preference) {
   .player-card[data-active] {
     animation: player-card-glow 2.4s ease-in-out infinite;
   }
 }
+
 @keyframes player-card-glow {
   50% {
     box-shadow:
@@ -375,6 +410,7 @@ body,
       0 0 4px 0 rgb(232 188 74 / 30%);
   }
 }
+
 /* Square HUD control (openspec improve-touch-camera-and-hud-layout): 0 radius, brown border. */
 .hud-square {
   border: 2px solid var(--color-leather);
@@ -382,9 +418,11 @@ body,
   background-color: var(--color-hud-solid);
   box-shadow: 0 2px 0 rgb(74 44 26 / 45%);
 }
+
 .hud-square:where(:hover, [aria-pressed="true"]) {
   background-color: var(--color-paper-deep);
 }
+
 /* Leather plaque button (reference art): brown leather, thin gold inner line, brass rivets at
    both ends. Text and icons turn cream. CSS only. */
 .hud-leather {
@@ -401,22 +439,16 @@ body,
   border-radius: 0;
   padding-inline: 22px;
   background:
-    radial-gradient(
-        circle at 50% 50%,
-        #f3d58a 0 1.5px,
-        #b98a3c 2.5px 4.5px,
-        #5a3a14 5.5px,
-        transparent 6px
-      )
-      5px 50% / 14px 14px no-repeat,
-    radial-gradient(
-        circle at 50% 50%,
-        #f3d58a 0 1.5px,
-        #b98a3c 2.5px 4.5px,
-        #5a3a14 5.5px,
-        transparent 6px
-      )
-      calc(100% - 5px) 50% / 14px 14px no-repeat,
+    radial-gradient(circle at 50% 50%,
+      #f3d58a 0 1.5px,
+      #b98a3c 2.5px 4.5px,
+      #5a3a14 5.5px,
+      transparent 6px) 5px 50% / 14px 14px no-repeat,
+    radial-gradient(circle at 50% 50%,
+      #f3d58a 0 1.5px,
+      #b98a3c 2.5px 4.5px,
+      #5a3a14 5.5px,
+      transparent 6px) calc(100% - 5px) 50% / 14px 14px no-repeat,
     linear-gradient(180deg, #8a4a2a 0%, #6b3720 45%, #512a18 100%);
   box-shadow:
     inset 0 0 0 1.5px #c9a04e,
@@ -425,14 +457,17 @@ body,
     0 3px 6px rgb(0 0 0 / 55%);
   text-shadow: 0 1px 1px rgb(0 0 0 / 60%);
 }
+
 /* Title banner for dialogs, drawers and cards: the plaque without the hover brightening. */
 .hud-title {
   padding-block: 6px;
   filter: none !important;
 }
+
 .hud-leather:where(:hover, [aria-pressed="true"]) {
   filter: brightness(1.15);
 }
+
 /* Round variant for icon-only buttons: gold ring, no rivets. */
 .hud-leather-round {
   --color-hud-fg: var(--color-cream);
@@ -452,9 +487,11 @@ body,
     inset 0 0 0 5px #b98a3c,
     0 3px 6px rgb(0 0 0 / 55%);
 }
+
 .hud-leather-round:where(:hover, [aria-pressed="true"]) {
   filter: brightness(1.2);
 }
+
 /* Zoom slider: dark brass track, gold knob. */
 .hud-range {
   appearance: none;
@@ -464,6 +501,7 @@ body,
   background: linear-gradient(180deg, #1b0f08, #4a2c1a);
   border: 1px solid #c9a04e;
 }
+
 .hud-range::-webkit-slider-thumb {
   appearance: none;
   width: 20px;
@@ -473,6 +511,7 @@ body,
   background: radial-gradient(circle at 35% 30%, #fff1b0, #e8bc4a 55%, #a8741c);
   box-shadow: 0 1px 3px rgb(0 0 0 / 60%);
 }
+
 .hud-range::-moz-range-thumb {
   width: 20px;
   height: 20px;
@@ -480,25 +519,31 @@ body,
   border: 1px solid #5d3a14;
   background: radial-gradient(circle at 35% 30%, #fff1b0, #e8bc4a 55%, #a8741c);
 }
+
 .hud-range:focus-visible {
   outline: 2px solid var(--color-ring);
   outline-offset: 3px;
 }
+
 .paper-solid {
   background-color: var(--color-paper);
 }
+
 /* Illustrated corner ornaments (openspec illustrated-hud-ornaments): one image per corner, in
    four ready-made orientations, so no transforms are needed. `.frame` = small carved stone
    (cards, tiles, buttons); `.frame-brass` = large brass filigree (dialogs, drawers). */
 .frame {
   --corner-size: 18px;
 }
+
 .frame-brass {
   --corner-size: 44px;
 }
+
 .frame:where(:not(.absolute, .fixed)) {
   position: relative;
 }
+
 /* Pseudo-element so the corners never replace a surface's own background. */
 .frame::before {
   content: "";
@@ -519,12 +564,14 @@ body,
     var(--corner-bl, url("/ui/corners/stone-bl.webp")),
     var(--corner-br, url("/ui/corners/stone-br.webp"));
 }
+
 .frame-brass {
   --corner-tl: url("/ui/corners/brass-tl.webp");
   --corner-tr: url("/ui/corners/brass-tr.webp");
   --corner-bl: url("/ui/corners/brass-bl.webp");
   --corner-br: url("/ui/corners/brass-br.webp");
 }
+
 @media (max-width: 640px) {
   .frame-brass {
     --corner-size: 34px;
@@ -536,6 +583,7 @@ body,
 .hud {
   pointer-events: none;
 }
+
 .hud button,
 .hud a,
 .hud input,
@@ -556,25 +604,28 @@ body,
 .edge-hand {
   --slot-w: 72px;
   --hand-gap: 10px;
-  --overlap: clamp(
-    calc(var(--slot-w) * -0.6),
-    calc((100vw - 24px - var(--n, 5) * var(--slot-w)) / max(1, var(--n, 5) - 1)),
-    var(--hand-gap)
-  );
+  --overlap: clamp(calc(var(--slot-w) * -0.6),
+      calc((100vw - 24px - var(--n, 5) * var(--slot-w)) / max(1, var(--n, 5) - 1)),
+      var(--hand-gap));
 }
-@media (max-width: 639px), (max-height: 599px) {
+
+@media (max-width: 639px),
+(max-height: 599px) {
   .edge-hand {
     --slot-w: 52px;
     --hand-gap: 6px;
   }
 }
-.edge-hand > li + li {
+
+.edge-hand>li+li {
   margin-left: var(--overlap);
 }
+
 /* Small extra gap between the resource cards and the development cards. */
-.edge-hand > li[data-dev-start] {
+.edge-hand>li[data-dev-start] {
   margin-left: calc(var(--overlap) + 8px);
 }
+
 /* One soft shadow behind the row instead of a panel: a radial gradient, no `filter`. */
 .hand-shadow {
   position: absolute;
@@ -582,6 +633,7 @@ body,
   pointer-events: none;
   background: radial-gradient(ellipse 50% 100% at 50% 100%, rgb(0 0 0 / 40%), transparent);
 }
+
 @theme inline {
   --color-sidebar: var(--sidebar);
   --color-sidebar-foreground: var(--sidebar-foreground);
@@ -599,20 +651,19 @@ body,
  * Explicit component classes win by specificity where they differ (e.g. informational disabled).
  */
 @layer base {
-  .hud
-    :where(
-      a[href],
-      button:not(:disabled),
-      [role="button"]:not([aria-disabled="true"]),
-      [role="tab"],
-      [role="menuitem"],
-      [role="option"],
-      summary,
-      label[for],
-      select:not(:disabled)
-    ) {
+
+  .hud :where(a[href],
+    button:not(:disabled),
+    [role="button"]:not([aria-disabled="true"]),
+    [role="tab"],
+    [role="menuitem"],
+    [role="option"],
+    summary,
+    label[for],
+    select:not(:disabled)) {
     cursor: pointer;
   }
+
   .hud :where(button:disabled, [aria-disabled="true"], select:disabled) {
     cursor: not-allowed;
   }
@@ -622,23 +673,29 @@ body,
   .welcome-sheet {
     padding: 20px 28px;
   }
+
   .welcome-brand {
     display: none;
   }
+
   .welcome-hero {
     padding-block: 0 12px;
     grid-template-columns: 1.4fr 1fr;
   }
+
   .welcome-message h2 {
     font-size: 30px;
   }
+
   .welcome-eyebrow {
     margin-bottom: 6px;
   }
+
   .welcome-intro {
     margin-block: 8px 12px;
     font-size: 15px;
   }
+
   .welcome-reassurance {
     margin-top: 8px;
   }
@@ -651,6 +708,7 @@ body,
   gap: 12px;
   min-width: 0;
 }
+
 .game-mode-button {
   width: 100%;
   min-height: 108px;
@@ -667,15 +725,18 @@ body,
     inset 0 0 0 4px var(--color-gold),
     0 3px 6px rgb(74 44 26 / 20%);
 }
+
 .game-mode-button:hover {
   filter: brightness(1.12);
 }
+
 .game-mode-icon {
   width: 52px;
   height: 52px;
   flex-shrink: 0;
   object-fit: contain;
 }
+
 .game-mode-copy {
   display: flex;
   flex: 1;
@@ -683,73 +744,91 @@ body,
   gap: 4px;
   min-width: 0;
 }
+
 .game-mode-title {
   font-family: var(--font-serif);
   font-size: 20px;
   line-height: 1.1;
 }
+
 .game-mode-hint {
   font-size: 12px;
   line-height: 1.35;
   font-weight: 500;
 }
+
 .game-mode-arrow {
   font-size: 28px;
 }
+
 @media (max-width: 639px) {
   .welcome-sheet {
     padding: 22px;
   }
+
   .welcome-hero {
     gap: 18px;
     padding-block: 20px;
   }
+
   .welcome-eyebrow,
   .welcome-intro {
     display: none;
   }
+
   .welcome-message h2 {
     font-size: 25px;
   }
+
   .welcome-reassurance {
     margin-top: 8px;
     font-size: 12px;
   }
+
   .game-mode-button {
     min-height: 84px;
     padding: 12px;
     gap: 12px;
   }
+
   .game-mode-icon {
     width: 42px;
     height: 42px;
   }
+
   .game-mode-title {
     font-size: 18px;
   }
 }
+
 @media (max-height: 599px) and (min-width: 640px) {
   .welcome-hero {
     grid-template-columns: 1fr 1.2fr;
   }
+
   .welcome-intro {
     display: none;
   }
+
   .game-mode-menu {
     gap: 8px;
   }
+
   .game-mode-button {
     min-height: 68px;
     padding: 10px;
     gap: 10px;
   }
+
   .game-mode-icon {
     width: 36px;
     height: 36px;
   }
+
   .game-mode-title {
     font-size: 16px;
   }
+
   .game-mode-hint {
     font-size: 11px;
   }

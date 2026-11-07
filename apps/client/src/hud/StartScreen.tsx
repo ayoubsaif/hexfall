@@ -14,7 +14,7 @@ import type { GameMode } from "./GameModeButtons.tsx";
 import { SavedGames } from "./SavedGames.tsx";
 
 export const NAME_MAX = 20;
-
+export const GAME_NAME = import.meta.env.VITE_GAME_NAME || "Hexfall"
 /** Shared looks for the start screen and lobby (both centered HUD cards). */
 export const panelClass =
   "pointer-events-auto absolute top-1/2 left-1/2 flex max-h-[calc(100%-112px)] w-[min(440px,calc(100%-32px))] -translate-x-1/2 -translate-y-1/2 flex-col overflow-hidden frame frame-brass frame-corners paper rounded-none text-sm";
@@ -64,7 +64,7 @@ export function StartScreen({
   return (
     <div className={panelClass} data-interactive>
       <div className={panelBodyClass}>
-        <h1 className="font-serif text-4xl leading-none font-semibold text-forest">Hexfall</h1>
+        <h1 className="font-serif text-4xl leading-none font-semibold text-forest">{GAME_NAME}</h1>
         <p className="mb-1 font-serif text-lg text-ink-muted">{t("session.start.tagline")}</p>
         <p className="mb-2 text-muted-foreground">{t("session.start.description")}</p>
         {notice && (

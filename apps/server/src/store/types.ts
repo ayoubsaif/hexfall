@@ -18,6 +18,11 @@ export interface StoredSeat {
   tokenHash: string;
   /** A bot seat: driven by the server, its tokenHash matches no real token. */
   bot?: true;
+  /**
+   * With `bot`: a player left this seat during the game, so the bot plays it until someone
+   * takes it over by joining (leave-game). Absent in older rooms = not open.
+   */
+  open?: true;
   /** Avatar catalog id; absent in games saved before avatars (resolved by index on load). */
   avatar?: string;
 }

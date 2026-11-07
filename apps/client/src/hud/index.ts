@@ -4,7 +4,7 @@ export { ActionButtons } from "./actions/ActionButtons.tsx";
 export { CreditsList } from "./Credits.tsx";
 export { DiscardDialog, MonopolyDialog, VictimDialog, YearOfPlentyDialog } from "./Dialogs.tsx";
 export { EventLog, GameOver, Rejection, Toasts, useEventToasts } from "./Feed.tsx";
-export { HostGameMenu, PausedNotice } from "./GamePause.tsx";
+export { GameMenu, PausedNotice } from "./GamePause.tsx";
 export { DiceStats } from "./DiceStats.tsx";
 export { Hand } from "./Hand.tsx";
 export { Lobby, inviteLinkFor } from "./Lobby.tsx";

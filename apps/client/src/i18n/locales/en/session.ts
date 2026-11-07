@@ -186,6 +186,14 @@ export const session = {
     end: "End game",
     endLabel: "End the game in room {{code}}",
   },
+  leave: {
+    leave: "Leave game",
+    hint: "A bot plays your seat; anyone with the room code can take it.",
+    confirmTitle: "Leave the game?",
+    confirmText:
+      "A bot will play your seat from now on, so the game goes on without you. You cannot come back to this seat from your saved games. Anyone with the room code or invite link can join and take the seat over.",
+    inviteHint: "Share this link to invite someone to an open seat.",
+  },
   pause: {
     menu: "Game",
     menuTitle: "Game options",

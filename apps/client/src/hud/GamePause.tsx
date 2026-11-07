@@ -1,17 +1,21 @@
-// Host pause / end controls and the paused notice (openspec change pause-and-resume-games:
-// specs game-pause "Pause controls in the HUD", "Paused screen"; early-end "End control").
+// The in-game menu and the paused notice (openspec changes pause-and-resume-games: specs
+// game-pause "Pause controls in the HUD", "Paused screen", early-end "End control";
+// leave-running-game: spec leave-game "Game menu for every player").
 import { gameIcon } from "./GameIcon.tsx";
 
 const Flag = gameIcon("flag");
 const Pause = gameIcon("pause");
+const Leave = gameIcon("leave");
 import { useState } from "react";
 import { useTranslation } from "react-i18next";
 import { Button } from "@/components/ui/button.tsx";
 import { Dialog, DialogContent, DialogFooter } from "@/components/ui/dialog.tsx";
-import { endGame, pauseGame, resumeGame } from "../net/actions.ts";
+import { endGame, leaveRoom, pauseGame, resumeGame } from "../net/actions.ts";
 import { useConnectionStore } from "../store/connection.ts";
 import { useRoomStore } from "../store/room.ts";
 import { roomErrorText } from "./errors.ts";
+import { inviteLinkFor } from "./Lobby.tsx";
+import { inputClass } from "./StartScreen.tsx";
 
 /** A paused room is kept this long after the pause (server PAUSED_TTL_MS). */
 export const PAUSED_KEEP_MS = 7 * 24 * 60 * 60 * 1000;
@@ -34,6 +38,85 @@ function useRequestError(): string | null {
     return null;
   }
   return roomErrorText(error.code, error.message, t);
+}
+
+/** The error of the last leave request, as text, or null. */
+function useLeaveError(): string | null {
+  const { t } = useTranslation();
+  const error = useRoomStore((s) => s.error);
+  if (!error || error.request !== "leave") return null;
+  return roomErrorText(error.code, error.message, t);
+}
+
+/** Confirmation before leaving a running game: a bot takes the seat, which others can claim. */
+export function LeaveGameConfirm({
+  open,
+  onOpenChange,
+}: {
+  open: boolean;
+  onOpenChange: (open: boolean) => void;
+}) {
+  const { t } = useTranslation();
+  const pending = useRoomStore((s) => s.pending);
+  const online = useConnectionStore((s) => s.status === "open");
+  const error = useLeaveError();
+  return (
+    <Dialog open={open} onOpenChange={onOpenChange}>
+      <DialogContent title={t("session.leave.confirmTitle")} data-testid="leave-confirm">
+        <p className="text-sm">{t("session.leave.confirmText")}</p>
+        {error && (
+          <p className="mt-2 text-bad" role="alert">
+            {error}
+          </p>
+        )}
+        <DialogFooter>
+          <Button variant="secondary" onClick={() => onOpenChange(false)}>
+            {t("session.pause.cancel")}
+          </Button>
+          <Button
+            variant="destructive"
+            disabled={!online || pending !== null}
+            onClick={() => leaveRoom()}
+          >
+            {t("session.leave.leave")}
+          </Button>
+        </DialogFooter>
+      </DialogContent>
+    </Dialog>
+  );
+}
+
+/** The room's invite link with a copy button, so the table can fill an open seat. */
+function InviteLink({ room }: { room: string }) {
+  const { t } = useTranslation();
+  const [copied, setCopied] = useState(false);
+  const link = inviteLinkFor(room);
+  const copy = async () => {
+    try {
+      await navigator.clipboard.writeText(link);
+      setCopied(true);
+      setTimeout(() => setCopied(false), 2000);
+    } catch {
+      setCopied(false);
+    }
+  };
+  return (
+    <div className="flex flex-col gap-1">
+      <span className="text-xs text-muted-foreground">{t("session.leave.inviteHint")}</span>
+      <div className="flex gap-1.5">
+        <input
+          className={inputClass}
+          readOnly
+          value={link}
+          aria-label={t("session.lobby.inviteLink")}
+          onFocus={(e) => e.target.select()}
+        />
+        <Button variant="secondary" onClick={() => void copy()}>
+          {copied ? t("session.lobby.copied") : t("session.lobby.copyLink")}
+        </Button>
+      </div>
+    </div>
+  );
 }
 
 /**
@@ -85,21 +168,24 @@ export function EndGameConfirm({
   );
 }
 
-type MenuStep = "menu" | "pause" | "end" | null;
+type MenuStep = "menu" | "pause" | "end" | "leave" | null;
 
 /**
- * Host-only "Game" button for the HUD corner while the game runs: "Close game for now"
- * (pause) and "End game now", each behind a confirmation.
+ * The "Game" button in the HUD corner while the game runs, for every seated player: "Leave
+ * game" and the invite link; the host also gets "Close game for now" (pause) and "End game
+ * now". Each action sits behind a confirmation.
  */
-export function HostGameMenu() {
+export function GameMenu() {
   const { t } = useTranslation();
   const isHost = useIsHost();
+  const room = useRoomStore((s) => s.room);
+  const seated = useRoomStore((s) => s.seat !== null);
   const playing = useRoomStore((s) => s.status === "playing");
   const pending = useRoomStore((s) => s.pending);
   const online = useConnectionStore((s) => s.status === "open");
   const error = useRequestError();
   const [step, setStep] = useState<MenuStep>(null);
-  if (!isHost || !playing) return null;
+  if (!seated || !playing || room === null) return null;
   const close = (open: boolean) => {
     if (!open) setStep(null);
   };
@@ -116,29 +202,45 @@ export function HostGameMenu() {
         className="pointer-events-auto grid size-10 cursor-pointer place-items-center hud-leather-round transition-colors duration-150 outline-none focus-visible:ring-2 focus-visible:ring-ring max-sm:size-11 short:size-11 pointer-coarse:size-11 motion-reduce:transition-none"
         onClick={() => setStep("menu")}
       >
-        <Pause aria-hidden className="size-6" />
+        <Leave aria-hidden className="size-6" />
       </button>
       <Dialog open={step === "menu"} onOpenChange={close}>
         <DialogContent title={t("session.pause.menuTitle")} data-testid="game-menu">
           <div className="flex flex-col gap-2">
-            <Button variant="secondary" className="justify-start" onClick={() => setStep("pause")}>
-              <Pause aria-hidden />
-              <span className="flex flex-col items-start text-left">
-                <span>{t("session.pause.closeForNow")}</span>
-                <span className="text-xs text-muted-foreground">
-                  {t("session.pause.closeForNowHint")}
+            {isHost && (
+              <Button
+                variant="secondary"
+                className="justify-start"
+                onClick={() => setStep("pause")}
+              >
+                <Pause aria-hidden />
+                <span className="flex flex-col items-start text-left">
+                  <span>{t("session.pause.closeForNow")}</span>
+                  <span className="text-xs text-muted-foreground">
+                    {t("session.pause.closeForNowHint")}
+                  </span>
                 </span>
+              </Button>
+            )}
+            {isHost && (
+              <Button variant="secondary" className="justify-start" onClick={() => setStep("end")}>
+                <Flag aria-hidden />
+                <span className="flex flex-col items-start text-left">
+                  <span>{t("session.pause.endNow")}</span>
+                  <span className="text-xs text-muted-foreground">
+                    {t("session.pause.endNowHint")}
+                  </span>
+                </span>
+              </Button>
+            )}
+            <Button variant="secondary" className="justify-start" onClick={() => setStep("leave")}>
+              <Leave aria-hidden />
+              <span className="flex flex-col items-start text-left">
+                <span>{t("session.leave.leave")}</span>
+                <span className="text-xs text-muted-foreground">{t("session.leave.hint")}</span>
               </span>
             </Button>
-            <Button variant="secondary" className="justify-start" onClick={() => setStep("end")}>
-              <Flag aria-hidden />
-              <span className="flex flex-col items-start text-left">
-                <span>{t("session.pause.endNow")}</span>
-                <span className="text-xs text-muted-foreground">
-                  {t("session.pause.endNowHint")}
-                </span>
-              </span>
-            </Button>
+            <InviteLink room={room} />
           </div>
         </DialogContent>
       </Dialog>
@@ -161,6 +263,7 @@ export function HostGameMenu() {
         </DialogContent>
       </Dialog>
       <EndGameConfirm open={step === "end"} onOpenChange={close} />
+      <LeaveGameConfirm open={step === "leave"} onOpenChange={close} />
     </>
   );
 }
@@ -178,6 +281,7 @@ export function PausedNotice() {
   const online = useConnectionStore((s) => s.status === "open");
   const error = useRequestError();
   const [ending, setEnding] = useState(false);
+  const [leaving, setLeaving] = useState(false);
   if (!paused) return null;
   const until = formatDate((pausedAt ?? Date.now()) + PAUSED_KEEP_MS, i18n.language);
   return (
@@ -200,8 +304,16 @@ export function PausedNotice() {
               {error}
             </p>
           )}
-          {isHost && (
-            <DialogFooter>
+          <DialogFooter>
+            <Button
+              variant="secondary"
+              disabled={!online || pending !== null}
+              onClick={() => setLeaving(true)}
+            >
+              <Leave aria-hidden />
+              {t("session.leave.leave")}
+            </Button>
+            {isHost && (
               <Button
                 variant="secondary"
                 disabled={!online || pending !== null}
@@ -209,14 +321,17 @@ export function PausedNotice() {
               >
                 {t("session.pause.end")}
               </Button>
+            )}
+            {isHost && (
               <Button disabled={!online || pending !== null} onClick={() => resumeGame()}>
                 {t("session.pause.resume")}
               </Button>
-            </DialogFooter>
-          )}
+            )}
+          </DialogFooter>
         </DialogContent>
       </Dialog>
       {isHost && <EndGameConfirm open={ending} onOpenChange={setEnding} />}
+      <LeaveGameConfirm open={leaving} onOpenChange={setLeaving} />
     </>
   );
 }

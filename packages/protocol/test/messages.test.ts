@@ -364,3 +364,51 @@ describe("pause, end and saved games (protocol v5)", () => {
     expect(decodeServerMessage(raw)).toMatchObject({ ok: false, error: "bad_frame" });
   });
 });
+
+describe("leaving a running game (leave-game)", () => {
+  it("round-trips open seats and system chat lines", () => {
+    const state = encodeServer(
+      "roomState",
+      {
+        room: "ABC234",
+        host: 0,
+        status: "playing",
+        pausedAt: null,
+        result: null,
+        seats: [
+          { seat: 0, name: "Ana", connected: true, bot: false, avatar: "villager-beard" },
+          {
+            seat: 1,
+            name: "Bot",
+            connected: true,
+            bot: true,
+            open: true,
+            avatar: "villager-beard",
+          },
+        ],
+      },
+      1,
+    );
+    expect(decodeServerMessage(state)).toMatchObject({
+      ok: true,
+      message: { payload: { seats: [{ seat: 0 }, { seat: 1, open: true }] } },
+    });
+    for (const system of ["left", "tookOver"] as const) {
+      const line = encodeServer(
+        "chatLine",
+        { entry: { id: 0, seat: 1, name: "Ben", text: "", at: 5, system } },
+        2,
+      );
+      expect(decodeServerMessage(line)).toMatchObject({
+        ok: true,
+        message: { payload: { entry: { system } } },
+      });
+    }
+    const bad = encodeServer(
+      "chatLine",
+      { entry: { id: 0, seat: 1, name: "Ben", text: "", at: 5, system: "kicked" as "left" } },
+      3,
+    );
+    expect(decodeServerMessage(bad).ok).toBe(false);
+  });
+});

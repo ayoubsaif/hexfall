@@ -215,6 +215,11 @@ export const SeatInfo = z.object({
   connected: z.boolean(),
   /** Bot seats are driven by the server and always report connected. */
   bot: z.boolean(),
+  /**
+   * A seat a player left during the game (leave-game): a bot plays it until someone joins
+   * with the room code and takes it over. Absent = false.
+   */
+  open: z.boolean().optional(),
   /** Catalog id; unique per room. */
   avatar: AvatarId,
 });
@@ -322,6 +327,11 @@ export const ChatEntry = z.object({
   text: z.string(),
   /** Server ms. */
   at: z.number(),
+  /**
+   * A server notice instead of a player's words (leave-game): `left` = the player `name` left
+   * and a bot plays `seat`; `tookOver` = `name` took over `seat`. `text` is empty.
+   */
+  system: z.enum(["left", "tookOver"]).optional(),
 });
 export type ChatEntry = z.infer<typeof ChatEntry>;
 /** A new chat line, to every connected seat. */

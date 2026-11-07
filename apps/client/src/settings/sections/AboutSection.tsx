@@ -4,13 +4,13 @@ import { SupportButton } from "../../hud/SupportButton.tsx";
 import { CreditsList } from "../../hud/Credits.tsx";
 import { CLIENT_VERSION } from "../../net/config.ts";
 import { useTheme } from "../../theme/index.ts";
-
+const GAME_NAME = import.meta.env.VITE_GAME_NAME || "Hexfall"
 export function AboutSection() {
   const { t } = useTranslation();
   const { theme } = useTheme();
   return (
     <div className="py-3 text-sm">
-      <p className="font-semibold">Hexfall</p>
+      <p className="font-semibold">{GAME_NAME}</p>
       <p data-testid="settings-version" className="text-muted-foreground tabular-nums">
         {t("settings.about.version", { version: CLIENT_VERSION })}
       </p>

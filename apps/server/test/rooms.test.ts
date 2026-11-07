@@ -141,9 +141,12 @@ describe("lobby", () => {
     expect(await svc.joinRoom(req(fakeConn()), code, "Ben")).toEqual(err("room_not_found"));
   });
 
-  it("cannot leave after the start", async () => {
+  it("leaving after the start keeps the seat as an open bot seat (leave-game)", async () => {
     const { conns } = await started(["Ana", "Ben", "Cy"]);
-    expect(await svc.leaveRoom(req(conns[1] as FakeConn))).toEqual(err("game_started"));
+    expect(await svc.leaveRoom(req(conns[1] as FakeConn))).toEqual({ ok: true });
+    const seats = lastRoomState(conns[0] as FakeConn)?.seats;
+    expect(seats).toHaveLength(3);
+    expect(seats?.[1]).toMatchObject({ bot: true, open: true });
   });
 });
 

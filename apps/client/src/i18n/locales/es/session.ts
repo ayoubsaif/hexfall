@@ -187,6 +187,14 @@ export const session: Catalog["session"] = {
     end: "Terminar partida",
     endLabel: "Terminar la partida de la sala {{code}}",
   },
+  leave: {
+    leave: "Salir de la partida",
+    hint: "Un bot juega tu puesto; cualquiera con el código de la sala puede ocuparlo.",
+    confirmTitle: "¿Salir de la partida?",
+    confirmText:
+      "A partir de ahora un bot jugará tu puesto, así que la partida sigue sin ti. No podrás volver a este puesto desde tus partidas guardadas. Cualquiera con el código de la sala o el enlace de invitación puede entrar y ocupar el puesto.",
+    inviteHint: "Comparte este enlace para invitar a alguien a un puesto libre.",
+  },
   pause: {
     menu: "Partida",
     menuTitle: "Opciones de la partida",

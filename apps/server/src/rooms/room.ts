@@ -86,7 +86,7 @@ export interface RoomDeps {
   clearTimer(handle: unknown): void;
   /** The game moved from `before` (null at start) to `after`, already stored and sent. */
   waitsChanged?(room: Room, before: GameState | null, after: GameState): void;
-  /** A seat left the lobby; `tokenHash` identified it. */
+  /** A player left their seat (lobby or running game); `tokenHash` identified it. */
   seatLeft?(room: Room, tokenHash: string): void;
   /** The room's stored expiry changed (pause, resume, early end); `ttlMs` is the new TTL. */
   expiryChanged?(room: Room, ttlMs: number): void;
@@ -292,10 +292,19 @@ export class Room {
       text: Array.from(text).slice(0, CHAT_MAX_LENGTH).join(""),
       at: this.deps.now(),
     };
+    this.pushChat(entry);
+    return OK;
+  }
+
+  /** A server notice in the chat (leave-game): `name` left, or took over, `seat`. */
+  private chatNotice(system: "left" | "tookOver", seat: number, name: string): void {
+    this.pushChat({ id: this.chatId++, seat, name, text: "", at: this.deps.now(), system });
+  }
+
+  private pushChat(entry: ChatEntry): void {
     this.chatLog.push(entry);
     if (this.chatLog.length > CHAT_HISTORY) this.chatLog.shift();
     for (const c of this.conns) if (c) this.send(c, { type: "chatLine", payload: { entry } });
-    return OK;
   }
 
   /** The recent chat to one connection (a seat that just joined or resumed). */
@@ -343,7 +352,7 @@ export class Room {
 
   join(req: Request, rawName: string, avatar?: AvatarId): Promise<ServiceResult> {
     return this.run(async () => {
-      if (this.status() !== "lobby") return fail("game_started", "the game has already started");
+      if (this.status() !== "lobby") return this.takeOver(req, rawName, avatar);
       if (this.meta.seats.length >= MAX_SEATS) return fail("room_full", "the room is full");
       const name = validateName(
         rawName,
@@ -406,7 +415,8 @@ export class Room {
     return this.run(async () => {
       const seat = this.seatOf(req.conn);
       if (seat < 0) return fail("no_seat", "this connection holds no seat");
-      if (this.status() !== "lobby") return fail("game_started", "cannot leave after the start");
+      const status = this.status();
+      if (status === "ended") return fail("not_playing", "the game is over");
       const conn = req.conn;
       if (this.meta.seats.every((s, i) => i === seat || s.bot)) {
         const w = await this.deps.store.deleteRoom(this.code);
@@ -419,6 +429,7 @@ export class Room {
         this.deps.deleted(this);
         return OK;
       }
+      if (status !== "lobby") return this.leaveRunning(req, seat);
       const host = this.meta.host;
       const leaver = this.meta.seats[seat]?.tokenHash;
       const seats = this.meta.seats.filter((_, i) => i !== seat);
@@ -446,6 +457,100 @@ export class Room {
       this.broadcastRoomState();
       return OK;
     });
+  }
+
+  /**
+   * Leaves a playing or paused game (leave-game "Leave a running game"): the seat stays in
+   * the game as an open bot seat, the leaver's token stops matching, and the host passes to
+   * the lowest remaining human. The caller handled the last-human case. Runs inside `run()`.
+   */
+  private async leaveRunning(req: Request, seat: number): Promise<ServiceResult> {
+    const old = this.meta.seats[seat];
+    if (!old) return fail("no_seat", "this connection holds no seat");
+    const timerBefore = JSON.stringify(this.timer());
+    const bot: RoomMeta["seats"][number] = {
+      avatar: chooseAvatar(undefined, this.avatarsExcept(seat)),
+      name: botName(this.meta.seats.map((s) => s.name)),
+      // Nobody holds this token: the leaver's token no longer matches the seat.
+      tokenHash: hashToken(generateToken()),
+      bot: true,
+      open: true,
+    };
+    const seats = this.meta.seats.map((s, i) => (i === seat ? bot : s));
+    const next: RoomMeta = {
+      ...this.meta,
+      rev: this.meta.rev + 1,
+      seats,
+      host:
+        this.meta.host === seat
+          ? Math.max(
+              0,
+              seats.findIndex((s) => !s.bot),
+            )
+          : this.meta.host,
+    };
+    const w = await this.saveMeta(next);
+    if (w) return w;
+    this.conns[seat] = null;
+    this.deps.unbind(req.conn);
+    this.deps.seatLeft?.(this, old.tokenHash);
+    this.send(req.conn, { type: "roomLeft", payload: { room: this.code } }, req);
+    this.chatNotice("left", seat, old.name);
+    this.broadcastRoomState();
+    // The game may wait on this seat now: let its bot act. A bot wait has no countdown.
+    this.arm();
+    if (JSON.stringify(this.timer()) !== timerBefore) this.broadcastSnapshots();
+    return OK;
+  }
+
+  /**
+   * Joins a started room by taking over its lowest open seat (leave-game "Take over an open
+   * seat"); `game_started` when there is none. Runs inside `run()`.
+   */
+  private async takeOver(req: Request, rawName: string, avatar?: AvatarId): Promise<ServiceResult> {
+    const status = this.status();
+    const seat = this.meta.seats.findIndex((s) => s.open === true && s.bot === true);
+    if ((status !== "playing" && status !== "paused") || seat < 0) {
+      return fail("game_started", "the game has already started");
+    }
+    const timerBefore = JSON.stringify(this.timer());
+    const name = validateName(
+      rawName,
+      this.meta.seats.filter((_, i) => i !== seat).map((s) => s.name),
+    );
+    if (!name.ok) return fail("bad_name", name.message);
+    const token = generateToken();
+    const next: RoomMeta = {
+      ...this.meta,
+      rev: this.meta.rev + 1,
+      seats: this.meta.seats.map((s, i) =>
+        i === seat
+          ? {
+              name: name.name,
+              tokenHash: hashToken(token),
+              avatar: chooseAvatar(avatar, this.avatarsExcept(seat)),
+            }
+          : s,
+      ),
+    };
+    const w = await this.saveMeta(next);
+    if (w) return w;
+    this.conns[seat] = req.conn;
+    this.deps.bind(req.conn, this);
+    this.send(req.conn, { type: "roomJoined", payload: { room: this.code, seat, token } }, req);
+    this.broadcastRoomState(req);
+    this.sendChatHistory(req.conn);
+    this.chatNotice("tookOver", seat, name.name);
+    // No bot moves for this seat any more; the turn timer applies again if it is awaited.
+    this.arm();
+    if (JSON.stringify(this.timer()) !== timerBefore) this.broadcastSnapshots();
+    else this.sendSnapshot(seat, req);
+    return OK;
+  }
+
+  /** Every seat's avatar except `seat`'s (taken for a new holder of `seat`). */
+  private avatarsExcept(seat: number): AvatarId[] {
+    return resolveAvatars(this.meta.seats).filter((_, i) => i !== seat);
   }
 
   private newBotSeat(seats: RoomMeta["seats"]): RoomMeta["seats"][number] {
@@ -821,11 +926,14 @@ export class Room {
         return OK;
       }
       const seed = `${this.meta.config?.seed ?? this.code}:bot:${this.version}`;
+      // Bots trade on their merits only when one human (or none) is left (specs/bots).
+      const trade = this.meta.seats.filter((s) => s.bot !== true).length <= 1;
       for (const seat of this.pendingBots(state)) {
         const action = chooseAction(
           playerView(state, seat),
           legalActions(state, seat),
           new BotRng(`${seed}:${seat}`),
+          { trade },
         );
         if (!action) continue;
         const r = await this.commit(action, this.deps.now());
@@ -925,6 +1033,7 @@ export class Room {
           avatar: avatars[seat] as AvatarId,
           connected: s.bot === true || this.conns[seat] != null,
           bot: s.bot === true,
+          ...(s.open === true ? { open: true } : {}),
         })),
         pausedAt: this.meta.status === "paused" ? (this.meta.pausedAt ?? null) : null,
         result: this.meta.result ?? null,

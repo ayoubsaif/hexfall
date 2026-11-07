@@ -21,7 +21,7 @@ export const resetWelcome = (): void => {
 };
 
 const LOGO = "/icons/icon-192.png";
-const GAME_NAME = process.env.VITE_GAME_NAME || "Hexfall"
+const GAME_NAME = import.meta.env.VITE_GAME_NAME || "Hexfall"
 
 const STEPS = ["s1", "s2", "s3"] as const;
 const TIPS = ["t1", "t2", "t3"] as const;

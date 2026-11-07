@@ -1,0 +1,28 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="30 24 456 492">
+  <defs>
+    <linearGradient id="frame" x1="0" x2="1">
+      <stop offset="0" stop-color="#8a5a34"/><stop offset="1" stop-color="#6e4526"/>
+    </linearGradient>
+    <linearGradient id="door" x1="0" x2="1">
+      <stop offset="0" stop-color="#a8703f"/><stop offset="1" stop-color="#7d4d2a"/>
+    </linearGradient>
+    <linearGradient id="gold" x1="0" y1="0" x2="0" y2="1">
+      <stop offset="0" stop-color="#f3d38b"/><stop offset="0.55" stop-color="#d9a957"/><stop offset="1" stop-color="#b98536"/>
+    </linearGradient>
+  </defs>
+  <g stroke="#3b2414" stroke-linejoin="round" stroke-linecap="round">
+    <!-- door frame with a dark opening -->
+    <path d="M70 470 V70 Q70 46 94 46 H286 Q310 46 310 70 V470 Z" fill="url(#frame)" stroke-width="20"/>
+    <path d="M104 470 V84 H276 V470 Z" fill="#2a1a10" stroke-width="12"/>
+    <!-- door swung open towards the viewer -->
+    <path d="M104 84 L226 120 V500 L104 470 Z" fill="url(#door)" stroke-width="18"/>
+    <path d="M144 106 L144 474 M186 118 L186 486" fill="none" stroke="#5a361c" stroke-width="10"/>
+    <path d="M118 96 L212 124" fill="none" stroke="#c48b55" stroke-width="8" stroke-opacity="0.7"/>
+    <circle cx="204" cy="300" r="14" fill="url(#gold)" stroke-width="8"/>
+    <!-- threshold -->
+    <path d="M52 470 H330" stroke-width="20"/>
+    <!-- outward arrow -->
+    <path d="M262 236 H372 V182 L470 276 L372 370 V316 H262 Z" fill="url(#gold)" stroke-width="20"/>
+    <path d="M280 254 H388 V222" fill="none" stroke="#fbe7b4" stroke-width="10" stroke-opacity="0.8"/>
+  </g>
+</svg>

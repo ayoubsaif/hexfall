@@ -33,7 +33,7 @@ import {
   EventLog,
   GameOver,
   Hand,
-  HostGameMenu,
+  GameMenu,
   Lobby,
   MaritimePanel,
   MonopolyDialog,
@@ -317,7 +317,7 @@ export function Hud() {
           >
             <div className="flex items-center gap-2">
               <SettingsButton />
-              {inGame && <HostGameMenu />}
+              {inGame && <GameMenu />}
               {inGame && <LogDrawer />}
             </div>
             <ConnectionBadge />

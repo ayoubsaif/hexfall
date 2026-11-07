@@ -12,6 +12,7 @@ export type GameIconName =
   | "flag"
   | "hand"
   | "knight"
+  | "leave"
   | "log"
   | "pause"
   | "road"
@@ -31,6 +32,7 @@ export function gameIcon(name: GameIconName): LucideIcon {
     const Component = ({ className }: { className?: string }) => (
       <img
         src={`/ui/icons/${name}.webp`}
+        data-icon={name}
         alt=""
         aria-hidden="true"
         width={128}

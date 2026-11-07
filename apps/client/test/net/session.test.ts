@@ -340,6 +340,30 @@ describe("lobby", () => {
     expect(env.location.search).toBe("");
   });
 
+  it("leaves a running game: forgets the seat, clears the game, back to the start screen (leave-game)", () => {
+    inLobby();
+    roomState("playing");
+    snapshot(3);
+    expect(useGameStore.getState().view).not.toBeNull();
+    expect(session.leaveRoom()).toBe(true);
+    send("roomLeft", { room: "K7QX2M" });
+    expect(useRoomStore.getState()).toMatchObject({ room: null, seat: null, pending: null });
+    expect(useGameStore.getState().view).toBeNull();
+    expect(seats.token("K7QX2M")).toBeNull();
+  });
+
+  it("joining a started game takes the open seat and lands in the game (leave-game)", () => {
+    boot();
+    welcome();
+    session.joinRoom("K7QX2M", "Eve");
+    send("roomJoined", { room: "K7QX2M", seat: 1, token: "fresh" });
+    roomState("playing");
+    snapshot(40);
+    expect(useRoomStore.getState()).toMatchObject({ room: "K7QX2M", seat: 1, status: "playing" });
+    expect(useGameStore.getState()).toMatchObject({ version: 40, source: "snapshot" });
+    expect(seats.token("K7QX2M")).toBe("fresh");
+  });
+
   it("start delivers the game", () => {
     inLobby();
     session.startGame("variable");
