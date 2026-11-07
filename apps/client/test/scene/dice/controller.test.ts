@@ -2,13 +2,7 @@
 // task 3.4).
 import { describe, expect, it } from "vite-plus/test";
 import type { DiceRoll } from "../../../src/game/status.ts";
-import {
-  DiceController,
-  FADE_SECONDS,
-  HOLD_SECONDS,
-  type Planner,
-  REST_POSES,
-} from "../../../src/scene/dice/controller.ts";
+import { DiceController, type Planner, REST_POSES } from "../../../src/scene/dice/controller.ts";
 import { valueUp } from "../../../src/scene/dice/faces.ts";
 import { planThrow } from "../../../src/scene/dice/simulate.ts";
 
@@ -50,51 +44,41 @@ describe("DiceController", () => {
     expect(c.playing).toBe(false);
   });
 
-  it("shows a reduced-motion roll at rest, then hides it at 5 s with no fade", () => {
+  it("shows a reduced-motion roll at rest and keeps it on the table", () => {
     const c = new DiceController();
     const out = c.roll({ ...base, mode: "static", reason: "reduced", roll: roll(6, 6) });
     expect(out).toEqual({ settled: 5, throwing: false });
     expect(shown(c)).toEqual([6, 6]);
     expect(c.frame.bodies[0].position).toEqual(REST_POSES[0].position);
     expect(c.phase).toBe("resting");
+    expect(c.playing).toBe(false);
     c.tick(100);
-    c.tick(100 + HOLD_SECONDS - 0.01);
+    c.tick(10_000);
+    expect(c.phase).toBe("resting");
     expect(c.visible).toBe(true);
-    expect(c.opacity).toBe(1);
-    c.tick(100 + HOLD_SECONDS);
-    expect(c.phase).toBe("hidden");
-    expect(c.visible).toBe(false);
   });
 
-  it("holds a thrown roll 5 s, fades it over 0.5 s, then hides (spec: Fade after five seconds)", () => {
+  it("keeps a thrown roll resting on the table, with no hold or fade (spec: Dice stay on the table)", () => {
     const c = new DiceController();
     c.roll({ ...base, mode: "animate", roll: roll(4, 2, 7) });
+    expect(c.playing).toBe(true);
     const { settled, t } = playThrow(c);
     expect(settled).toBe(7);
     expect(c.phase).toBe("resting");
-    const rest = t - 1 / 60;
-    c.tick(rest + HOLD_SECONDS - 0.01);
-    expect(c.phase).toBe("resting");
-    c.tick(rest + HOLD_SECONDS);
-    expect(c.phase).toBe("fading");
-    c.tick(rest + HOLD_SECONDS + FADE_SECONDS / 2);
-    expect(c.opacity).toBeCloseTo(0.5, 5);
+    expect(c.playing).toBe(false); // no more frames to play
+    const pose = JSON.stringify(c.frame);
+    expect(c.tick(t + 60)).toBeNull();
     expect(c.visible).toBe(true);
-    c.tick(rest + HOLD_SECONDS + FADE_SECONDS);
-    expect(c.visible).toBe(false);
-    expect(c.playing).toBe(false);
+    expect(JSON.stringify(c.frame)).toBe(pose);
   });
 
-  it("restarts at full opacity when a new roll arrives during the fade", () => {
+  it("replaces the resting dice when the next roll arrives", () => {
     const c = new DiceController();
     c.roll({ ...base, mode: "animate", roll: roll(1, 2, 3) });
     const { t } = playThrow(c);
-    c.tick(t + HOLD_SECONDS);
-    c.tick(t + HOLD_SECONDS + FADE_SECONDS / 2);
-    expect(c.phase).toBe("fading");
+    expect(c.phase).toBe("resting");
     expect(c.roll({ ...base, mode: "animate", roll: roll(5, 5, 4) }).throwing).toBe(true);
     expect(c.phase).toBe("throwing");
-    expect(c.opacity).toBe(1);
     expect(playThrow(c, t + 20).settled).toBe(4);
     expect(shown(c)).toEqual([5, 5]);
   });
@@ -139,7 +123,7 @@ describe("DiceController", () => {
     expect(shown(throwing)).toEqual([2, 3]);
   });
 
-  it("leaves the last dice to finish on their own when a new turn starts before its roll", () => {
+  it("leaves the last dice on the table when a new turn starts before its roll", () => {
     const c = new DiceController();
     c.roll({ ...base, mode: "static", reason: "reduced", roll: roll(3, 6) });
     const before = JSON.stringify(c.frame);
@@ -148,5 +132,6 @@ describe("DiceController", () => {
       throwing: false,
     });
     expect(JSON.stringify(c.frame)).toBe(before);
+    expect(c.visible).toBe(true);
   });
 });

@@ -1,19 +1,19 @@
 // Two 3D dice thrown onto the middle of the island (openspec physics-dice-3d, dice-center-fade;
 // specs board-dice). A new roll that should animate is simulated once with physics and played
-// back; otherwise the dice show at rest (or not at all for a snapshot). They rest 5 s, fade
-// out and hide. The die model sits inside each body with a fixed cube rotation, so the side
-// that lands up always shows the server's value. The physics code loads on mount.
+// back; otherwise the dice show at rest (or not at all for a snapshot). Once at rest they stay
+// on the table until the next roll. The die model sits inside each body with a fixed cube
+// rotation, so the side that lands up always shows the server's value. The physics code loads
+// on mount.
 import { useFrame, useThree } from "@react-three/fiber";
 import { useEffect, useLayoutEffect, useRef, useState } from "react";
-import type { Group, Material, Mesh, Object3D } from "three";
+import type { Group, Mesh, Object3D } from "three";
 import { useDiceThrow } from "../../game/diceThrow.ts";
 import { latestRoll } from "../../game/status.ts";
 import { setDiceSettled } from "../../store/dice.ts";
 import { useGameStore } from "../../store/game.ts";
 import { useRoomStore } from "../../store/room.ts";
 import { Asset } from "../../theme/index.ts";
-import { useViewStore } from "../../store/view.ts";
-import { DICE_LIFT, DICE_SCALE, diceZoomBoost } from "./area.ts";
+import { DICE_LIFT, DICE_SCALE, DIE_MODEL_SCALE } from "./area.ts";
 import { DiceController, type Planner } from "./controller.ts";
 import { diceObstacles } from "./obstacles.ts";
 import { rotationQuaternion } from "./faces.ts";
@@ -21,30 +21,15 @@ import { rotationQuaternion } from "./faces.ts";
 const noRaycast = () => undefined;
 
 /**
- * Prepares a die's meshes once (they may load later, so this runs every visible frame and
- * skips meshes already done): no pointer picks, and its own materials so the fade does not
- * touch shared ones. Then writes the opacity; materials are transparent only while fading.
+ * Turns off pointer picks on a die's meshes, so hexes and pieces under the dice stay pickable.
+ * The model may load later, so this runs on every visible frame and skips meshes already done.
  */
-function applyOpacity(root: Object3D | null, opacity: number): void {
+function ignorePointer(root: Object3D | null): void {
   root?.traverse((o) => {
     const mesh = o as Mesh;
-    if (!mesh.isMesh) return;
-    if (!mesh.userData.diceReady) {
-      mesh.raycast = noRaycast;
-      mesh.material = Array.isArray(mesh.material)
-        ? mesh.material.map((m) => m.clone())
-        : mesh.material.clone();
-      mesh.userData.diceReady = true;
-    }
-    const mats: Material[] = Array.isArray(mesh.material) ? mesh.material : [mesh.material];
-    for (const m of mats) {
-      const fading = opacity < 1;
-      if (m.transparent !== fading) {
-        m.transparent = fading;
-        m.needsUpdate = true;
-      }
-      m.opacity = opacity;
-    }
+    if (!mesh.isMesh || mesh.userData.diceReady) return;
+    mesh.raycast = noRaycast;
+    mesh.userData.diceReady = true;
   });
 }
 
@@ -66,10 +51,9 @@ function usePlanner(): Planner | null {
 }
 
 function apply(c: DiceController, bodies: (Group | null)[], models: (Group | null)[]): void {
-  const { frame, visible, opacity } = c;
+  const { frame, visible } = c;
   bodies.forEach((b) => {
     if (b) b.visible = visible;
-    if (visible) applyOpacity(b, opacity);
   });
   frame.bodies.forEach((pose, i) => {
     bodies[i]?.position.set(...pose.position);
@@ -84,7 +68,6 @@ export function BoardDice({ floorY }: { floorY: number }) {
   const view = useGameStore((s) => s.view);
   const room = useRoomStore((s) => s.room) ?? "";
   const invalidate = useThree((s) => s.invalidate);
-  const zoom = useViewStore((s) => s.zoom);
   const roll = latestRoll(log);
   const thrown = useDiceThrow(roll);
   const planner = usePlanner();
@@ -118,6 +101,7 @@ export function BoardDice({ floorY }: { floorY: number }) {
 
   useFrame((state) => {
     const c = controller.current!;
+    if (c.visible) for (const r of bodies) ignorePointer(r.current);
     if (!c.playing) return;
     const done = c.tick(state.clock.getElapsedTime());
     apply(c, ...refs());
@@ -125,14 +109,14 @@ export function BoardDice({ floorY }: { floorY: number }) {
   });
 
   return (
-    <group position={[0, floorY + DICE_LIFT, 0]} scale={DICE_SCALE * diceZoomBoost(zoom)}>
+    <group position={[0, floorY + DICE_LIFT, 0]} scale={DICE_SCALE}>
       <group ref={body0} visible={false}>
-        <group ref={model0}>
+        <group ref={model0} scale={DIE_MODEL_SCALE}>
           <Asset assetKey="dice.die" />
         </group>
       </group>
       <group ref={body1} visible={false}>
-        <group ref={model1}>
+        <group ref={model1} scale={DIE_MODEL_SCALE}>
           <Asset assetKey="dice.die" />
         </group>
       </group>

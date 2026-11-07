@@ -12,7 +12,8 @@ import {
   recordingSeconds,
   simulate,
 } from "../../../src/scene/dice/simulate.ts";
-import { DIE_EDGE, DIE_VALUES, type DieValue } from "../../../src/theme/die.ts";
+import { DIE_SIZE } from "../../../src/scene/dice/area.ts";
+import { DIE_VALUES, type DieValue } from "../../../src/theme/die.ts";
 
 const restQuat = (plan: { recording: { frames: number; data: Float32Array } }, die: 0 | 1) => {
   const [x, y, z, w] = poseAt(plan.recording, die, 1e9).quaternion;
@@ -48,7 +49,7 @@ describe("simulate", () => {
     for (let index = 0; index < 40; index++) {
       const { recording } = simulate({ room: "AREA01", index, attempt: 0 });
       expect(recordingSeconds(recording)).toBeLessThanOrEqual(MAX_SECONDS);
-      const margin = DIE_EDGE; // a die's center stays within one edge of the walls
+      const margin = DIE_SIZE; // a die's center stays within one edge of the walls
       for (let f = 0; f < recording.frames; f++) {
         for (const die of [0, 1] as const) {
           const at = f * 14 + die * 7;

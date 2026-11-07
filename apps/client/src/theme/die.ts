@@ -22,9 +22,15 @@ export const DIE_FACE_AXES: Readonly<Record<DieValue, Axis>> = {
   6: [0, -1, 0],
 };
 
-/** Die colors (sRGB): a classic red body with light-gold pips. The die GLB uses the same ones. */
-export const DIE_BODY_COLOR = "#b8231a";
-export const DIE_PIP_COLOR = "#ffe066";
+/** Die colors (sRGB): a classic ivory body with dark pips. The die GLB uses the same ones. */
+export const DIE_BODY_COLOR = "#f2ebd9";
+export const DIE_PIP_COLOR = "#1e1a16";
+
+/** Shape of the procedural die: sphere radius over half the edge (flat round faces ~0.98 of
+ * the half edge wide, rounded corners), and the radius and depth of its sunken pips. */
+export const SPHERE_RATIO = 1.4;
+export const PIP_RADIUS = DIE_EDGE * 0.1;
+export const PIP_DEPTH = PIP_RADIUS * 0.5;
 
 /** Pip spots on a unit face, in [-1, 1]²: classic die layouts. */
 const SPOTS: Readonly<Record<DieValue, readonly (readonly [number, number])[]>> = {

@@ -4,7 +4,7 @@
 // Pure: no React, no DOM, no clock.
 import { Body, Box, ContactMaterial, Cylinder, Material, Plane, Vec3, World } from "cannon-es";
 import { THROW_MS } from "../../game/diceThrow.ts";
-import { DIE_EDGE, type DieValue } from "../../theme/die.ts";
+import type { DieValue } from "../../theme/die.ts";
 import { type CubeRotation, remapFor, upAxis } from "./faces.ts";
 import type { Obstacle } from "./obstacles.ts";
 import { type AreaSize, type ThrowKey, throwParams } from "./seed.ts";
@@ -20,7 +20,7 @@ export const MAX_ATTEMPTS = 8;
 
 /** The dice area, in its own coordinates (floor at y = 0, centered on the origin). */
 export { DICE_AREA } from "./area.ts";
-import { DICE_AREA } from "./area.ts";
+import { DICE_AREA, DIE_SIZE } from "./area.ts";
 
 const GRAVITY = -22;
 const WALL_HEIGHT = 3;
@@ -100,7 +100,7 @@ export function simulate(
     world.addBody(b);
   }
 
-  const half = DIE_EDGE / 2;
+  const half = DIE_SIZE / 2;
   const params = throwParams(key, area);
   const dice = params.map((p) => {
     const b = new Body({

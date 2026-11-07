@@ -1,9 +1,10 @@
 // The dice tray (specs/game-hud "Dice display", "Your-turn focus", "Turn countdown"; openspec
 // dice-tray-3d, design decisions 4–5; floating-hud-turn-timer, design decision 8;
-// physics-dice-3d, design decision 9): the Roll dice / Roll for order control and the total
-// of the latest roll, docked at the bottom-right of the board area, or enlarged at the center
-// of the screen while the your-turn focus is open. The dice themselves roll on the board
-// (scene/dice/BoardDice.tsx); the tray announces the roll when they come to rest.
+// physics-dice-3d, design decision 9): the Roll dice / Roll for order control, docked at the
+// bottom-right of the board area, or enlarged at the center of the screen while the your-turn
+// focus is open. It is drawn only while the viewer has a roll to make; the 3D dice on the
+// board (scene/dice/BoardDice.tsx) show every roll's values, so the tray draws no total. It
+// still announces each roll, as text, when the board dice come to rest.
 import { useEffect, useLayoutEffect, useRef, useState } from "react";
 import type { Seat } from "@hexfall/engine";
 import { useTranslation } from "react-i18next";
@@ -118,18 +119,20 @@ export function DiceTray({ onSettled = closeFocusOnOwnRoll }: DiceTrayProps = {}
       : action === "rollDice"
         ? t("play.dice.rollDice")
         : text;
-  const total = roll && settled ? roll.dice[0] + roll.dice[1] : null;
   // The viewer's own roll wait: the countdown sits on the dice (the focus shows it when open).
   const own =
     countdown && countdown.kind === "roll" && viewer !== null && countdown.seats.includes(viewer)
       ? countdown
       : null;
   const showCountdown = own !== null && action !== null && !centered;
+  // Drawn only while there is a roll to make (the HUD stays as light as possible).
+  const shown = action !== null;
 
   return (
     <div
       data-testid="dice-tray"
       data-centered={centered || undefined}
+      data-shown={shown || undefined}
       className={cn(
         "pointer-events-auto",
         centered
@@ -138,7 +141,11 @@ export function DiceTray({ onSettled = closeFocusOnOwnRoll }: DiceTrayProps = {}
       )}
       style={centered ? undefined : { right: dock.right, bottom: dock.bottom }}
     >
-      <div ref={moveRef} className="relative motion-reduce:transition-none">
+      <div
+        ref={moveRef}
+        hidden={!shown}
+        className="relative motion-reduce:transition-none"
+      >
         <button
           type="button"
           data-testid="dice"
@@ -152,25 +159,17 @@ export function DiceTray({ onSettled = closeFocusOnOwnRoll }: DiceTrayProps = {}
             if (action) act({ type: action });
           }}
           className={cn(
-            "flex items-center gap-[calc(var(--die)*0.2)] bg-transparent p-1 outline-none",
+            "flex items-center bg-transparent p-1 outline-none",
             "transition-[translate,filter] duration-150 focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-leather",
             "data-[ready]:cursor-pointer data-[ready]:[filter:drop-shadow(0_0_6px_var(--color-wait))] data-[ready]:hover:-translate-y-0.5",
             "disabled:cursor-default",
           )}
         >
           <DiceArt
-            dice={roll && settled ? roll.dice : null}
+            dice={null}
             rolling={thrown.mode === "animate" && !settled}
             className="h-[calc(var(--die)*1.7)] w-[calc(var(--die)*2)] data-[rolling]:opacity-60"
           />
-          <span
-            data-testid="dice-total"
-            data-seven={total === 7 || undefined}
-            aria-hidden="true"
-            className="min-w-[2ch] text-center text-xl font-bold text-hud-fg tabular-nums [text-shadow:0_1px_0_#f7edd5,0_0_4px_#f7edd5] data-[seven]:text-bad"
-          >
-            {total ?? ""}
-          </span>
         </button>
         {showCountdown && (
           <span

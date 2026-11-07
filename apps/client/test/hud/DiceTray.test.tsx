@@ -90,7 +90,9 @@ describe("DiceTray centered mode", () => {
     expect(el.hasAttribute("data-centered")).toBe(false);
     expect(el.style.right).toBe("342px");
     expect(el.style.bottom).toBe("260px");
-    expect(q('[data-testid="dice-total"]')?.textContent).toBe("6");
+    expect(q('[data-testid="dice-announce"]')?.textContent).toContain("total 6");
+    // Rolled: no roll left to make, so the tray is not drawn (the board dice show the values).
+    expect(el.hasAttribute("data-shown")).toBe(false);
     expect(actions(calls)).toHaveLength(1);
   });
 

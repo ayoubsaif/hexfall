@@ -1,11 +1,12 @@
 // What the board dice show, frame by frame (openspec physics-dice-3d, design decisions 1, 2,
 // 7 and 8; dice-center-fade, design decision 4). Pure and clock-free so it can be tested
-// without WebGL: BoardDice feeds it rolls and frame times and copies the poses, visibility
-// and opacity onto the scene. The physics planner is injected, so this module never imports
+// without WebGL: BoardDice feeds it rolls and frame times and copies the poses and
+// visibility onto the scene. The physics planner is injected, so this module never imports
 // the physics library.
 import type { ThrowMode, ThrowReason } from "../../game/diceThrow.ts";
 import type { DiceRoll } from "../../game/status.ts";
-import { DIE_EDGE, type DieValue } from "../../theme/die.ts";
+import type { DieValue } from "../../theme/die.ts";
+import { DIE_SIZE } from "./area.ts";
 import { type CubeRotation, remapFor } from "./faces.ts";
 import type { Obstacle } from "./obstacles.ts";
 import type { DiceThrowPlan, Recording } from "./simulate.ts";
@@ -30,16 +31,12 @@ export interface DiceFrame {
 }
 
 const STEP = 1 / 120;
-/** How long the dice stay at rest before they hide (s). */
-export const HOLD_SECONDS = 5;
-/** Length of the fade out (s); skipped under reduced motion. */
-export const FADE_SECONDS = 0.5;
 
-/** hidden → throwing → resting → fading → hidden (resting → hidden with no fade). */
-export type DicePhase = "hidden" | "throwing" | "resting" | "fading";
+/** hidden → throwing → resting. Resting dice stay on the table until the next roll. */
+export type DicePhase = "hidden" | "throwing" | "resting";
 const FLOATS_PER_FRAME = 14;
 const UP = [0, 1, 0] as const;
-const half = DIE_EDGE / 2;
+const half = DIE_SIZE / 2;
 
 function yawQuat(angle: number): [number, number, number, number] {
   return [0, Math.sin(angle / 2), 0, Math.cos(angle / 2)];
@@ -88,7 +85,7 @@ export function poseAt(recording: Recording, die: 0 | 1, t: number): Pose {
 
 export interface RollInput {
   mode: ThrowMode;
-  /** Snapshot rolls hide the dice; reduced motion hides them without a fade. */
+  /** Snapshot rolls show no dice; reduced motion shows them at rest. */
   reason: ThrowReason;
   /** Latest roll of the current turn, or null before it. */
   roll: DiceRoll | null;
@@ -108,16 +105,13 @@ export interface RollOutcome {
 
 /**
  * Holds the dice's current frame and visibility. `roll()` is called once per new throw
- * decision (a new roll, or the first mount); `tick(seconds)` advances a throw, the hold and
- * the fade.
+ * decision (a new roll, or the first mount); `tick(seconds)` advances a throw. Once at rest
+ * the dice stay on the table, through later turns, until the next roll replaces them.
  */
 export class DiceController {
   frame: DiceFrame = staticFrame([1, 1]);
   phase: DicePhase = "hidden";
-  /** 1 while visible, falling to 0 during the fade. */
-  opacity = 1;
   private plan: { recording: Recording; index: number; duration: number } | null = null;
-  private fade = true;
   /** Clock time the current phase started, set on its first tick. */
   private start: number | null = null;
 
@@ -125,26 +119,24 @@ export class DiceController {
     return this.phase !== "hidden";
   }
 
-  /** True while frames still change (throw, hold or fade). */
+  /** True while frames still change (during a throw). */
   get playing(): boolean {
-    return this.phase !== "hidden";
+    return this.phase === "throwing";
   }
 
   private enter(phase: DicePhase): void {
     this.phase = phase;
     this.start = null;
-    this.opacity = phase === "hidden" ? 0 : 1;
   }
 
   roll(input: RollInput): RollOutcome {
     const { roll } = input;
     if (!roll) {
-      // A new turn before its roll: the last dice finish their hold and fade on their own.
+      // A new turn before its roll: the last dice stay where they are.
       return { settled: null, throwing: false };
     }
     const values = asValues(roll.dice);
     this.plan = null;
-    this.fade = input.reason !== "reduced";
     if (input.mode === "animate" && input.planner) {
       let plan: DiceThrowPlan | null = null;
       try {
@@ -167,7 +159,7 @@ export class DiceController {
       }
     }
     this.frame = staticFrame(values);
-    // A snapshot (join, resume) shows no board dice; anything else rests, then hides.
+    // A snapshot (join, resume) shows no board dice; anything else rests on the table.
     this.enter(input.reason === "snapshot" ? "hidden" : "resting");
     return { settled: roll.index, throwing: false };
   }
@@ -189,18 +181,7 @@ export class DiceController {
       if (t < duration) return null;
       this.plan = null;
       this.enter("resting");
-      this.start = now;
       return index;
-    }
-    if (this.phase === "resting") {
-      if (t < HOLD_SECONDS) return null;
-      this.enter(this.fade ? "fading" : "hidden");
-      this.start = now;
-      return null;
-    }
-    if (this.phase === "fading") {
-      if (t >= FADE_SECONDS) this.enter("hidden");
-      else this.opacity = 1 - t / FADE_SECONDS;
     }
     return null;
   }

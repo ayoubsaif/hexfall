@@ -3,7 +3,12 @@
 import { beginnerBoard } from "@hexfall/engine/geometry";
 import { PerspectiveCamera, Spherical, Vector3 } from "three";
 import { describe, expect, it } from "vite-plus/test";
-import { areaCorners, DICE_SCALE } from "../../../src/scene/dice/area.ts";
+import {
+  areaCorners,
+  DICE_SCALE,
+  DIE_MODEL_SCALE,
+  DIE_SIZE,
+} from "../../../src/scene/dice/area.ts";
 import { boardLayout } from "../../../src/scene/layout.ts";
 import { FIT_FOV, fitDistance, fitPosition } from "../../../src/scene/useFitCamera.ts";
 import { DIE_EDGE } from "../../../src/theme/die.ts";
@@ -30,8 +35,9 @@ function camera(aspect: number, elevationDeg: number, zoom: number, azimuth: num
 }
 
 describe("dice area", () => {
-  it("draws the die at a world edge of 0.45", () => {
-    expect(DIE_EDGE * DICE_SCALE).toBeCloseTo(0.45, 9);
+  it("draws small table dice, a world edge of 0.27, with the model scaled to the body", () => {
+    expect(DIE_SIZE * DICE_SCALE).toBeCloseTo(0.27, 9);
+    expect(DIE_EDGE * DIE_MODEL_SCALE).toBeCloseTo(DIE_SIZE, 9);
   });
 
   it.each(ASPECTS)("is in view at %s for default, turned and zoomed cameras", (_n, aspect) => {
@@ -40,7 +46,7 @@ describe("dice area", () => {
         for (const azimuth of [0, -MAX_TURN, MAX_TURN]) {
           const cam = camera(aspect, elevation, zoom, azimuth);
           for (const [x, z] of areaCorners()) {
-            for (const y of [0, DIE_EDGE * DICE_SCALE]) {
+            for (const y of [0, DIE_SIZE * DICE_SCALE]) {
               const p = new Vector3(x, y, z).project(cam);
               expect(Math.abs(p.x)).toBeLessThan(1);
               expect(Math.abs(p.y)).toBeLessThan(1);
@@ -66,17 +72,5 @@ describe("dice area", () => {
     }
     const reach = Math.max(...areaCorners().map(([x, z]) => Math.hypot(x, z)));
     for (const h of layout.harbors) expect(Math.hypot(...h.position)).toBeGreaterThan(reach);
-  });
-});
-
-import { diceZoomBoost } from "../../../src/scene/dice/area.ts";
-
-describe("dice zoom boost", () => {
-  it("is larger at the default zoom and 1 when already zoomed in", () => {
-    expect(diceZoomBoost(100)).toBeCloseTo(1.35);
-    expect(diceZoomBoost(67)).toBeCloseTo(1.35);
-    expect(diceZoomBoost(150)).toBe(1);
-    expect(diceZoomBoost(222)).toBe(1);
-    expect(diceZoomBoost(125)).toBeGreaterThan(1);
   });
 });
