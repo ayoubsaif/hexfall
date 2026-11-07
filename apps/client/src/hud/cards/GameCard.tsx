@@ -47,6 +47,9 @@ export const RESOURCE_FRAME: Readonly<Record<Resource, string>> = {
 
 const DEV_FRAME = "#4b4f7a";
 
+/** Most ghost cards drawn when a stack fans out; the count badge still shows the exact number. */
+const MAX_FAN = 8;
+
 const SIZE: Record<CardSize, string> = {
   sm: "w-7 rounded-md p-px",
   md: "w-14 rounded-xl p-[3px]",
@@ -129,8 +132,32 @@ export function GameCard(props: GameCardProps) {
       : undefined,
   } as CSSProperties;
 
+  const faceStyle: CSSProperties = props.resource
+    ? {
+        // Tinted face in the resource color; the icon sits on top (no terrain art).
+        backgroundImage: `radial-gradient(circle at 50% 38%, color-mix(in srgb, var(--frame) 55%, white) 0%, var(--frame) 70%, color-mix(in srgb, var(--frame) 70%, black) 100%)`,
+      }
+    : { backgroundImage: `url(${devCardArtUrl(props.dev)})` };
+  // Peek cards held in twos or more fan out upward when their hand slot is hovered or focused:
+  // one ghost per extra card, each rising a further 20 % of the card height behind the one in front.
+  const ghosts = peek && count !== undefined ? Math.min(Math.max(count - 1, 0), MAX_FAN) : 0;
+
   const body = (
     <>
+      {Array.from({ length: ghosts }, (_, i) => (
+        <span
+          key={i}
+          aria-hidden="true"
+          data-card-ghost
+          className="pointer-events-none absolute inset-0 -z-10 translate-y-0 rounded-xl bg-[var(--frame)] p-1 opacity-0 shadow-md shadow-black/30 transition-[translate,opacity] duration-200 group-focus-within/slot:translate-y-[calc(var(--k)*-20%)] group-focus-within/slot:opacity-100 group-hover/slot:translate-y-[calc(var(--k)*-20%)] group-hover/slot:opacity-100 motion-reduce:transition-none max-sm:p-[3px]"
+          style={{ "--k": i + 1, transitionDelay: `${i * 25}ms` } as CSSProperties}
+        >
+          <span
+            className="block aspect-[5/7] w-full rounded-lg bg-black/40 bg-cover bg-center"
+            style={faceStyle}
+          />
+        </span>
+      ))}
       <span
         aria-hidden="true"
         data-card-art
@@ -140,14 +167,7 @@ export function GameCard(props: GameCardProps) {
           peek ? "items-start pt-[24%] max-sm:pt-[28%] short:pt-[28%]" : "items-center",
           size === "sm" ? "rounded-[5px]" : "rounded-lg",
         )}
-        style={
-          props.resource
-            ? {
-                // Tinted face in the resource color; the icon sits on top (no terrain art).
-                backgroundImage: `radial-gradient(circle at 50% 38%, color-mix(in srgb, var(--frame) 55%, white) 0%, var(--frame) 70%, color-mix(in srgb, var(--frame) 70%, black) 100%)`,
-              }
-            : { backgroundImage: `url(${devCardArtUrl(props.dev)})` }
-        }
+        style={faceStyle}
       >
         {props.resource && (
           <img

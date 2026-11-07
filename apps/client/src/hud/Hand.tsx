@@ -16,7 +16,7 @@ import {
 import { resourceLabel } from "../i18n/labels.ts";
 import { GameCard } from "./cards/GameCard.tsx";
 import { useCountChange } from "./cards/useCountChange.ts";
-import { DevCards, HAND_SLOT, groupCards } from "./DevCards.tsx";
+import { DevCards, HAND_SLOT, fanOffset, groupCards } from "./DevCards.tsx";
 import { useOwn } from "./state.ts";
 
 /** One fixed resource slot: the resource's card, stacked by count, dimmed at zero. */
@@ -40,7 +40,7 @@ function HandSlot({ resource, count }: { resource: Resource; count: number }) {
           />
         </li>
       </TooltipTrigger>
-      <TooltipContent side="top" className="pointer-events-none">
+      <TooltipContent side="top" sideOffset={fanOffset(count)} className="pointer-events-none">
         {resourceLabel(t, resource)}
       </TooltipContent>
     </Tooltip>

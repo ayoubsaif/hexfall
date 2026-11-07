@@ -216,7 +216,7 @@ describe("Own hand at the edge", () => {
     expect(card.tabIndex).toBe(0);
     expect(card.textContent).toContain("Brick, 3");
     expect(card.dataset.layout).toBe("peek");
-    expect(slot.className).toContain("translate-y-1/2");
+    expect(slot.className).toContain("translate-y-[20%]");
     expect(slot.className).toContain("hover:translate-y-0");
     expect(slot.className).toContain("focus-within:translate-y-0");
     expect(slot.className).toContain("motion-reduce:transition-none");
@@ -239,7 +239,7 @@ describe("Own hand at the edge", () => {
     const last = items[5]!;
     expect(last.dataset.card).toBe("monopoly");
     expect(last.hasAttribute("data-dev-start")).toBe(true);
-    expect(last.className).toContain("translate-y-1/2");
+    expect(last.className).toContain("translate-y-[20%]");
     expect(last.querySelector<HTMLElement>("[data-card]")?.dataset.layout).toBe("peek");
     expect(
       hand().style.getPropertyValue("--n") ||

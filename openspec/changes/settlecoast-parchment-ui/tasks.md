@@ -66,3 +66,9 @@
 ## 10. Turn status label (owner request)
 
 - [x] 10.1 Move the turn status pill into the top bar under the view controls and give it the view-controls look (dark translucent leather, gold border, cream text, gold "your move" text) for contrast over the board
+
+## 11. Hand cards (owner request)
+
+- [x] 11.1 Hand slots rest at 80 % visible (was half hidden) and still rise fully on hover or focus
+- [x] 11.2 Development cards drop their name strip like resource cards; the name (and why a card is blocked) moves to a tooltip
+- [x] 11.3 Stacks of two or more fan out upward on hover or focus, one ghost per extra card (up to 8), each showing 20 % behind the one in front; the tooltip clears the fan
