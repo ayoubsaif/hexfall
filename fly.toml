@@ -23,5 +23,5 @@ path = '/healthz'
 timeout = '5s'
 
 [[vm]]
-memory = '1gb'
+memory = '256mb'
 cpus = 1
