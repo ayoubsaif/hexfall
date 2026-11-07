@@ -2,7 +2,7 @@
 // a translucent bar with zoom out, a zoom slider, zoom in, the zoom percent and the three view
 // presets (default, top-down centered, diagonal). Every button sits
 // in one thin translucent rounded card; gold line icons (orbit = free, map = top-down, cube = diagonal).
-import { Box, Map as MapIcon, Minus, Orbit, Plus, type LucideIcon } from "lucide-react";
+import { Box, Contrast, Map as MapIcon, Minus, Orbit, Plus, type LucideIcon } from "lucide-react";
 import { useTranslation } from "react-i18next";
 import { cn } from "@/lib/utils.ts";
 import { hotkeyLabel } from "../hotkeys/registry.ts";
@@ -12,6 +12,7 @@ import {
   ZOOM_MIN,
   requestZoom,
   setViewPreset,
+  toggleSoftTiles,
   useViewStore,
 } from "../store/view.ts";
 
@@ -33,6 +34,7 @@ export function ViewControls() {
   const { t } = useTranslation();
   const current = useViewStore((s) => s.preset);
   const zoom = useViewStore((s) => s.zoom);
+  const soft = useViewStore((s) => s.softTiles);
   return (
     <div
       role="group"
@@ -103,6 +105,22 @@ export function ViewControls() {
           <Icon aria-hidden size={20} strokeWidth={2} />
         </button>
       ))}
+      <span aria-hidden="true" className="mx-0.5 h-5 w-px bg-[#c9a04e]/40" />
+      <button
+        type="button"
+        data-interactive
+        data-testid="soft-tiles"
+        aria-label={t("board.softTiles")}
+        title={t("board.softTiles")}
+        aria-pressed={soft}
+        onClick={toggleSoftTiles}
+        className={cn(
+          BTN,
+          "aria-pressed:bg-black/40 aria-pressed:ring-1 aria-pressed:ring-[#e8bc4a]/70",
+        )}
+      >
+        <Contrast aria-hidden size={20} strokeWidth={2} />
+      </button>
     </div>
   );
 }

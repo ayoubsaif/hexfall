@@ -12,7 +12,18 @@ export function clampZoom(percent: number): number {
   return Math.min(ZOOM_MAX, Math.max(ZOOM_MIN, Math.round(percent)));
 }
 
+const SOFT_KEY = "hexfall.softTiles";
+const readSoft = (): boolean => {
+  try {
+    return localStorage.getItem(SOFT_KEY) !== "0";
+  } catch {
+    return true;
+  }
+};
+
 interface ViewState {
+  /** Land textures are softened (less contrast) so pieces and the robber stand out. */
+  softTiles: boolean;
   preset: ViewPreset;
   /** Bumped on every request, so choosing the same preset again recenters. */
   nonce: number;
@@ -24,6 +35,7 @@ interface ViewState {
 }
 
 export const useViewStore = create<ViewState>()(() => ({
+  softTiles: readSoft(),
   preset: "free",
   nonce: 0,
   zoom: 100,
@@ -44,4 +56,14 @@ export function requestZoom(percent: number): void {
 
 export function setViewPreset(preset: ViewPreset): void {
   useViewStore.setState((s) => ({ preset, nonce: s.nonce + 1 }));
+}
+
+export function toggleSoftTiles(): void {
+  const softTiles = !useViewStore.getState().softTiles;
+  useViewStore.setState({ softTiles });
+  try {
+    localStorage.setItem(SOFT_KEY, softTiles ? "1" : "0");
+  } catch {
+    /* Not persisted; the choice still applies for this visit. */
+  }
 }

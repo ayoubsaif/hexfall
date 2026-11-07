@@ -4,6 +4,7 @@ export const board = {
   zoomOut: "Zoom out",
   zoomIn: "Zoom in",
   zoomSlider: "Zoom",
+  softTiles: "Soften tile colors to highlight pieces",
   viewGroup: "Board view",
   viewTop: "Top view, centered",
   viewDiagonal: "Diagonal view from the side",

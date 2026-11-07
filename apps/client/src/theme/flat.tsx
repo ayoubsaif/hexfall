@@ -7,6 +7,7 @@
 // geometry is built in the XY plane and rotated -90° about X, so shape +Y becomes -Z,
 // the top of the board (row 1). Each shape's UVs span its square bounding box, so a
 // square image's top edge faces the top of the board.
+import { useViewStore } from "../store/view.ts";
 import { useTexture } from "@react-three/drei";
 import {
   BufferGeometry,
@@ -413,6 +414,27 @@ function SoilWalls({ geometry }: { geometry: BufferGeometry }) {
   );
 }
 
+/**
+ * Lowers the contrast and saturation of a land tile's texture so pieces, number chips and the
+ * robber stand out against it. Pulls the sampled color toward a mid grey-tan and desaturates it.
+ */
+const LAND_SOFTEN = { contrast: 0.85, saturation: 0.9 } as const;
+const softenLandMaterial = (shader: { fragmentShader: string }): void => {
+  shader.fragmentShader = shader.fragmentShader.replace(
+    "#include <map_fragment>",
+    `#include <map_fragment>
+    {
+      float l = dot(diffuseColor.rgb, vec3(0.2126, 0.7152, 0.0722));
+      vec3 c = mix(vec3(l), diffuseColor.rgb, ${LAND_SOFTEN.saturation.toFixed(2)});
+      diffuseColor.rgb = mix(vec3(0.6, 0.58, 0.52), c, ${LAND_SOFTEN.contrast.toFixed(2)});
+    }`,
+  );
+};
+const SOFTEN_PROPS = {
+  onBeforeCompile: softenLandMaterial,
+  customProgramCacheKey: () => "land-soften",
+};
+
 export interface FlatShapeProps {
   assetKey: FlatAssetKey;
   /** Procedural color; ignored (white) when `map` is set so the image shows unmodified. */
@@ -428,6 +450,7 @@ export interface FlatShapeProps {
  * this component; only the material's color/map differ.
  */
 export function FlatShape({ assetKey, color, map, projection = "top" }: FlatShapeProps) {
+  const softTiles = useViewStore((s) => s.softTiles);
   const relief = useLandRelief();
   const shape = FLAT_SHAPE[assetKey];
   const { fill: hexFill, outline } = flatGeometry(shape);
@@ -452,12 +475,13 @@ export function FlatShape({ assetKey, color, map, projection = "top" }: FlatShap
           <SoilWalls geometry={landBlockGeometry(assetKey, iso).sides} />
           <mesh geometry={landBlockGeometry(assetKey, iso).top} castShadow receiveShadow>
             <meshStandardMaterial
-              key={map ? "map" : "color"}
+              key={`${map ? "map" : "color"}${softTiles ? "-soft" : ""}`}
               color={map ? "#ffffff" : color}
               map={map ?? null}
               roughness={1}
               metalness={0}
               side={DoubleSide}
+              {...(map && softTiles ? SOFTEN_PROPS : {})}
             />
           </mesh>
         </>
@@ -470,7 +494,7 @@ export function FlatShape({ assetKey, color, map, projection = "top" }: FlatShap
       {!block && (
         <mesh geometry={fill} position={[0, y, 0]} receiveShadow>
           <meshStandardMaterial
-            key={`${map ? "map" : "color"}${land ? "-land" : ""}`}
+            key={`${map ? "map" : "color"}${land ? "-land" : ""}${softTiles ? "-soft" : ""}`}
             color={map ? "#ffffff" : color}
             map={map ?? null}
             roughness={1}
@@ -478,6 +502,7 @@ export function FlatShape({ assetKey, color, map, projection = "top" }: FlatShap
             transparent={land}
             opacity={land ? LAND_OPACITY : 1}
             depthWrite={!land}
+            {...(map && land && softTiles ? SOFTEN_PROPS : {})}
             polygonOffset={marker}
             polygonOffsetFactor={marker ? -2 : 0}
             polygonOffsetUnits={marker ? -2 : 0}

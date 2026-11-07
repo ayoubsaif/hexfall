@@ -6,6 +6,7 @@ export const board: Catalog["board"] = {
   zoomOut: "Alejar",
   zoomIn: "Acercar",
   zoomSlider: "Zoom",
+  softTiles: "Suavizar los colores de las casillas para destacar las piezas",
   viewGroup: "Vista del tablero",
   viewTop: "Vista cenital, centrada",
   viewDiagonal: "Vista diagonal lateral",
