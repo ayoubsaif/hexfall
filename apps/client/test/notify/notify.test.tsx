@@ -275,7 +275,10 @@ describe("service worker strings", () => {
     expect(i18n.t("common.alerts.push.title.turn", { room: "AB" })).toBe("Your turn — room AB");
   });
 
-  it("has no fetch handler", () => {
-    expect(swSource).not.toMatch(/addEventListener\(\s*["']fetch["']/);
+  it("caches only same-origin GET requests and never intercepts the worker file", () => {
+    expect(swSource).toMatch(/addEventListener\(\s*["']fetch["']/);
+    expect(swSource).toMatch(/request\.method !== "GET"/);
+    expect(swSource).toMatch(/url\.origin !== self\.location\.origin/);
+    expect(swSource).toMatch(/"\/sw\.js"/);
   });
 });

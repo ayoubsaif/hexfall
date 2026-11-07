@@ -1,6 +1,7 @@
-// Hexfall service worker: turn notifications only (openspec change turn-sound-and-push;
-// specs/turn-notifications "Service worker", "Push notification display", "Notification click").
-// It never caches or intercepts requests: there is no fetch handler on purpose.
+// Hexfall service worker: turn notifications (openspec change turn-sound-and-push; specs/
+// turn-notifications "Service worker", "Push notification display", "Notification click") and
+// runtime caching for fast, offline-tolerant loads (openspec change pwa-install-and-offline-cache).
+// Only same-origin GET requests are cached; sockets and cross-origin calls are never touched.
 
 // Notification text; must match common.alerts.push in the i18n catalogs (a test checks it).
 /* STRINGS */
@@ -40,8 +41,85 @@ const ICON = "/icons/icon-192.png";
 const BADGE = "/icons/badge-96.png";
 const CODE = /^[A-Z0-9]{1,16}$/;
 
-self.addEventListener("install", () => self.skipWaiting());
-self.addEventListener("activate", (event) => event.waitUntil(self.clients.claim()));
+// Bump to drop every old cache on the next activation.
+const CACHE = "hexfall-v1";
+const SHELL = ["/", "/manifest.webmanifest", ICON, "/icons/icon-512.png", "/favicon.ico"];
+// Static files that rarely change but are not content-hashed: serve cached, refresh behind.
+const SWR = /^\/(textures|themes|cards|avatars|ui|icons|fonts)\//;
+
+self.addEventListener("install", (event) => {
+  event.waitUntil(
+    caches
+      .open(CACHE)
+      .then((cache) => cache.addAll(SHELL))
+      .catch(() => {})
+      .then(() => self.skipWaiting()),
+  );
+});
+self.addEventListener("activate", (event) =>
+  event.waitUntil(
+    caches
+      .keys()
+      .then((keys) =>
+        Promise.all(
+          keys.filter((k) => k.startsWith("hexfall-") && k !== CACHE).map((k) => caches.delete(k)),
+        ),
+      )
+      .then(() => self.clients.claim()),
+  ),
+);
+
+async function store(request, response) {
+  if (response && response.ok && response.type === "basic") {
+    const cache = await caches.open(CACHE);
+    await cache.put(request, response.clone());
+  }
+  return response;
+}
+
+// Hashed build output never changes under the same name: cache first.
+async function cacheFirst(request) {
+  const hit = await caches.match(request);
+  return hit || store(request, await fetch(request));
+}
+
+// Cached copy now, fresh copy for next time.
+async function staleWhileRevalidate(event, request) {
+  const hit = await caches.match(request);
+  const fresh = fetch(request)
+    .then((res) => store(request, res))
+    .catch(() => hit);
+  if (hit) {
+    event.waitUntil(fresh);
+    return hit;
+  }
+  return fresh;
+}
+
+// Pages: always try the network for the newest build, fall back to the cached shell offline.
+async function networkFirst(request) {
+  try {
+    return await store(request, await fetch(request));
+  } catch (error) {
+    const hit = (await caches.match(request)) || (await caches.match("/"));
+    if (hit) return hit;
+    throw error;
+  }
+}
+
+self.addEventListener("fetch", (event) => {
+  const { request } = event;
+  if (request.method !== "GET") return;
+  const url = new URL(request.url);
+  if (url.origin !== self.location.origin || url.pathname === "/sw.js") return;
+  if (request.mode === "navigate") {
+    event.respondWith(networkFirst(request));
+  } else if (url.pathname.startsWith("/assets/")) {
+    event.respondWith(cacheFirst(request));
+  } else if (SWR.test(url.pathname) || url.pathname === "/manifest.webmanifest") {
+    event.respondWith(staleWhileRevalidate(event, request));
+  }
+});
 
 function text(lang, kind, room) {
   const base = String(lang || "en")

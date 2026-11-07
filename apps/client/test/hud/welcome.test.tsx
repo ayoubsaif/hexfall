@@ -76,3 +76,22 @@ describe("Welcome screen", () => {
     expect(m.container.querySelector("input")).not.toBeNull();
   });
 });
+
+describe("Install prompt", () => {
+  it("offers a one-tap install only once the browser allows it, and prompts on click", async () => {
+    const { setDeferredInstall } = await import("../../src/pwa/install.ts");
+    m = mount(<Hud />);
+    expect(q("install-app")).toBeNull();
+    let prompted = 0;
+    act(() =>
+      setDeferredInstall({
+        prompt: async () => void prompted++,
+        userChoice: Promise.resolve({ outcome: "accepted" }),
+      } as never),
+    );
+    expect(q("install-app")?.textContent).toContain("Install the app");
+    await act(async () => click(q("install-app")!));
+    expect(prompted).toBe(1);
+    expect(q("install-app")).toBeNull();
+  });
+});

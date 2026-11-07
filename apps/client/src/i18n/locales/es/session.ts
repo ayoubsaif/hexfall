@@ -42,6 +42,7 @@ export const session: Catalog["session"] = {
       "Reúne a tus amigos, negocia un buen trato y construye tu camino a la victoria. Cada tirada abre nuevas posibilidades.",
     reassurance: "Juega con amigos o practica contra bots · 3–4 jugadores",
     guide: "¿Primera vez en la isla? Guía rápida",
+    install: "Instalar la app",
     play: "Jugar",
     ad: "Publicidad",
     howTitle: "Cómo se juega",

@@ -41,6 +41,7 @@ export const session = {
       "Gather your friends, strike a clever trade, and build your way to victory. Every roll brings a new possibility.",
     reassurance: "Play with friends or practice against bots · 3–4 players",
     guide: "New to the island? A quick guide",
+    install: "Install the app",
     play: "Play Game",
     ad: "Advertisement",
     howTitle: "How to play",

@@ -3,8 +3,10 @@
 // start screen, unless an invite link, a notice or a returning player skips it.
 import { COSTS } from "@hexfall/engine/geometry";
 import type { ResourceBundle } from "@hexfall/engine";
+import { Download } from "lucide-react";
 import { useTranslation } from "react-i18next";
 import { GameModeButtons, type GameMode } from "./GameModeButtons.tsx";
+import { promptInstall, useCanInstall } from "../pwa/install.ts";
 import { CostCards } from "./actions/ActionButtons.tsx";
 
 /** Module flag: the welcome screen was dismissed in this page visit. */
@@ -58,6 +60,7 @@ export function AdGutters() {
 
 export function Welcome({ onPlay }: { onPlay: (mode: GameMode) => void }) {
   const { t } = useTranslation();
+  const canInstall = useCanInstall();
   return (
     <div data-testid="welcome" data-interactive className="welcome-sheet paper pointer-events-auto">
       <header className="welcome-brand">
@@ -85,6 +88,19 @@ export function Welcome({ onPlay }: { onPlay: (mode: GameMode) => void }) {
         </div>
         <GameModeButtons onSelect={onPlay} />
       </div>
+
+      {canInstall && (
+        <button
+          type="button"
+          data-testid="install-app"
+          data-interactive
+          onClick={() => void promptInstall()}
+          className="mx-auto flex cursor-pointer items-center gap-2 rounded-full border border-[#c9a04e]/40 bg-[#2a160b]/75 px-4 py-2 text-sm font-semibold text-[#f6ecd0] shadow-sm shadow-black/20 outline-none backdrop-blur-sm hover:bg-[#2a160b]/90 focus-visible:ring-2 focus-visible:ring-ring"
+        >
+          <Download aria-hidden size={18} className="text-[#f0c860]" />
+          {t("session.welcome.install")}
+        </button>
+      )}
 
       <details className="welcome-guide">
         <summary>{t("session.welcome.guide")}</summary>
