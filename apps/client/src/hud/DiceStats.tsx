@@ -1,4 +1,4 @@
-// "Dice" tab of the log drawer: how often each total has been rolled (specs/game-hud
+// Dice statistics at the top of the log drawer's Log tab: how often each total has been rolled (specs/game-hud
 // "Dice statistics").
 import { useMemo } from "react";
 import { useTranslation } from "react-i18next";
@@ -6,14 +6,18 @@ import { cn } from "@/lib/utils.ts";
 import { DICE_TOTALS, diceCounts } from "../game/diceStats.ts";
 import { useGameStore } from "../store/game.ts";
 
-export function DiceStats() {
+/** `compact`: a short chart, for sharing the Log tab with the event log. */
+export function DiceStats({ compact = false }: { compact?: boolean }) {
   const { t } = useTranslation();
   const log = useGameStore((s) => s.log);
   const { counts, total } = useMemo(() => diceCounts(log), [log]);
   const max = Math.max(0, ...Object.values(counts));
 
   return (
-    <section aria-label={t("dialogs.feed.diceTitle")} className="flex min-h-0 flex-col gap-3 px-1">
+    <section
+      aria-label={t("dialogs.feed.diceTitle")}
+      className={cn("flex shrink-0 flex-col px-1", compact ? "gap-1.5" : "gap-3")}
+    >
       <p data-testid="dice-total" className="m-0 text-muted-foreground">
         {t("dialogs.feed.diceRolls", { count: total })}
       </p>
@@ -22,7 +26,7 @@ export function DiceStats() {
           {t("dialogs.feed.diceEmpty")}
         </p>
       ) : (
-        <ol className="m-0 flex h-48 list-none items-stretch gap-1 p-0">
+        <ol className={cn("m-0 flex list-none items-stretch gap-1 p-0", compact ? "h-24" : "h-48")}>
           {DICE_TOTALS.map((n) => {
             const count = counts[n];
             return (

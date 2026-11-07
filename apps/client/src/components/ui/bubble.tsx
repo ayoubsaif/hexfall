@@ -1,4 +1,4 @@
-// shadcn/ui Bubble: the visible surface of one chat message (styled for the parchment HUD).
+// shadcn/ui Bubble: the visible surface of one chat message (a square card block, like the HUD cards).
 import type { ComponentProps } from "react";
 import { cn } from "@/lib/utils.ts";
 
@@ -7,7 +7,7 @@ export function Bubble({ className, ...props }: ComponentProps<"div">) {
     <div
       data-slot="bubble"
       className={cn(
-        "group/bubble relative max-w-full rounded-2xl border border-ink/15 bg-cream/70 px-3 py-1.5 text-sm leading-snug text-ink shadow-sm shadow-black/10 group-data-[align=end]/message:rounded-br-sm group-data-[align=end]/message:border-leather/40 group-data-[align=end]/message:bg-leather group-data-[align=end]/message:text-cream group-data-[align=start]/message:rounded-bl-sm",
+        "group/bubble relative max-w-full rounded-none border-2 border-leather bg-hud-solid px-3 py-1.5 text-sm leading-snug text-ink shadow-[0_2px_0_rgb(74_44_26/45%)] group-data-[align=end]/message:border-[#2a160b] group-data-[align=end]/message:bg-leather group-data-[align=end]/message:text-cream",
         className,
       )}
       {...props}

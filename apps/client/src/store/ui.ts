@@ -31,7 +31,7 @@ export interface Toast {
 export type TurnFocusState = "closed" | "open" | "dismissed";
 
 /** Tab shown in the log drawer (game-hud "Log drawer tabs"). */
-export type LogTab = "log" | "dice" | "chat";
+export type LogTab = "chat" | "log";
 
 export interface UiState {
   build: BuildChoice | null;
@@ -53,7 +53,7 @@ export const initialUiState: UiState = {
   tradeDraft: null,
   toasts: [],
   focus: "closed",
-  logTab: "log",
+  logTab: "chat",
 };
 
 /**

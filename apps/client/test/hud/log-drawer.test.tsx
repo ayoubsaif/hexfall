@@ -1,4 +1,4 @@
-// Log drawer with Log and Dice tabs (openspec log-drawer-dice-stats; specs/game-hud "Log drawer
+// Log drawer with Chat and Log (event log + dice statistics) tabs (openspec log-drawer-dice-stats, in-game-chat; specs/game-hud "Log drawer
 // tabs", "Dice statistics"; specs/hud-presentation "Responsive HUD layout").
 import type { GameEvent } from "@hexfall/engine";
 import { act } from "react";
@@ -75,23 +75,25 @@ describe("Log drawer", () => {
     expect(document.querySelector('[role="tablist"]')).toBeNull();
   });
 
-  it("opens on the Log tab with the event log", () => {
+  it("opens on the Chat tab, first of two tabs", () => {
     openDrawer();
-    expect(tab("Log")?.getAttribute("aria-selected")).toBe("true");
-    expect(tab("Dice")?.getAttribute("aria-selected")).toBe("false");
-    const panel = document.querySelector('[role="tabpanel"]');
-    expect(panel?.getAttribute("aria-labelledby")).toBe(tab("Log")?.id);
+    const tabs = [...document.querySelectorAll('[role="tab"]')].map((t) => t.textContent);
+    expect(tabs).toEqual(["Chat", "Log & dice"]);
+    expect(tab("Chat")?.getAttribute("aria-selected")).toBe("true");
+    expect(document.querySelector('[data-testid="chat"]')).not.toBeNull();
+    expect(document.querySelector('[data-testid="log-line"]')).toBeNull();
+  });
+
+  it("shows the event log and the dice statistics together, and reopens on the last tab", () => {
+    openDrawer();
+    pick(tab("Log & dice"));
+    expect(tab("Log & dice")?.getAttribute("aria-selected")).toBe("true");
+    const panel = document.querySelector('[role="tabpanel"]:not([hidden])');
+    expect(panel?.getAttribute("aria-labelledby")).toBe(tab("Log & dice")?.id);
+    expect(panel?.querySelector('[data-testid="dice-total"]')).not.toBeNull();
     expect(
       panel?.querySelector('[data-testid="log-line"], [data-testid="log-empty"]'),
     ).not.toBeNull();
-  });
-
-  it("switches to Dice and reopens on the last tab", () => {
-    openDrawer();
-    pick(tab("Dice"));
-    expect(tab("Dice")?.getAttribute("aria-selected")).toBe("true");
-    expect(document.querySelector('[data-testid="dice-total"]')).not.toBeNull();
-    expect(document.querySelector('[data-testid="log-line"]')).toBeNull();
     // Close with Escape, then open again.
     act(() => {
       document.activeElement?.dispatchEvent(
@@ -100,7 +102,7 @@ describe("Log drawer", () => {
     });
     expect(document.querySelector('[role="tablist"]')).toBeNull();
     click(toggle());
-    expect(tab("Dice")?.getAttribute("aria-selected")).toBe("true");
+    expect(tab("Log & dice")?.getAttribute("aria-selected")).toBe("true");
   });
 });
 

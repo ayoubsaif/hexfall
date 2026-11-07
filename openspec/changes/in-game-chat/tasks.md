@@ -14,3 +14,8 @@
 ## 3. Check
 
 - [ ] 3.1 Play-test with two browsers: send, receive, rejoin history, unread dot, 360 px layout
+
+## 4. Drawer layout (owner request)
+
+- [x] 4.1 Chat is the first tab and the default; the Log tab holds the dice statistics (compact chart) above the event log; the separate Dice tab is gone
+- [x] 4.2 Unread dot is light green; chat bubbles are square cards

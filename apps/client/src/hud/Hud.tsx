@@ -190,7 +190,7 @@ function LogDrawer() {
             <span
               aria-hidden="true"
               data-testid="chat-unread"
-              className="absolute top-0 right-0 size-3 rounded-full border border-cream bg-accent"
+              className="absolute top-0 right-0 size-3 rounded-full border border-cream/80 bg-[#5fd08a] shadow-[0_0_6px_#5fd08a]"
             />
           )}
         </button>
@@ -245,25 +245,22 @@ function GameHud({ corner }: { corner: HTMLElement | null }) {
   );
 }
 
-/** The log drawer's body: Log and Dice tabs; it reopens on the tab last selected. */
+/** The log drawer's body: Chat, and Log with the dice statistics; it reopens on the last tab. */
 function LogTabs() {
   const { t } = useTranslation();
   const tab = useUiStore((s) => s.logTab);
   return (
     <Tabs value={tab} onValueChange={(v) => setLogTab(v as LogTab)} className="flex-1">
       <TabsList>
-        <TabsTrigger value="log">{t("dialogs.feed.tabLog")}</TabsTrigger>
-        <TabsTrigger value="dice">{t("dialogs.feed.tabDice")}</TabsTrigger>
         <TabsTrigger value="chat">{t("dialogs.feed.tabChat")}</TabsTrigger>
+        <TabsTrigger value="log">{t("dialogs.feed.tabLog")}</TabsTrigger>
       </TabsList>
-      <TabsContent value="log">
-        <EventLog />
-      </TabsContent>
-      <TabsContent value="dice">
-        <DiceStats />
-      </TabsContent>
       <TabsContent value="chat" className="flex min-h-0 flex-1 flex-col">
         <ChatPanel />
+      </TabsContent>
+      <TabsContent value="log" className="flex min-h-0 flex-1 flex-col gap-3">
+        <DiceStats compact />
+        <EventLog />
       </TabsContent>
     </Tabs>
   );
