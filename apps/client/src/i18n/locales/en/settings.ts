@@ -93,6 +93,7 @@ export const settings = {
   },
   about: {
     version: "Version {{version}}",
+    createdBy: "Created by",
     credits: "Credits",
     by: "by",
     otherAssets: "Other theme assets: ",

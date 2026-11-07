@@ -1,11 +1,14 @@
 import tailwindcss from "@tailwindcss/vite";
 import react from "@vitejs/plugin-react";
 import { defineConfig, loadEnv } from "vite-plus";
+import pkg from "./package.json" with { type: "json" };
 import { applySiteUrl, normalizeSiteUrl } from "./siteMeta.ts";
 
 export default defineConfig(({ mode }) => {
   const siteUrl = normalizeSiteUrl(loadEnv(mode, process.cwd(), "VITE_").VITE_SITE_URL);
   return {
+    // The app version shown in Settings and sent in `hello`: package.json, unless VITE_APP_VERSION overrides it.
+    define: { __APP_VERSION__: JSON.stringify(pkg.version) },
     plugins: [
       react(),
       tailwindcss(),

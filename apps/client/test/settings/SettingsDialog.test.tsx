@@ -222,7 +222,10 @@ describe("Settings dialog layout", () => {
   it("About shows the version and the theme credits", () => {
     render();
     act(() => setSettingsSection("about"));
-    expect(byTestId("settings-version")?.textContent).toMatch(/Version /);
+    expect(byTestId("settings-version")?.textContent).toMatch(/Version \d+\.\d+\.\d+/);
+    const author = byTestId("settings-author")?.querySelector("a");
+    expect(author?.textContent).toBe("@ayoubsaif");
+    expect(author?.getAttribute("href")).toBe("https://github.com/ayoubsaif");
     expect(byTestId("settings-section-about")?.textContent).toContain("Credits");
   });
 });

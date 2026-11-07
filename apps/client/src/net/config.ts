@@ -4,4 +4,4 @@ export const SERVER_URL: string =
 
 /** Sent in `hello`. */
 export const CLIENT_VERSION: string =
-  (import.meta.env["VITE_APP_VERSION"] as string | undefined) || "0.0.0-dev";
+  (import.meta.env["VITE_APP_VERSION"] as string | undefined) || __APP_VERSION__;

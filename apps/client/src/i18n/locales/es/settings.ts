@@ -95,6 +95,7 @@ export const settings: Catalog["settings"] = {
   },
   about: {
     version: "Versión {{version}}",
+    createdBy: "Creado por",
     credits: "Créditos",
     by: "de",
     otherAssets: "Otros recursos del tema: ",

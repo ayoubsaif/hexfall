@@ -14,6 +14,17 @@ export function AboutSection() {
         {t("settings.about.version", { version: CLIENT_VERSION })}
       </p>
       <h3 className="mt-4 font-semibold">{t("settings.about.credits")}</h3>
+      <p data-testid="settings-author" className="my-1">
+        {t("settings.about.createdBy")}{" "}
+        <a
+          href="https://github.com/ayoubsaif"
+          target="_blank"
+          rel="noopener noreferrer"
+          className="text-primary underline underline-offset-2"
+        >
+          @ayoubsaif
+        </a>
+      </p>
       <CreditsList theme={theme} />
       <p className="mt-4 text-xs text-muted-foreground">{t("settings.about.note")}</p>
     </div>
