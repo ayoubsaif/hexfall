@@ -1,10 +1,10 @@
-// Frames the whole island (sea ring plus harbor badges) on load and on resize. The canvas
+// Frames the whole island (sea ring plus harbor piers and boats) on load and on resize. The canvas
 // is a full-screen background behind the HUD, and the board is fitted to the whole screen.
 import { useThree } from "@react-three/fiber";
 import { useLayoutEffect, useMemo } from "react";
 import { PerspectiveCamera } from "three";
 
-/** Radius of the circle that holds the sea ring and harbor badges. */
+/** Radius of the sphere that holds the sea ring and harbor boats, masts included. */
 export const FIT_RADIUS = 6.3;
 export const FIT_FOV = 45;
 /** Camera elevation above the board plane, from the +Z side so row 1 is on top. */

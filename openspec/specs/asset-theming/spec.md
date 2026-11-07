@@ -8,7 +8,7 @@ Define how the 3D client resolves visual assets by stable key through a swappabl
 
 ### Requirement: Asset requests by key
 
-Scene components SHALL request every visual asset by a stable asset key and MUST NOT reference asset file paths (model or image) directly. The supported key set SHALL be exactly: `tile.forest`, `tile.pasture`, `tile.fields`, `tile.hills`, `tile.mountains`, `tile.desert`, `sea`, `token`, `harbor.generic`, `harbor.brick`, `harbor.grain`, `harbor.lumber`, `harbor.ore`, `harbor.wool`, `piece.road`, `piece.settlement`, `piece.city`, `piece.robber`, `dice.die`. Resolving a supported key SHALL always produce a renderable asset, whether themed or procedural.
+Scene components SHALL request every visual asset by a stable asset key and MUST NOT reference asset file paths (model or image) directly. The supported key set SHALL be exactly: `tile.forest`, `tile.pasture`, `tile.fields`, `tile.hills`, `tile.mountains`, `tile.desert`, `sea`, `token`, `harbor.generic`, `harbor.brick`, `harbor.grain`, `harbor.lumber`, `harbor.ore`, `harbor.wool`, `piece.road`, `piece.settlement`, `piece.city`, `piece.robber`, `dice.die`, `prop.boat`. Resolving a supported key SHALL always produce a renderable asset, whether themed or procedural.
 
 #### Scenario: Supported key resolves to a renderable asset
 - **WHEN** a scene component requests the key `tile.forest`
@@ -22,6 +22,10 @@ Scene components SHALL request every visual asset by a stable asset key and MUST
 #### Scenario: Die key resolves
 - **WHEN** the board dice request the key `dice.die`
 - **THEN** the theme layer returns a renderable die, themed or procedural
+
+#### Scenario: Boat key resolves
+- **WHEN** a harbor marker requests the key `prop.boat`
+- **THEN** the theme layer returns a renderable boat, themed or procedural, whose sail and mast can be found by the requesting component
 
 ### Requirement: Theme manifest
 
@@ -65,6 +69,7 @@ Every themed asset SHALL follow this contract: Y-up; 1 unit equals the hex circu
 - **Token and harbor images** (`token`, `harbor.*`) SHALL be square. They are mapped onto the flat marker shape the board draws for them, centered on the marker.
 - **Model keys** (`piece.*`) SHALL have the origin at the base center and rest on y=0.
 - **The die** (`dice.die`) SHALL be white with black pips, SHALL have its origin at its center and an edge of 0.30 units, with its values on fixed local axes: +Y=1, +Z=2, +X=3, −X=4, −Z=5, −Y=6.
+- **The boat** (`prop.boat`) SHALL have its origin at the center of the hull's waterline, resting on y=0 (the sea surface), with its length along the X axis. It SHALL contain one mesh whose node name contains `Sail` (case-insensitive), whose face points along ±X before any turn, and one node whose name contains `Mast`, whose X/Z position is the vertical axis the sail turns about. The mast and nodes whose names contain `Yard`, `Sheet` or `Lashing` SHALL turn and lean with the sail, about the mast's foot. When no mast node is present, the sail SHALL turn about the vertical axis through its own bounding-box center. A sail without texture coordinates SHALL be accepted; the client generates them.
 
 The theme layer SHALL place assets assuming this contract. Procedural fallbacks SHALL follow the same contract, so swapping a themed asset for its fallback (or vice versa) does not move or resize the asset's placement.
 
@@ -85,6 +90,14 @@ The theme layer SHALL place assets assuming this contract. Procedural fallbacks 
 - **WHEN** a resting die switches from its procedural fallback to the loaded `dice.die` model
 - **THEN** the same value faces up and the die does not move or resize
 
+#### Scenario: Boat floats on the sea
+- **WHEN** a conforming `prop.boat` model is placed at a harbor
+- **THEN** its hull's waterline sits at the sea surface, neither floating above nor sunk below it
+
+#### Scenario: Sail found by name
+- **WHEN** a `prop.boat` model has a node named `Boat Sail` and a node named `Boat Mast`
+- **THEN** the client paints the harbor label on `Boat Sail` and turns it about the mast's vertical axis
+
 ### Requirement: Per-asset transform overrides
 
 A manifest entry for a model key SHALL accept optional overrides for scale, rotation and offset. When present, the overrides SHALL be applied to that model on top of the model contract, and SHALL affect only that key in that theme. When absent, the model SHALL be used as authored. Entries for flat keys SHALL NOT accept transform overrides, because flat assets must keep the board's exact footprint.
@@ -104,7 +117,7 @@ A manifest entry for a model key SHALL accept optional overrides for scale, rota
 
 ### Requirement: Procedural fallback for every key
 
-Every supported asset key SHALL have a built-in procedural representation that requires no asset files. For flat keys it is a flat shape in a key-specific color: a flat hex for `tile.*` and `sea`, a flat disc for `token`, and a flat badge for `harbor.*`. For model keys it is a simple 3D shape. The procedural fallback SHALL be rendered when the active theme does not map the key, while the mapped file is loading, or when the mapped file fails to load or decode. The fallbacks for different terrain and harbor keys SHALL be visually distinguishable from one another. Flat fallbacks SHALL have no raised 3D props. The game SHALL remain fully playable with zero asset files present.
+Every supported asset key SHALL have a built-in procedural representation that requires no asset files. For flat keys it is a flat shape in a key-specific color: a flat hex for `tile.*` and `sea`, a flat disc for `token`, and a flat badge for `harbor.*`. For model keys it is a simple 3D shape; for `prop.boat` it is a simple hull with a mast and a flat sail that follows the boat contract (named sail and mast parts), so it carries the same sail label and turn as the themed boat. The procedural fallback SHALL be rendered when the active theme does not map the key, while the mapped file is loading, or when the mapped file fails to load or decode. The fallbacks for different terrain and harbor keys SHALL be visually distinguishable from one another. Flat fallbacks SHALL have no raised 3D props. The game SHALL remain fully playable with zero asset files present.
 
 #### Scenario: Zero model files
 - **WHEN** the client runs with a theme that maps no keys, or with all asset files absent
@@ -119,6 +132,10 @@ Every supported asset key SHALL have a built-in procedural representation that r
 #### Scenario: Terrains are distinguishable in fallback
 - **WHEN** all six `tile.*` keys render as procedural fallbacks
 - **THEN** each terrain type has a distinct flat color
+
+#### Scenario: Fallback boat has a labelled sail
+- **WHEN** `prop.boat` renders as its procedural fallback at an ore harbor
+- **THEN** the fallback boat's sail shows the ore icon and "2:1"
 
 ### Requirement: Load failure handling
 
@@ -308,7 +325,7 @@ The project SHALL provide a command-line conversion that turns the committed die
 
 Every supported asset key SHALL have exactly one kind:
 - **Flat** keys: `tile.forest`, `tile.pasture`, `tile.fields`, `tile.hills`, `tile.mountains`, `tile.desert`, `sea`, `token`, `harbor.generic`, `harbor.brick`, `harbor.grain`, `harbor.lumber`, `harbor.ore`, `harbor.wool`. These are drawn as flat shapes on the board plane, optionally textured with an image.
-- **Model** keys: `piece.road`, `piece.settlement`, `piece.city`, `piece.robber`, `dice.die`. These are 3D objects, optionally loaded from a GLB model.
+- **Model** keys: `piece.road`, `piece.settlement`, `piece.city`, `piece.robber`, `dice.die`, `prop.boat`. These are 3D objects, optionally loaded from a GLB model.
 
 The kind of a key SHALL be fixed and SHALL NOT depend on the theme.
 
@@ -322,6 +339,10 @@ The kind of a key SHALL be fixed and SHALL NOT depend on the theme.
 
 #### Scenario: The die is a model
 - **WHEN** the kind of `dice.die` is looked up
+- **THEN** it is model
+
+#### Scenario: The boat is a model
+- **WHEN** the kind of `prop.boat` is looked up
 - **THEN** it is model
 
 ### Requirement: Original painted tile art

@@ -105,6 +105,9 @@ export function FlatAsset({
   return <FlatShape assetKey={assetKey} color="#ffffff" map={texture} projection={projection} />;
 }
 
+/** Draco decoder served by the app (copied from three.js), so compressed models load offline. */
+const DRACO_DECODERS = "/draco/";
+
 function ThemedModel({
   url,
   assetKey,
@@ -116,7 +119,7 @@ function ThemedModel({
   playerColor: string | undefined;
   transform: Transform | undefined;
 }) {
-  const gltf = useGLTF(url);
+  const gltf = useGLTF(url, DRACO_DECODERS);
   const object = useMemo(
     () => instantiateModel(gltf.scene, assetKey, playerColor),
     [gltf.scene, assetKey, playerColor],

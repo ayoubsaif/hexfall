@@ -19,6 +19,7 @@ import { SEA } from "./graphicsQuality.ts";
 import { visibleSeaHalf } from "./seaBounds.ts";
 import { CoastTerrain } from "./CoastTerrain.tsx";
 import { coastRocks } from "./coastTerrain.ts";
+import { SEA_ORDER } from "./hullMask.ts";
 import { supportsWaterSimulation, WaterSimulation } from "./waterSimulation.ts";
 import { realisticVertex, realisticFragment } from "./realisticWater.ts";
 
@@ -287,6 +288,8 @@ export function Water({
       <mesh
         frustumCulled={false}
         raycast={() => {}}
+        // Drawn after the boats' hull lids, so no sea shows inside a hull (hullMask.ts).
+        renderOrder={SEA_ORDER}
         rotation={[-Math.PI / 2, 0, 0]}
         position={[0, y, 0]}
       >

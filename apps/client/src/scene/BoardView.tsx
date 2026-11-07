@@ -8,6 +8,7 @@ import type { Group, MeshBasicMaterial } from "three";
 import type { WriteSource } from "../store/game.ts";
 import { Asset, domeHeight, useLandRelief } from "../theme/index.ts";
 import { faceChips } from "./chipYaw.ts";
+import { useSailRigs } from "./HarborBoat.tsx";
 import { HarborMarker } from "./HarborMarker.tsx";
 import { type XZ, boardLayout } from "./layout.ts";
 import {
@@ -105,11 +106,7 @@ function Glow({ ms }: { ms: number }) {
   });
   if (done) return null;
   return (
-    <mesh
-      rotation={[-Math.PI / 2, 0, 0]}
-      position={[0, 0.02, 0]}
-      renderOrder={5}
-    >
+    <mesh rotation={[-Math.PI / 2, 0, 0]} position={[0, 0.02, 0]} renderOrder={5}>
       <ringGeometry args={[0.32, 0.62, 32]} />
       <meshBasicMaterial
         ref={mat}
@@ -148,50 +145,34 @@ export function BoardView({
   glowKey = 0,
   source = null,
 }: BoardViewProps) {
-  const layout = useMemo(
-    () => boardLayout(board, robberHex),
-    [board, robberHex],
-  );
+  const layout = useMemo(() => boardLayout(board, robberHex), [board, robberHex]);
   const reduced = useReducedMotion();
   const glowMs = motionDurations(reduced).glow;
   const glowing = useMemo(() => new Set(glowHexes ?? []), [glowHexes]);
   const chipRef = useChipFacing();
+  const boatRef = useSailRigs();
   // Domed land lifts each hex's token to the top of its dome.
   const relief = useLandRelief();
-  const terrainOf = useMemo(
-    () => new Map(layout.tiles.map((t) => [t.hex, t.assetKey])),
-    [layout],
-  );
-  const lift = (hex: number) =>
-    relief.raised ? domeHeight(terrainOf.get(hex) ?? "", 0) : 0;
+  const terrainOf = useMemo(() => new Map(layout.tiles.map((t) => [t.hex, t.assetKey])), [layout]);
+  const lift = (hex: number) => (relief.raised ? domeHeight(terrainOf.get(hex) ?? "", 0) : 0);
   // Image themes draw the land as one continuous island surface (IslandGround) instead of
   // one block per tile. Keyed on tile positions and terrains, so moving the robber (which
   // rebuilds the layout) does not rebuild the island mesh.
   const islandUrls = useIslandTextureUrls();
-  const islandKey = layout.tiles
-    .map((t) => `${t.assetKey}@${t.position.join(",")}`)
-    .join("|");
+  const islandKey = layout.tiles.map((t) => `${t.assetKey}@${t.position.join(",")}`).join("|");
   const islandTiles = useMemo(
-    () =>
-      layout.tiles.map((t) => ({ position: t.position, assetKey: t.assetKey })),
+    () => layout.tiles.map((t) => ({ position: t.position, assetKey: t.assetKey })),
     // eslint-disable-next-line react-hooks/exhaustive-deps
     [islandKey],
   );
-  const islandLand = useMemo(
-    () => islandTiles.map((t) => t.position),
-    [islandTiles],
-  );
+  const islandLand = useMemo(() => islandTiles.map((t) => t.position), [islandTiles]);
   const island = relief.raised && islandUrls !== null;
   const robber = layout.robber;
-  const robberCenter =
-    layout.tiles.find((t) => t.hex === robber.hex)?.position ?? robber.position;
+  const robberCenter = layout.tiles.find((t) => t.hex === robber.hex)?.position ?? robber.position;
   const robberLift = relief.raised
     ? domeHeight(
         terrainOf.get(robber.hex) ?? "",
-        Math.hypot(
-          robber.position[0] - robberCenter[0],
-          robber.position[1] - robberCenter[1],
-        ),
+        Math.hypot(robber.position[0] - robberCenter[0], robber.position[1] - robberCenter[1]),
       )
     : 0;
   return (
@@ -212,20 +193,15 @@ export function BoardView({
         ))
       )}
       {layout.tokens.map((t) => (
-        <group
-          key={t.key}
-          position={[t.position[0], lift(t.hex), t.position[1]]}
-        >
+        <group key={t.key} position={[t.position[0], lift(t.hex), t.position[1]]}>
           <group ref={chipRef} name="chip">
             <NumberToken value={t.value} />
           </group>
-          {glowMs > 0 && glowing.has(t.hex) && (
-            <Glow key={glowKey} ms={glowMs} />
-          )}
+          {glowMs > 0 && glowing.has(t.hex) && <Glow key={glowKey} ms={glowMs} />}
         </group>
       ))}
       {layout.harbors.map((h) => (
-        <HarborMarker key={h.key} item={h} chipRef={chipRef} />
+        <HarborMarker key={h.key} item={h} boatRef={boatRef} />
       ))}
       <Robber
         hex={layout.robber.hex}

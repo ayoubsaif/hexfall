@@ -130,3 +130,18 @@ describe("token chip", () => {
     expect(typeof FALLBACKS.token).toBe("function");
   });
 });
+
+describe("boat fallback", () => {
+  it("has a flat sail facing +X, without UVs, above the hull at every turn", async () => {
+    const { BOAT_HULL_TOP, BOAT_MAST, BOAT_SAIL, sailGeometry } =
+      await import("../../src/theme/fallbacks/boat.tsx");
+    const g = sailGeometry();
+    expect(g.getAttribute("uv")).toBeUndefined();
+    const normal = g.getAttribute("normal");
+    for (let i = 0; i < normal.count; i++) expect(Math.abs(normal.getX(i))).toBeCloseTo(1);
+    g.computeBoundingBox();
+    expect(g.boundingBox!.max.z - g.boundingBox!.min.z).toBeCloseTo(BOAT_SAIL.halfWidth * 2);
+    expect(BOAT_SAIL.bottom).toBeGreaterThan(BOAT_HULL_TOP);
+    expect(BOAT_MAST.height).toBeGreaterThan(BOAT_SAIL.top);
+  });
+});

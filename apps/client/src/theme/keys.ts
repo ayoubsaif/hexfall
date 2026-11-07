@@ -21,6 +21,7 @@ export const ASSET_KEYS = [
   "piece.city",
   "piece.robber",
   "dice.die",
+  "prop.boat",
 ] as const;
 
 export type AssetKey = (typeof ASSET_KEYS)[number];
@@ -57,6 +58,7 @@ export const ASSET_KIND: Readonly<Record<AssetKey, AssetKind>> = {
   "piece.city": "model",
   "piece.robber": "model",
   "dice.die": "model",
+  "prop.boat": "model",
 };
 
 export function assetKind(key: AssetKey): AssetKind {
