@@ -217,6 +217,9 @@ export const session = {
       "The game is saved until {{date}}. You can close this tab and continue later from the start screen.",
     waitingHost: "Waiting for the host to resume the game.",
     resume: "Resume game",
+    resumeHint: "Everyone continues from where you left off.",
+    playAnother: "Play another game",
+    playAnotherHint: "Your seat stays saved; continue from Your games.",
     end: "End game",
   },
   ui: {

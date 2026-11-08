@@ -26,7 +26,8 @@ export interface SessionApi {
   /** After a Replaced close: reconnect here and take the seat back. */
   playHere(): void;
   /** After game over: forget the seat and get a fresh, unseated connection. */
-  backToStart(): void;
+  /** Back to the start screen; `keepSeat` keeps the seat saved (paused game) instead of forgetting it. */
+  backToStart(opts?: { keepSeat?: boolean }): void;
   /** Host only (pause-and-resume-games). */
   pauseGame(): boolean;
   resumeGame(): boolean;
@@ -90,7 +91,8 @@ export const setBotLevel = (seat: number, level: BotLevel): boolean => api.setBo
 export const playSolo = (name: string, opponents: 2 | 3, avatar?: AvatarId): boolean =>
   api.playSolo(name, opponents, avatar);
 export const playHere = (): void => api.playHere();
-export const backToStart = (): void => api.backToStart();
+export const backToStart = (...args: Parameters<SessionApi["backToStart"]>): void =>
+  api.backToStart(...args);
 export const pauseGame = (): boolean => api.pauseGame();
 export const resumeGame = (): boolean => api.resumeGame();
 export const endGame = (): boolean => api.endGame();

@@ -505,9 +505,17 @@ export class SessionController implements SessionApi {
     this.conn.restart();
   }
 
-  backToStart(): void {
+  /**
+   * Back to the start screen. After a game over the seat is forgotten; with `keepSeat` (a paused
+   * game) only the auto-resume is dropped, so the room stays in the saved games list.
+   */
+  backToStart(opts?: { keepSeat?: boolean }): void {
     const room = useRoomStore.getState().room;
-    if (room) this.seats.forget(room);
+    if (room && opts?.keepSeat) {
+      if (this.seats.lastRoom() === room) this.seats.setLastRoom(null);
+    } else if (room) {
+      this.seats.forget(room);
+    }
     this.address.setRoom(null);
     this.resuming = null;
     this.clearAll();

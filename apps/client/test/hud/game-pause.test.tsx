@@ -156,7 +156,43 @@ describe("paused notice", () => {
     expect(notice?.textContent).toContain("Paused by the host");
     expect(notice?.textContent).toContain(formatDate(1_000 + PAUSED_KEEP_MS, "en"));
     expect(notice?.getAttribute("role")).toBe("alertdialog");
-    expect(button("Resume game")).toBeUndefined();
+    expect(button(/Resume game/)).toBeUndefined();
+    const rows = [...(dialog("paused-actions")?.querySelectorAll("button") ?? [])];
+    expect(rows.map((b) => b.querySelector("img")?.getAttribute("data-icon"))).toEqual([
+      "home",
+      "leave",
+    ]);
+  });
+
+  it("Host sees three stacked actions: Resume, End, Leave, each with icon and hint", () => {
+    seatRoom(0);
+    act(() => useRoomStore.setState({ status: "paused", pausedAt: 1_000 }));
+    m = mount(<PausedNotice />);
+    const actions = dialog("paused-actions");
+    expect(actions?.className).toContain("flex-col");
+    const rows = [...(actions?.querySelectorAll("button") ?? [])];
+    expect(rows.map((b) => b.querySelector("img")?.getAttribute("data-icon"))).toEqual([
+      "resume",
+      "end-game",
+      "home",
+      "leave",
+    ]);
+    expect(rows[0]?.textContent).toContain("Resume game");
+    expect(rows[0]?.textContent).toContain("Everyone continues from where you left off.");
+    expect(rows[1]?.textContent).toContain("The player with the most VP wins.");
+    expect(rows[2]?.textContent).toContain("Play another game");
+    expect(rows[2]?.textContent).toContain("Your seat stays saved");
+    expect(rows[3]?.textContent).toContain("A bot plays your seat");
+    for (const row of rows) expect(row.className).toContain("w-full");
+    expect(dialog("paused-notice")?.querySelector(".justify-end")).toBeNull();
+  });
+
+  it("Play another game goes back to the start screen and keeps the seat", () => {
+    seatRoom(2);
+    act(() => useRoomStore.setState({ status: "paused", pausedAt: 1_000 }));
+    m = mount(<PausedNotice />);
+    click(byText(dialog("paused-actions")!, "button", /Play another game/));
+    expect(intents()).toEqual([{ fn: "backToStart", args: [{ keepSeat: true }] }]);
   });
 
   it("Anyone can leave from the paused notice", () => {
@@ -172,7 +208,7 @@ describe("paused notice", () => {
     seatRoom(0);
     act(() => useRoomStore.setState({ status: "paused", pausedAt: 1_000 }));
     m = mount(<PausedNotice />);
-    click(button("Resume game"));
+    click(button(/Resume game/));
     expect(intents()).toEqual([{ fn: "resumeGame", args: [] }]);
     act(() => useRoomStore.setState({ status: "playing", pausedAt: null }));
     expect(dialog("paused-notice")).toBeNull();
@@ -182,7 +218,7 @@ describe("paused notice", () => {
     seatRoom(0);
     act(() => useRoomStore.setState({ status: "paused", pausedAt: 1_000 }));
     m = mount(<PausedNotice />);
-    click(button("End game"));
+    click(byText(dialog("paused-actions")!, "button", /End game/));
     click(byText(dialog("end-confirm")!, "button", "End game now"));
     expect(intents()).toEqual([{ fn: "endGame", args: [] }]);
     const result: EarlyResult = { reason: "host", at: 1, winners: [0], scores: [] };

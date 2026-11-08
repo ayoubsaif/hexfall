@@ -6,11 +6,15 @@ import { gameIcon } from "./GameIcon.tsx";
 const Flag = gameIcon("flag");
 const Pause = gameIcon("pause");
 const Leave = gameIcon("leave");
-import { useState } from "react";
+const Resume = gameIcon("resume");
+const EndGame = gameIcon("end-game");
+const Home = gameIcon("home");
+import { type ComponentType, useState } from "react";
 import { useTranslation } from "react-i18next";
-import { Button } from "@/components/ui/button.tsx";
+import { Button, type ButtonProps } from "@/components/ui/button.tsx";
 import { Dialog, DialogContent, DialogFooter } from "@/components/ui/dialog.tsx";
-import { endGame, leaveRoom, pauseGame, resumeGame } from "../net/actions.ts";
+import { cn } from "@/lib/utils.ts";
+import { backToStart, endGame, leaveRoom, pauseGame, resumeGame } from "../net/actions.ts";
 import { useConnectionStore } from "../store/connection.ts";
 import { useRoomStore } from "../store/room.ts";
 import { roomErrorText } from "./errors.ts";
@@ -168,6 +172,45 @@ export function EndGameConfirm({
   );
 }
 
+/**
+ * One full-width action in a stacked list: icon, label and a hint line that wraps. Used by the
+ * game menu and the paused notice, so long labels never push a button out of the dialog.
+ */
+function ActionRow({
+  icon: Icon,
+  label,
+  hint,
+  primary = false,
+  className,
+  ...props
+}: Omit<ButtonProps, "variant" | "children"> & {
+  icon: ComponentType<{ className?: string; "aria-hidden"?: boolean }>;
+  label: string;
+  hint: string;
+  primary?: boolean;
+}) {
+  return (
+    <Button
+      variant={primary ? "default" : "secondary"}
+      className={cn("w-full justify-start gap-2.5 py-2 text-left whitespace-normal", className)}
+      {...props}
+    >
+      <Icon aria-hidden className="size-6 shrink-0" />
+      <span className="flex min-w-0 flex-col items-start">
+        <span>{label}</span>
+        <span
+          className={cn(
+            "font-sans text-xs font-normal tracking-normal",
+            primary ? "text-cream/80" : "text-muted-foreground",
+          )}
+        >
+          {hint}
+        </span>
+      </span>
+    </Button>
+  );
+}
+
 type MenuStep = "menu" | "pause" | "end" | "leave" | null;
 
 /**
@@ -208,38 +251,27 @@ export function GameMenu() {
         <DialogContent title={t("session.pause.menuTitle")} data-testid="game-menu">
           <div className="flex flex-col gap-2">
             {isHost && (
-              <Button
-                variant="secondary"
-                className="justify-start"
+              <ActionRow
+                icon={Pause}
+                label={t("session.pause.closeForNow")}
+                hint={t("session.pause.closeForNowHint")}
                 onClick={() => setStep("pause")}
-              >
-                <Pause aria-hidden />
-                <span className="flex flex-col items-start text-left">
-                  <span>{t("session.pause.closeForNow")}</span>
-                  <span className="text-xs text-muted-foreground">
-                    {t("session.pause.closeForNowHint")}
-                  </span>
-                </span>
-              </Button>
+              />
             )}
             {isHost && (
-              <Button variant="secondary" className="justify-start" onClick={() => setStep("end")}>
-                <Flag aria-hidden />
-                <span className="flex flex-col items-start text-left">
-                  <span>{t("session.pause.endNow")}</span>
-                  <span className="text-xs text-muted-foreground">
-                    {t("session.pause.endNowHint")}
-                  </span>
-                </span>
-              </Button>
+              <ActionRow
+                icon={Flag}
+                label={t("session.pause.endNow")}
+                hint={t("session.pause.endNowHint")}
+                onClick={() => setStep("end")}
+              />
             )}
-            <Button variant="secondary" className="justify-start" onClick={() => setStep("leave")}>
-              <Leave aria-hidden />
-              <span className="flex flex-col items-start text-left">
-                <span>{t("session.leave.leave")}</span>
-                <span className="text-xs text-muted-foreground">{t("session.leave.hint")}</span>
-              </span>
-            </Button>
+            <ActionRow
+              icon={Leave}
+              label={t("session.leave.leave")}
+              hint={t("session.leave.hint")}
+              onClick={() => setStep("leave")}
+            />
             <InviteLink room={room} />
           </div>
         </DialogContent>
@@ -269,8 +301,9 @@ export function GameMenu() {
 }
 
 /**
- * Full-screen notice while the room is paused: who paused, until when the game is kept,
- * and (host only) Resume / End game. The board stays visible behind it.
+ * Full-screen notice while the room is paused: who paused, until when the game is kept, and
+ * the actions as stacked rows: (host only) Resume and End game, then Play another game (back to
+ * the start screen, seat kept) and Leave game. The board stays visible behind it.
  */
 export function PausedNotice() {
   const { t, i18n } = useTranslation();
@@ -304,30 +337,40 @@ export function PausedNotice() {
               {error}
             </p>
           )}
-          <DialogFooter>
-            <Button
-              variant="secondary"
-              disabled={!online || pending !== null}
-              onClick={() => setLeaving(true)}
-            >
-              <Leave aria-hidden />
-              {t("session.leave.leave")}
-            </Button>
+          <div className="mt-4 flex flex-col gap-2" data-testid="paused-actions">
             {isHost && (
-              <Button
-                variant="secondary"
+              <ActionRow
+                primary
+                icon={Resume}
+                label={t("session.pause.resume")}
+                hint={t("session.pause.resumeHint")}
+                disabled={!online || pending !== null}
+                onClick={() => resumeGame()}
+              />
+            )}
+            {isHost && (
+              <ActionRow
+                icon={EndGame}
+                label={t("session.pause.end")}
+                hint={t("session.pause.endNowHint")}
                 disabled={!online || pending !== null}
                 onClick={() => setEnding(true)}
-              >
-                {t("session.pause.end")}
-              </Button>
+              />
             )}
-            {isHost && (
-              <Button disabled={!online || pending !== null} onClick={() => resumeGame()}>
-                {t("session.pause.resume")}
-              </Button>
-            )}
-          </DialogFooter>
+            <ActionRow
+              icon={Home}
+              label={t("session.pause.playAnother")}
+              hint={t("session.pause.playAnotherHint")}
+              onClick={() => backToStart({ keepSeat: true })}
+            />
+            <ActionRow
+              icon={Leave}
+              label={t("session.leave.leave")}
+              hint={t("session.leave.hint")}
+              disabled={!online || pending !== null}
+              onClick={() => setLeaving(true)}
+            />
+          </div>
         </DialogContent>
       </Dialog>
       {isHost && <EndGameConfirm open={ending} onOpenChange={setEnding} />}

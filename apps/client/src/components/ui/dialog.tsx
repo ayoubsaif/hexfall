@@ -65,5 +65,5 @@ export function DialogContent({
 }
 
 export function DialogFooter({ className, ...props }: ComponentProps<"div">) {
-  return <div className={cn("mt-3 flex justify-end gap-2", className)} {...props} />;
+  return <div className={cn("mt-3 flex flex-wrap justify-end gap-2", className)} {...props} />;
 }

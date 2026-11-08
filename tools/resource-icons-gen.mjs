@@ -10,7 +10,7 @@ import sharp from "sharp";
 const ROOT = resolve(dirname(fileURLToPath(import.meta.url)), "..");
 const ICON_DIR = join(ROOT, "apps", "client", "public", "ui", "resources");
 
-function env(name) {
+export function env(name) {
   if (process.env[name]) return process.env[name];
   try {
     const m = readFileSync(join(ROOT, ".env"), "utf8").match(new RegExp(`^${name}=(.*)$`, "m"));
@@ -54,16 +54,20 @@ export async function keyOutGreen(input, size = 128) {
       data[i + 1] = Math.max(r, b); // despill
     }
   }
-  return sharp(data, { raw: info })
+  // Two pipelines: sharp applies only one resize per pipeline, and extend after it, so a single
+  // chain came out size + 8 px.
+  const trimmed = await sharp(data, { raw: info })
     .trim({ background: "#00000000", threshold: 1 })
+    .png()
+    .toBuffer();
+  return sharp(trimmed)
     .resize(size - 8, size - 8, { fit: "contain", background: "#0000" })
     .extend({ top: 4, bottom: 4, left: 4, right: 4, background: "#0000" })
-    .resize(size, size, { fit: "contain", background: "#0000" })
     .webp({ quality: 88, alphaQuality: 100 })
     .toBuffer();
 }
 
-async function generate(model, key, prompt, refs) {
+export async function generate(model, key, prompt, refs) {
   const parts = [{ text: prompt }];
   for (const f of refs) {
     const png = await sharp(f).resize(256, 256).png().toBuffer();

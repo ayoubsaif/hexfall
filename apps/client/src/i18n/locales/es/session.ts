@@ -218,6 +218,9 @@ export const session: Catalog["session"] = {
       "La partida está guardada hasta el {{date}}. Puedes cerrar esta pestaña y continuar más tarde desde la pantalla de inicio.",
     waitingHost: "Esperando a que el anfitrión reanude la partida.",
     resume: "Reanudar partida",
+    resumeHint: "Todos siguen desde donde lo dejasteis.",
+    playAnother: "Jugar otra partida",
+    playAnotherHint: "Tu asiento queda guardado; continúa desde Tus partidas.",
     end: "Terminar partida",
   },
   ui: {

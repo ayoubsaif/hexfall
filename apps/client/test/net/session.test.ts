@@ -547,6 +547,20 @@ describe("game store", () => {
     expect(sent()).toEqual([]); // fresh, unseated connection
     expect(createRoom("Ana")).toBe(true);
   });
+
+  it("keeps the seat when leaving a paused game for another (back to start, keepSeat)", () => {
+    inGame();
+    session.backToStart({ keepSeat: true });
+    expect(useRoomStore.getState().room).toBeNull();
+    expect(useGameStore.getState().view).toBeNull();
+    expect(seats.token("K7QX2M")).not.toBeNull();
+    expect(seats.lastRoom()).toBeNull();
+    expect(env.location.search).toBe("");
+    welcome();
+    expect(sent()).toEqual([]); // not resumed automatically
+    expect(session.continueGame("K7QX2M")).toBe(true);
+    expect(sent().at(-1)).toMatchObject({ type: "resumeRoom", payload: { room: "K7QX2M" } });
+  });
 });
 
 describe("sending game actions", () => {
