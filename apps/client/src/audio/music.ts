@@ -13,7 +13,10 @@ export interface Track {
   gain?: number;
 }
 
-/** Played in order, then from the start again. Add a song: drop the file in /public/music. */
+/**
+ * Played in order, then from the start again. Add a song: drop the file in /public/music and
+ * record its source and license in docs/art/sources/music/SOURCE.md.
+ */
 export const PLAYLIST: readonly Track[] = [
   { src: "/music/fertility.mp3", title: "Fertility", artist: "Syouki Takahashi", gain: 0.5 },
 ];
