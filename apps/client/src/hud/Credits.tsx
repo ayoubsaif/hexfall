@@ -1,5 +1,5 @@
 // Credits list (specs/asset-theming, "Credits are visible in the client"), shown in the
-// settings About section: the active theme's per-asset credits, or its license/source when
+// settings Credits section: the active theme's per-asset credits, or its license/source when
 // it declares none.
 import { useTranslation } from "react-i18next";
 import type { ResolvedTheme } from "../theme/resolve.ts";

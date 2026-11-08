@@ -13,6 +13,7 @@ export const settings = {
     notifications: "Notifications",
     accessibility: "Accessibility",
     keyboard: "Keyboard",
+    credits: "Credits",
     about: "About",
   },
   graphics: {
@@ -95,14 +96,17 @@ export const settings = {
     wheel_auto: "Auto (touchpad pans)",
     wheel_zoom: "Wheel zooms",
   },
+  credits: {
+    createdBy: "Created by",
+    music: "Music",
+    art: "Art",
+  },
   about: {
     version: "Version {{version}}",
-    createdBy: "Created by",
-    credits: "Credits",
     by: "by",
     otherAssets: "Other theme assets: ",
     themeAssets: "Theme assets: ",
     procedural: "built-in procedural shapes.",
-    note: "Sounds are synthesized in the browser. Hexfall is a fan project and is not affiliated with any board game publisher.",
+    note: "Hexfall is a fan project and is not affiliated with any board game publisher.",
   },
 } as const;

@@ -9,6 +9,11 @@ export interface Track {
   src: string;
   title: string;
   artist: string;
+  /** Credits (Settings > Credits): the track's page, the artist's page and its license. */
+  url: string;
+  artistUrl: string;
+  license: string;
+  licenseUrl: string;
   /** This track's loudness relative to the music volume, 0..1 (default 1), to even out songs. */
   gain?: number;
 }
@@ -18,7 +23,16 @@ export interface Track {
  * record its source and license in docs/art/sources/music/SOURCE.md.
  */
 export const PLAYLIST: readonly Track[] = [
-  { src: "/music/fertility.mp3", title: "Fertility", artist: "Syouki Takahashi", gain: 0.5 },
+  {
+    src: "/music/fertility.mp3",
+    title: "Fertility",
+    artist: "Syouki Takahashi",
+    url: "https://pixabay.com/music/ambient-fertility-322747/",
+    artistUrl: "https://pixabay.com/users/syouki_takahashi-3820204/",
+    license: "Pixabay Content License",
+    licenseUrl: "https://pixabay.com/service/license-summary/",
+    gain: 0.5,
+  },
 ];
 
 /** The parts of HTMLAudioElement the player uses (tests pass a fake). */

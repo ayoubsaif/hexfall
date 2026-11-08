@@ -3,6 +3,7 @@
 // drills into a section (with a back button), and a "Settings › <section>" breadcrumb. Settings apply at once; there is no Save button.
 import {
   Accessibility,
+  Award,
   Monitor,
   Bell,
   Globe,
@@ -46,6 +47,7 @@ import {
 } from "./sections.ts";
 import { AboutSection } from "./sections/AboutSection.tsx";
 import { AccessibilitySection } from "./sections/AccessibilitySection.tsx";
+import { CreditsSection } from "./sections/CreditsSection.tsx";
 import { KeyboardSection } from "./sections/KeyboardSection.tsx";
 import { LanguageSection } from "./sections/LanguageSection.tsx";
 import { NotificationsSection } from "./sections/NotificationsSection.tsx";
@@ -60,6 +62,7 @@ const ICONS: Record<SectionId, LucideIcon> = {
   notifications: Bell,
   accessibility: Accessibility,
   keyboard: Keyboard,
+  credits: Award,
   about: Info,
 };
 
@@ -70,6 +73,7 @@ const CONTENT: Record<SectionId, () => ReactNode> = {
   notifications: () => <NotificationsSection />,
   accessibility: () => <AccessibilitySection />,
   keyboard: () => <KeyboardSection />,
+  credits: () => <CreditsSection />,
   about: () => <AboutSection />,
 };
 

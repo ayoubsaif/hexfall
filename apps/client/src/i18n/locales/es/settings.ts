@@ -15,6 +15,7 @@ export const settings: Catalog["settings"] = {
     notifications: "Notificaciones",
     accessibility: "Accesibilidad",
     keyboard: "Teclado",
+    credits: "Créditos",
     about: "Acerca de",
   },
   graphics: {
@@ -97,14 +98,17 @@ export const settings: Catalog["settings"] = {
     wheel_auto: "Auto (el panel táctil mueve)",
     wheel_zoom: "La rueda hace zoom",
   },
+  credits: {
+    createdBy: "Creado por",
+    music: "Música",
+    art: "Arte",
+  },
   about: {
     version: "Versión {{version}}",
-    createdBy: "Creado por",
-    credits: "Créditos",
     by: "de",
     otherAssets: "Otros recursos del tema: ",
     themeAssets: "Recursos del tema: ",
     procedural: "formas procedurales integradas.",
-    note: "Los sonidos se sintetizan en el navegador. Hexfall es un proyecto de fans y no está afiliado a ninguna editorial de juegos de mesa.",
+    note: "Hexfall es un proyecto de fans y no está afiliado a ninguna editorial de juegos de mesa.",
   },
 };

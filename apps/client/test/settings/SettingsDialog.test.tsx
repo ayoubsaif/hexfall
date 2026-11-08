@@ -121,6 +121,7 @@ describe("Settings dialog layout", () => {
       "Graphics",
       "Accessibility",
       "Keyboard",
+      "Credits",
       "About",
     ]);
     const menu = SECTION_IDS.map((s) => byTestId(`settings-menu-${s}`)?.textContent);
@@ -219,13 +220,25 @@ describe("Settings dialog layout", () => {
     expect(byTestId("settings-section-graphics")!.textContent).toContain("Current quality: Low");
   });
 
-  it("About shows the version and the theme credits", () => {
+  it("About shows the version", () => {
     render();
     act(() => setSettingsSection("about"));
     expect(byTestId("settings-version")?.textContent).toMatch(/Version \d+\.\d+\.\d+/);
+  });
+
+  it("Credits shows the author, the music with its links and the theme credits", () => {
+    render();
+    act(() => setSettingsSection("credits"));
     const author = byTestId("settings-author")?.querySelector("a");
     expect(author?.textContent).toBe("@ayoubsaif");
     expect(author?.getAttribute("href")).toBe("https://github.com/ayoubsaif");
-    expect(byTestId("settings-section-about")?.textContent).toContain("Credits");
+    const links = [...(byTestId("settings-music-credits")?.querySelectorAll("a") ?? [])];
+    expect(links.map((l) => [l.textContent, l.getAttribute("href")])).toEqual([
+      ["Fertility", "https://pixabay.com/music/ambient-fertility-322747/"],
+      ["Syouki Takahashi", "https://pixabay.com/users/syouki_takahashi-3820204/"],
+      ["Pixabay Content License", "https://pixabay.com/service/license-summary/"],
+    ]);
+    for (const l of links) expect(l.getAttribute("rel")).toBe("noopener noreferrer");
+    expect(byTestId("settings-section-credits")?.textContent).toContain("Art");
   });
 });
