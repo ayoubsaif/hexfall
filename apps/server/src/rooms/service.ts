@@ -9,6 +9,7 @@ import {
   type ErrorCode,
   type PayloadOf,
   type AvatarId,
+  type BotLevel,
   type SeatInfoEntry,
   type ServerMessage,
   type ServerMessageType,
@@ -95,6 +96,8 @@ export interface RoomService {
   /** Host only, lobby only: seat a bot / remove the bot in `seat`. */
   addBot(req: Request): Promise<ServiceResult>;
   removeBot(req: Request, seat: number): Promise<ServiceResult>;
+  /** Host only, lobby only: set the level of the bot in `seat`. */
+  setBotLevel(req: Request, seat: number, level: BotLevel): Promise<ServiceResult>;
   gameAction(req: Request, action: ClientAction): Promise<ServiceResult>;
   /** In-game chat line from a seated connection (memory only). */
   chat(req: Request, text: string): Promise<ServiceResult>;
@@ -419,6 +422,10 @@ export function createRoomService(opts: RoomServiceOptions): RoomService {
 
     removeBot(req, seat) {
       return seated("removeBot", req.conn, (room) => room.removeBot(req, seat));
+    },
+
+    setBotLevel(req, seat, level) {
+      return seated("setBotLevel", req.conn, (room) => room.setBotLevel(req, seat, level));
     },
 
     gameAction(req, action) {

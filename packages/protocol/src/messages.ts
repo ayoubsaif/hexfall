@@ -91,6 +91,11 @@ export const StartGameMessage = msg(
 export const AddBotMessage = msg("addBot", z.object({}));
 /** Host only, lobby only: remove the bot in `seat`; later seats close up. */
 export const RemoveBotMessage = msg("removeBot", z.object({ seat: Seat }));
+/** Bot difficulty (specs/bots "Bot difficulty levels"); same strings as @hexfall/bots. */
+export const BotLevel = z.enum(["easy", "normal", "hard"]);
+export type BotLevel = z.infer<typeof BotLevel>;
+/** Host only, lobby only: set the level of the bot in `seat`. */
+export const SetBotLevelMessage = msg("setBotLevel", z.object({ seat: Seat, level: BotLevel }));
 export const GameActionMessage = msg("gameAction", z.object({ action: ClientActionSchema }));
 
 /** A browser Web Push subscription (PushSubscription.toJSON()), size-limited. */
@@ -157,6 +162,7 @@ export const ClientMessage = z.discriminatedUnion("type", [
   StartGameMessage,
   AddBotMessage,
   RemoveBotMessage,
+  SetBotLevelMessage,
   SetAvatarMessage,
   GameActionMessage,
   PushSubscribeMessage,
@@ -220,6 +226,8 @@ export const SeatInfo = z.object({
    * with the room code and takes it over. Absent = false.
    */
   open: z.boolean().optional(),
+  /** Bot seats only: the bot's difficulty (Normal for seats stored without one). */
+  level: BotLevel.optional(),
   /** Catalog id; unique per room. */
   avatar: AvatarId,
 });

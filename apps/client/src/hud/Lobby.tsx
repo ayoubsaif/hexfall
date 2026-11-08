@@ -1,5 +1,5 @@
 // Lobby (specs/client-session, "Lobby", "Invite links"; game-hud "Turn countdown").
-import type { AvatarId, TurnTimerPreset } from "@hexfall/protocol";
+import type { AvatarId, BotLevel, TurnTimerPreset } from "@hexfall/protocol";
 import { useState } from "react";
 import { useTranslation } from "react-i18next";
 import { Badge } from "@/components/ui/badge.tsx";
@@ -10,6 +10,7 @@ import {
   leaveRoom,
   removeBot,
   setAvatar,
+  setBotLevel,
   startGame,
   type BoardModeChoice,
 } from "../net/actions.ts";
@@ -46,6 +47,17 @@ const TIMER_OPTIONS = [
   { value: "standard", label: "session.lobby.timerStandard" },
   { value: "relaxed", label: "session.lobby.timerRelaxed" },
 ] as const satisfies readonly { value: TurnTimerPreset; label: string }[];
+
+const LEVEL_OPTIONS = [
+  { value: "easy", label: "session.lobby.levelEasy" },
+  { value: "normal", label: "session.lobby.levelNormal" },
+  { value: "hard", label: "session.lobby.levelHard" },
+] as const satisfies readonly { value: BotLevel; label: string }[];
+
+/** Label key of a bot seat's level (Normal when the server sent none). */
+function levelLabel(level: BotLevel | undefined): (typeof LEVEL_OPTIONS)[number]["label"] {
+  return (LEVEL_OPTIONS.find((o) => o.value === level) ?? LEVEL_OPTIONS[1]).label;
+}
 
 /** The remembered preset, or Standard. Storage may be blocked: never throws. */
 export function loadTurnTimer(): TurnTimerPreset {
@@ -152,10 +164,31 @@ export function Lobby({ inviteLink }: { inviteLink?: string }) {
                 {s.seat === seat && <Badge variant="muted">{t("session.lobby.you")}</Badge>}
                 {s.seat === host && <Badge variant="muted">{t("session.lobby.host")}</Badge>}
                 {s.bot && <Badge variant="muted">{t("session.lobby.bot")}</Badge>}
+                {s.bot &&
+                  (isHost ? (
+                    <select
+                      className="ml-auto min-h-7 rounded-none border border-ink/30 bg-cream/70 px-1 py-0.5 text-sm text-hud-fg outline-none focus-visible:ring-2 focus-visible:ring-ring max-sm:min-h-10"
+                      data-testid="bot-level"
+                      value={s.level ?? "normal"}
+                      disabled={busy}
+                      aria-label={t("session.lobby.levelNamed", { name: s.name })}
+                      onChange={(e) => setBotLevel(s.seat, e.target.value as BotLevel)}
+                    >
+                      {LEVEL_OPTIONS.map((o) => (
+                        <option key={o.value} value={o.value}>
+                          {t(o.label)}
+                        </option>
+                      ))}
+                    </select>
+                  ) : (
+                    <span className="ml-auto text-sm opacity-75" data-testid="bot-level">
+                      {t(levelLabel(s.level))}
+                    </span>
+                  ))}
                 {isHost && s.bot && (
                   <Button
                     variant="link"
-                    className="ml-auto min-h-0 p-0"
+                    className="min-h-0 p-0"
                     disabled={busy}
                     aria-label={t("session.lobby.removeBotNamed", { name: s.name })}
                     onClick={() => removeBot(s.seat)}

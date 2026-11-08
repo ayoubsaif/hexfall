@@ -1,7 +1,7 @@
 // Intents the UI sends to the server (design.md decision 7). Components call these;
 // only the session (net/session.ts) talks to the connection and writes server stores.
 // The session registers its implementation with `setSessionApi` when the app starts.
-import type { AvatarId, ClientAction, TurnTimerPreset } from "@hexfall/protocol";
+import type { AvatarId, BotLevel, ClientAction, TurnTimerPreset } from "@hexfall/protocol";
 
 export type BoardModeChoice = "beginner" | "variable";
 
@@ -19,6 +19,8 @@ export interface SessionApi {
   /** Host only, lobby: seat a bot / remove the bot in `seat`. */
   addBot(): boolean;
   removeBot(seat: number): boolean;
+  /** Host only, lobby: set the difficulty of the bot in `seat`. */
+  setBotLevel(seat: number, level: BotLevel): boolean;
   /** Start screen: create a room, seat `opponents` bots and start the game at once. */
   playSolo(name: string, opponents: 2 | 3, avatar?: AvatarId): boolean;
   /** After a Replaced close: reconnect here and take the seat back. */
@@ -49,6 +51,7 @@ const offline: SessionApi = {
   chat: () => false,
   addBot: () => false,
   removeBot: () => false,
+  setBotLevel: () => false,
   playSolo: () => false,
   playHere: () => {},
   backToStart: () => {},
@@ -83,6 +86,7 @@ export const startGame = (
 export const sendChat = (text: string): boolean => api.chat(text);
 export const addBot = (): boolean => api.addBot();
 export const removeBot = (seat: number): boolean => api.removeBot(seat);
+export const setBotLevel = (seat: number, level: BotLevel): boolean => api.setBotLevel(seat, level);
 export const playSolo = (name: string, opponents: 2 | 3, avatar?: AvatarId): boolean =>
   api.playSolo(name, opponents, avatar);
 export const playHere = (): void => api.playHere();

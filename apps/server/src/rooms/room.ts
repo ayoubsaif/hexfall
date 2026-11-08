@@ -10,7 +10,7 @@ import {
   type GameConfig,
   type GameState,
 } from "@hexfall/engine";
-import { BotRng, chooseAction } from "@hexfall/bots";
+import { BotRng, chooseAction, toBotLevel } from "@hexfall/bots";
 import { chooseAvatar, resolveAvatars } from "./avatars.ts";
 import {
   CHAT_HISTORY,
@@ -18,6 +18,7 @@ import {
   CloseCode,
   DICE_THROW_MS,
   type AvatarId,
+  type BotLevel,
   type ChatEntry,
   type ClientAction,
   type RoomStatus,
@@ -638,6 +639,26 @@ export class Room {
     });
   }
 
+  /** Host only, lobby only: sets the difficulty of the bot in `botSeat`. */
+  setBotLevel(req: Request, botSeat: number, level: BotLevel): Promise<ServiceResult> {
+    return this.run(async () => {
+      const denied = this.hostOnly(req, "set a bot level in");
+      if (denied) return denied;
+      if (this.status() !== "lobby") return fail("game_started", "the game has already started");
+      if (this.meta.seats[botSeat]?.bot !== true)
+        return fail("not_a_bot", "that seat is not a bot");
+      const next: RoomMeta = {
+        ...this.meta,
+        rev: this.meta.rev + 1,
+        seats: this.meta.seats.map((s, i) => (i === botSeat ? { ...s, level } : s)),
+      };
+      const w = await this.saveMeta(next);
+      if (w) return w;
+      this.broadcastRoomState(req);
+      return OK;
+    });
+  }
+
   start(req: Request, opts: StartOptions): Promise<ServiceResult> {
     return this.run(async () => {
       const seat = this.seatOf(req.conn);
@@ -951,7 +972,7 @@ export class Room {
           playerView(state, seat),
           legalActions(state, seat),
           new BotRng(`${seed}:${seat}`),
-          { trade },
+          { trade, level: toBotLevel(this.meta.seats[seat]?.level) },
         );
         if (!action) continue;
         const r = await this.commit(action, this.deps.now());
@@ -1052,6 +1073,7 @@ export class Room {
           connected: s.bot === true || this.conns[seat] != null,
           bot: s.bot === true,
           ...(s.open === true ? { open: true } : {}),
+          ...(s.bot === true ? { level: toBotLevel(s.level) } : {}),
         })),
         pausedAt: this.meta.status === "paused" ? (this.meta.pausedAt ?? null) : null,
         result: this.meta.result ?? null,

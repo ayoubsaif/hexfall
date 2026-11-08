@@ -1,7 +1,7 @@
 // Durable room storage contract (design.md decisions 3-4). Redis in production,
 // an in-memory fake in tests. Every write refreshes the room's TTL.
 import type { Action, BoardMode, GameState, Seat } from "@hexfall/engine";
-import type { EarlyResult, RoomStatus, TurnTimerPreset } from "@hexfall/protocol";
+import type { BotLevel, EarlyResult, RoomStatus, TurnTimerPreset } from "@hexfall/protocol";
 
 const DAY_MS = 24 * 60 * 60 * 1000;
 export const ROOM_TTL_MS = 14 * DAY_MS;
@@ -23,6 +23,11 @@ export interface StoredSeat {
    * takes it over by joining (leave-game). Absent in older rooms = not open.
    */
   open?: true;
+  /**
+   * With `bot`: its difficulty, set by the host in the lobby. Absent (or unknown) = "normal",
+   * so rooms stored before levels keep working (specs/bots "Bot difficulty levels").
+   */
+  level?: BotLevel;
   /** Avatar catalog id; absent in games saved before avatars (resolved by index on load). */
   avatar?: string;
 }

@@ -143,6 +143,9 @@ export function createSession(opts: SessionOptions): Session {
       case "removeBot":
         result = await service.removeBot(req, msg.payload.seat);
         break;
+      case "setBotLevel":
+        result = await service.setBotLevel(req, msg.payload.seat, msg.payload.level);
+        break;
       case "gameAction":
         result = await service.gameAction(req, msg.payload.action);
         break;

@@ -56,6 +56,7 @@ export function recordSession(): Call[] {
     chat: rec("chat") as SessionApi["chat"],
     addBot: rec("addBot") as SessionApi["addBot"],
     removeBot: rec("removeBot") as SessionApi["removeBot"],
+    setBotLevel: rec("setBotLevel") as SessionApi["setBotLevel"],
     playSolo: rec("playSolo") as SessionApi["playSolo"],
     playHere: rec("playHere") as SessionApi["playHere"],
     backToStart: rec("backToStart") as SessionApi["backToStart"],

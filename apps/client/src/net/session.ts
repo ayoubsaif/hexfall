@@ -5,6 +5,7 @@
 import {
   MAX_LOOKUP_SEATS,
   type AvatarId,
+  type BotLevel,
   type ClientAction,
   type ErrorCode,
   type RoomStatus,
@@ -399,6 +400,11 @@ export class SessionController implements SessionApi {
   removeBot(seat: number): boolean {
     if (useRoomStore.getState().room === null || this.conn.status !== "open") return false;
     return this.conn.send("removeBot", { seat });
+  }
+
+  setBotLevel(seat: number, level: BotLevel): boolean {
+    if (useRoomStore.getState().room === null || this.conn.status !== "open") return false;
+    return this.conn.send("setBotLevel", { seat, level });
   }
 
   joinRoom(room: string, name: string, avatar?: AvatarId): boolean {

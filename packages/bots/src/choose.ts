@@ -1,6 +1,7 @@
 // Heuristic bot: one legal action per call, decided from the bot's own view.
 // Never proposes trades. Offers are rejected unless `trade` is on (one-human rooms), when
-// each is judged on its merits (trade.ts, specs/bots).
+// each is judged on its merits (trade.ts, specs/bots). The level changes only which legal
+// option is picked (specs/bots "Bot difficulty levels").
 import {
   COSTS,
   RESOURCES,
@@ -14,6 +15,7 @@ import {
   type Seat,
 } from "@hexfall/engine";
 import { pips, producedBy, roadValue, total, vertexPips, vertexValue } from "./eval.ts";
+import type { BotLevel } from "./level.ts";
 import type { BotRng } from "./rng.ts";
 import { judgeOffer } from "./trade.ts";
 
@@ -21,11 +23,25 @@ type Target = "city" | "settlement" | "devCard";
 const COST: Readonly<Record<keyof typeof COSTS, ResourceBundle>> = COSTS;
 const TARGETS: readonly Target[] = ["city", "settlement", "devCard"];
 
-function best<T>(xs: readonly T[], score: (x: T) => number, rng: BotRng): T | undefined {
+/** Picks the top-scored option; picks among several options vary by level. */
+type Picker = <T>(xs: readonly T[], score: (x: T) => number) => T | undefined;
+
+/** Jitter scale per level: Normal breaks ties at random, Hard almost never. */
+const JITTER: Readonly<Record<BotLevel, number>> = { easy: 0.01, normal: 0.01, hard: 1e-6 };
+/** Easy picks a random option instead of its best one about once in this many choices. */
+const EASY_SLIP = 3;
+
+function best<T>(
+  xs: readonly T[],
+  score: (x: T) => number,
+  rng: BotRng,
+  level: BotLevel = "normal",
+): T | undefined {
+  if (level === "easy" && xs.length > 1 && rng.int(EASY_SLIP) === 0) return rng.pick(xs);
   let top: T | undefined;
   let topScore = -Infinity;
   for (const x of xs) {
-    const s = score(x) + rng.jitter() * 0.01;
+    const s = score(x) + rng.jitter() * JITTER[level];
     if (s > topScore) {
       topScore = s;
       top = x;
@@ -34,15 +50,14 @@ function best<T>(xs: readonly T[], score: (x: T) => number, rng: BotRng): T | un
   return top;
 }
 
-function discardBundle(hand: ResourceCounts, n: number, rng: BotRng): ResourceBundle {
+function discardBundle(hand: ResourceCounts, n: number, pick: Picker): ResourceBundle {
   const left = { ...hand };
   const out: ResourceBundle = {};
   for (let i = 0; i < n; i++) {
     // Drop from the biggest pile; this keeps variety for building.
-    const r = best(
+    const r = pick(
       RESOURCES.filter((x) => left[x] > 0),
       (x) => left[x],
-      rng,
     )!;
     left[r]--;
     out[r] = (out[r] ?? 0) + 1;
@@ -50,23 +65,53 @@ function discardBundle(hand: ResourceCounts, n: number, rng: BotRng): ResourceBu
   return out;
 }
 
-function robberAction(view: PlayerView, legal: LegalActions, seat: Seat, rng: BotRng): Action {
+/** The opponent with the most public VP (ties: more cards, then lower seat). */
+function leaderOf(view: PlayerView, seat: Seat, among?: readonly Seat[]): Seat | null {
+  let top: Seat | null = null;
+  view.players.forEach((p, s) => {
+    if (s === seat || (among && !among.includes(s))) return;
+    const t = top === null ? null : view.players[top]!;
+    if (
+      t === null ||
+      p.publicVp > t.publicVp ||
+      (p.publicVp === t.publicVp && p.resourceCount > t.resourceCount)
+    )
+      top = s;
+  });
+  return top;
+}
+
+function robberAction(
+  view: PlayerView,
+  legal: LegalActions,
+  seat: Seat,
+  rng: BotRng,
+  level: BotLevel,
+  pick: Picker,
+): Action {
+  // Hard weighs the leader's buildings double, so the robber blocks the leader first.
+  const leader = level === "hard" ? leaderOf(view, seat) : null;
   const score = (o: { hex: number; victims: Seat[] }): number => {
     let s = 0;
     for (const v of TOPOLOGY.hexes[o.hex]!.vertices) {
       const b = view.vertices[v];
       if (!b) continue;
       const w = pips(view.board.hexes[o.hex]!.token) * (b.kind === "city" ? 2 : 1);
-      s += b.owner === seat ? -3 * w : w;
+      s += b.owner === seat ? -3 * w : b.owner === leader ? 2 * w : w;
     }
+    if (leader !== null && o.victims.includes(leader)) s += 1;
     return s;
   };
-  const opt = best(legal.moveRobber, score, rng)!;
-  const victim = best(
-    opt.victims,
-    (v) => view.players[v]!.publicVp * 2 + view.players[v]!.resourceCount,
-    rng,
-  );
+  const opt = pick(legal.moveRobber, score)!;
+  let victim: Seat | undefined;
+  if (opt.victims.length === 0) victim = undefined;
+  else if (level === "easy") victim = rng.pick(opt.victims);
+  else if (level === "hard") victim = leaderOf(view, seat, opt.victims) ?? undefined;
+  else
+    victim = pick(
+      opt.victims,
+      (v) => view.players[v]!.publicVp * 2 + view.players[v]!.resourceCount,
+    );
   return { type: "moveRobber", seat, hex: opt.hex, victim: victim ?? null };
 }
 
@@ -84,7 +129,7 @@ function maritime(
   legal: LegalActions,
   seat: Seat,
   hand: ResourceCounts,
-  rng: BotRng,
+  pick: Picker,
 ): Action | null {
   if (!legal.maritime) return null;
   const me = view.players[seat]!;
@@ -108,10 +153,9 @@ function maritime(
     if (n < 1 || n > 2) continue;
     const get = want.find((r) => view.bank[r] > 0);
     if (!get) continue;
-    const give = best(
+    const give = pick(
       RESOURCES.filter((r) => r !== get && hand[r] - (keep[r] ?? 0) >= legal.maritime![r]),
       (r) => hand[r] - (keep[r] ?? 0),
-      rng,
     );
     if (give) return { type: "maritimeTrade", seat, give, get, count: 1 };
   }
@@ -143,6 +187,8 @@ function ownsHexBuilding(view: PlayerView, seat: Seat, hex: number): boolean {
 export interface ChooseOptions {
   /** Answer offers on their merits instead of rejecting them all. */
   trade: boolean;
+  /** Difficulty; Normal when absent. */
+  level?: BotLevel;
 }
 
 /**
@@ -161,24 +207,26 @@ export function chooseAction(
   const hand = me.resources;
   if (!hand) return null;
   const owned = producedBy(view, seat);
+  const level = options.level ?? "normal";
+  const pick: Picker = (xs, score) => best(xs, score, rng, level);
 
   if (legal.rollForOrder) return { type: "rollForOrder", seat };
   if (legal.discard > 0)
-    return { type: "discard", seat, cards: discardBundle(hand, legal.discard, rng) };
-  if (legal.moveRobber.length > 0) return robberAction(view, legal, seat, rng);
+    return { type: "discard", seat, cards: discardBundle(hand, legal.discard, pick) };
+  if (legal.moveRobber.length > 0) return robberAction(view, legal, seat, rng, level, pick);
 
   if (legal.placeSettlement.length > 0) {
-    const vertex = best(legal.placeSettlement, (v) => vertexValue(view, v, owned), rng)!;
+    const vertex = pick(legal.placeSettlement, (v) => vertexValue(view, v, owned))!;
     return { type: "placeSettlement", seat, vertex };
   }
   if (legal.placeRoad.length > 0) {
-    const edge = best(legal.placeRoad, (e) => roadValue(view, e, owned), rng)!;
+    const edge = pick(legal.placeRoad, (e) => roadValue(view, e, owned))!;
     return { type: "placeRoad", seat, edge };
   }
 
   // Free roads from Road Building.
   if (view.phase.kind === "roadBuilding" && legal.buildRoad.length > 0) {
-    const edge = best(legal.buildRoad, (e) => roadValue(view, e, owned), rng)!;
+    const edge = pick(legal.buildRoad, (e) => roadValue(view, e, owned))!;
     return { type: "buildRoad", seat, edge };
   }
 
@@ -192,7 +240,7 @@ export function chooseAction(
       options.trade &&
       offer &&
       legal.acceptTrade.includes(answer) &&
-      judgeOffer(view, seat, offer)
+      judgeOffer(view, seat, offer, level)
     ) {
       return { type: "acceptTrade", seat, offerId: answer };
     }
@@ -210,11 +258,11 @@ export function chooseAction(
   if (legal.revealVictoryPoints) return { type: "revealVictoryPoints", seat };
 
   if (legal.buildCity.length > 0) {
-    const vertex = best(legal.buildCity, (v) => vertexPips(view, v), rng)!;
+    const vertex = pick(legal.buildCity, (v) => vertexPips(view, v))!;
     return { type: "buildCity", seat, vertex };
   }
   if (legal.buildSettlement.length > 0) {
-    const vertex = best(legal.buildSettlement, (v) => vertexValue(view, v, owned), rng)!;
+    const vertex = pick(legal.buildSettlement, (v) => vertexValue(view, v, owned))!;
     return { type: "buildSettlement", seat, vertex };
   }
   if (legal.buyDevCard) return { type: "buyDevCard", seat };
@@ -227,7 +275,7 @@ export function chooseAction(
     if (card === "monopoly") {
       // Ask for what we lack most.
       const gap = (r: Resource) => Math.max(0, (COST.city[r] ?? 0) - hand[r]) + 0.1 * (4 - hand[r]);
-      const resource = best(RESOURCES, gap, rng)!;
+      const resource = pick(RESOURCES, gap)!;
       return { type: "playMonopoly", seat, resource };
     }
     if (card === "roadBuilding" && legal.buildRoad.length > 0 && me.pieces.roads >= 2) {
@@ -237,11 +285,11 @@ export function chooseAction(
 
   // Paid road only when it opens a useful site and no settlement spot is open.
   if (legal.buildRoad.length > 0 && legal.buildSettlement.length === 0) {
-    const edge = best(legal.buildRoad, (e) => roadValue(view, e, owned), rng)!;
+    const edge = pick(legal.buildRoad, (e) => roadValue(view, e, owned))!;
     if (roadValue(view, edge, owned) >= 5) return { type: "buildRoad", seat, edge };
   }
 
-  const trade = maritime(view, legal, seat, hand, rng);
+  const trade = maritime(view, legal, seat, hand, pick);
   if (trade) return trade;
 
   if (legal.endTurn) return { type: "endTurn", seat };

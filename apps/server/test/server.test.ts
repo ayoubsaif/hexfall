@@ -54,6 +54,7 @@ function fakeService() {
     startGame: ok,
     addBot: ok,
     removeBot: ok,
+    setBotLevel: ok,
     pauseGame: ok,
     resumeGame: ok,
     endGame: ok,

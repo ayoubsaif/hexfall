@@ -39,6 +39,7 @@ function fakeService() {
     chat: record("chat"),
     addBot: record("addBot"),
     removeBot: record("removeBot"),
+    setBotLevel: record("setBotLevel"),
     gameAction: record("gameAction"),
     pauseGame: record("pauseGame"),
     resumeGame: record("resumeGame"),
