@@ -1,5 +1,5 @@
 // Game sounds (specs/game-audio): turn chime and dice rattle are synthesized with Web Audio;
-// building sounds play a recorded file (samples.ts).
+// building sounds and the burn on main buttons play recorded files (samples.ts).
 import { usePrefsStore } from "../store/prefs.ts";
 import { audioContext, audioOutput } from "./engine.ts";
 import { loadSample, playSample } from "./samples.ts";
@@ -10,7 +10,8 @@ export type SoundName =
   | "turnSoft"
   | "buildRoad"
   | "buildSettlement"
-  | "buildCity";
+  | "buildCity"
+  | "burn";
 
 /** Rattle length in seconds: a bit under the dice throw (DiceTray THROW_MS = 980). */
 export const RATTLE_S = 0.9;
@@ -101,6 +102,9 @@ const buildSettlement = (ctx: AudioContext, out: AudioNode) =>
 const buildCity = (ctx: AudioContext, out: AudioNode) =>
   playSample(ctx, out, "build", { gain: 1, rate: 0.85 });
 
+/** Short burn when a main (submit) button is pressed. */
+const burn = (ctx: AudioContext, out: AudioNode) => playSample(ctx, out, "burn", { gain: 0.6 });
+
 const SOUNDS: Record<SoundName, (ctx: AudioContext, out: AudioNode) => void> = {
   chime,
   dice: diceRattle,
@@ -108,13 +112,16 @@ const SOUNDS: Record<SoundName, (ctx: AudioContext, out: AudioNode) => void> = {
   buildRoad,
   buildSettlement,
   buildCity,
+  burn,
 };
 
 /** Starts decoding the sound files so the first one plays on time. Never throws. */
 export function preloadSounds(): void {
   try {
     const ctx = audioContext();
-    if (ctx) void loadSample(ctx, "build");
+    if (!ctx) return;
+    void loadSample(ctx, "build");
+    void loadSample(ctx, "burn");
   } catch {
     // Preloading is only an optimisation.
   }

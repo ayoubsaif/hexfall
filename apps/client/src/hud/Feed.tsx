@@ -1,6 +1,7 @@
 // Event log, toasts, rejection message and game over (specs/game-hud).
 import { useEffect, useLayoutEffect, useRef, useState } from "react";
 import { useTranslation } from "react-i18next";
+import { holdMusic } from "../audio/music.ts";
 import { Button } from "@/components/ui/button.tsx";
 import { SeatAvatar } from "./Avatar.tsx";
 import { Card } from "@/components/ui/card.tsx";
@@ -163,6 +164,12 @@ export function GameOver() {
   const view = useView();
   const result = useRoomStore((s) => s.result);
   const names = useNames();
+  const over = !!view && (view.winner !== null || result !== null);
+  // The background music fades out while the scoreboard is up, and comes back after it.
+  useEffect(() => {
+    holdMusic(over);
+    return () => holdMusic(false);
+  }, [over]);
   if (!view || (view.winner === null && result === null)) return null;
   const winners = result ? result.winners : [view.winner as number];
   const w = seatColor(winners[0] ?? 0);

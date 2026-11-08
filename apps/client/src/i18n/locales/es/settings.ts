@@ -67,6 +67,10 @@ export const settings: Catalog["settings"] = {
     enabledHint: "Tiradas de dados y el aviso al empezar tu turno.",
     volume: "Volumen",
     test: "Probar sonido",
+    music: "Música",
+    musicHint: "Banda sonora de fondo mientras juegas.",
+    musicVolume: "Volumen de la música",
+    nowPlaying: "Suena: {{title}}, de {{artist}}",
   },
   notifications: {
     enabled: "Avisos de turno",

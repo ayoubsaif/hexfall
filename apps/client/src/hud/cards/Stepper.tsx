@@ -13,20 +13,29 @@ export function Counter({
   lessLabel,
   moreLabel,
   onChange,
+  min = 0,
+  leather = false,
+  disabled = false,
 }: {
   value: number;
   canAdd: boolean;
   lessLabel: string;
   moreLabel: string;
   onChange: (next: number) => void;
+  /** Lowest value; − is disabled there. */
+  min?: number;
+  /** Brown leather buttons instead of parchment ones. */
+  leather?: boolean;
+  disabled?: boolean;
 }) {
+  const variant = leather ? "default" : "secondary";
   return (
     <span className="flex items-center gap-2">
       <Button
-        variant="secondary"
+        variant={variant}
         size="icon"
         aria-label={lessLabel}
-        disabled={value <= 0}
+        disabled={disabled || value <= min}
         onClick={() => onChange(value - 1)}
       >
         −
@@ -39,10 +48,10 @@ export function Counter({
         {value}
       </span>
       <Button
-        variant="secondary"
+        variant={variant}
         size="icon"
         aria-label={moreLabel}
-        disabled={!canAdd}
+        disabled={disabled || !canAdd}
         onClick={() => onChange(value + 1)}
       >
         +

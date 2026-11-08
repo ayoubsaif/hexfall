@@ -138,7 +138,7 @@ export function createSession(opts: SessionOptions): Session {
         result = await service.setAvatar(req, msg.payload.avatar);
         break;
       case "addBot":
-        result = await service.addBot(req);
+        result = await service.addBot(req, msg.payload.level);
         break;
       case "removeBot":
         result = await service.removeBot(req, msg.payload.seat);

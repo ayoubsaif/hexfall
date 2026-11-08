@@ -235,8 +235,18 @@ describe("MaritimePanel", () => {
     click(choice("Give", "ore"));
     expect(choice("Give", "ore").getAttribute("aria-checked")).toBe("true");
     click(choice("Get", "grain"));
-    const count = document.querySelector<HTMLInputElement>('input[type="number"]')!;
-    expect(count.max).toBe("2");
+    expect(document.querySelector('input[type="number"]')).toBeNull();
+    const stepper = document.querySelector<HTMLElement>('[data-testid="maritime-count"]')!;
+    const less = stepper.querySelector<HTMLButtonElement>('[aria-label="Get one less"]')!;
+    const more = stepper.querySelector<HTMLButtonElement>('[aria-label="Get one more"]')!;
+    const value = () => stepper.querySelector("[data-stepper-value]")?.textContent;
+    expect(value()).toBe("1");
+    expect(less.disabled).toBe(true);
+    click(more);
+    expect(value()).toBe("2");
+    expect(more.disabled).toBe(true);
+    click(less);
+    expect(value()).toBe("1");
     click(byText(doc(), "button", "Trade"));
     expect(actions(calls)).toEqual([
       { type: "maritimeTrade", give: "ore", get: "grain", count: 1 },

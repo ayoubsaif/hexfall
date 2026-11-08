@@ -12,6 +12,7 @@ Bots have one fixed level, and it is a hard trading partner: on 2,000 random han
   - All levels still never give up a card needed for a build they can already afford.
 - **Move choice** by level: Easy sometimes (about one decision in three) picks a random legal option instead of the best; Normal plays as today; Hard always plays its best-scored option. All randomness comes from the bot's own seeded `BotRng`, so games stay deterministic.
 - **Robber and steal targeting** by level: Easy steals from a random qualifying opponent; Normal as today (score of public VP and hand size); Hard places the robber to hurt the public-VP leader and steals from the leader.
+- Practice with bots: the form gets a bot level selector (default Normal) used for every bot it seats; `addBot` takes an optional `level` for this.
 - Lobby: the host sets each bot seat's level with a control next to the seat; other players see the level. New protocol message `setBotLevel { seat, level }` (host only, lobby only); `SeatInfo.level` on bot seats. English and Spanish text.
 - Rooms and saved games without the field, and seats a human left during the game, play at Normal.
 

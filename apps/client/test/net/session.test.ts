@@ -245,6 +245,16 @@ describe("start screen", () => {
     expect(sent()).toHaveLength(4);
   });
 
+  it("solo bots are added at the chosen level", () => {
+    boot();
+    welcome();
+    expect(session.playSolo("Ana", 3, undefined, "hard")).toBe(true);
+    send("roomJoined", { room: "K7QX2M", seat: 0, token: "secret" });
+    const bots = sent().filter((m) => m.type === "addBot");
+    expect(bots).toHaveLength(3);
+    for (const b of bots) expect(b).toMatchObject({ payload: { level: "hard" } });
+  });
+
   it("a failed solo create does not start a game on the next room", () => {
     boot();
     welcome();

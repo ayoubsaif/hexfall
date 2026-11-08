@@ -41,6 +41,8 @@ export const dialogs = {
     have: "have {{count}}",
     bank: "bank {{count}}",
     howMany: "How many to get",
+    less: "Get one less",
+    more: "Get one more",
     summary: "Give {{giveCount}} {{give}} for {{getCount}} {{get}}.",
     impossible: "Not possible with your cards and the bank's stock.",
     atMost: "You can get at most {{max}}.",

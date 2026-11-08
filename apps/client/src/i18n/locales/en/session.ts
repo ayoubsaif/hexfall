@@ -16,6 +16,7 @@ export const session = {
     playSolo: "Play solo vs bots",
     soloOpponents: "Bot opponents",
     soloOpponentsOption: "{{count}} bots",
+    soloLevel: "Bot level",
     waitingForServer: "Waiting for the server…",
   },
   modes: {

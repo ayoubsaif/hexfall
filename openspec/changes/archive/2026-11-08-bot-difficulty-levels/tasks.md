@@ -18,3 +18,10 @@
 - [x] 3.1 Add `setBotLevel` to `net/actions.ts` and `net/session.ts`
 - [x] 3.2 Lobby: level `<select>` on bot seats for the host, level text for others; en/es strings (`session.lobby.levelNamed`, `levelEasy/Normal/Hard`)
 - [x] 3.3 Client test `test/hud/bot-levels.test.tsx`: host change sends `setBotLevel`, guest sees "Hard" and no control; `pnpm exec vp test run` passes in `apps/client`
+
+## 4. Practice form level
+
+- [x] 4.1 Add optional `level` to `AddBotMessage`; `Room.addBot` stores it on the new bot seat; server test: `addBot { level: "easy" }` is stored and broadcast at Easy, `addBot {}` stays Normal
+- [x] 4.2 Practice form: "Bot level" select (Easy/Normal/Hard, default Normal) next to the opponents count; `playSolo` passes it and every solo `addBot` carries it; en/es strings; client tests for the select and the sent `addBot` payloads
+- [x] 4.3 Start a practice game against Hard bots in the browser; verify the lobby-less game seats Hard bots (room state level)
+- [x] 4.4 Game-styled pickers: shared `ChoiceGroup` (parchment buttons, radio-group keys) for the practice opponents/level and the lobby bot level; `SealRadio` (wax-seal radio) for the lobby board, turn timer and starting player; selected secondary buttons use brown leather instead of forest green; verified in the browser

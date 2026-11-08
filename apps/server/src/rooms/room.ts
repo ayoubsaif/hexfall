@@ -596,8 +596,8 @@ export class Room {
     });
   }
 
-  /** Host only, lobby only: seats a bot in the next free seat. */
-  addBot(req: Request): Promise<ServiceResult> {
+  /** Host only, lobby only: seats a bot in the next free seat, at `level` if given. */
+  addBot(req: Request, level?: BotLevel): Promise<ServiceResult> {
     return this.run(async () => {
       const denied = this.hostOnly(req, "add a bot to");
       if (denied) return denied;
@@ -606,7 +606,10 @@ export class Room {
       const next: RoomMeta = {
         ...this.meta,
         rev: this.meta.rev + 1,
-        seats: [...this.meta.seats, this.newBotSeat(this.meta.seats)],
+        seats: [
+          ...this.meta.seats,
+          { ...this.newBotSeat(this.meta.seats), ...(level ? { level } : {}) },
+        ],
       };
       const w = await this.saveMeta(next);
       if (w) return w;

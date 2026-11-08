@@ -168,7 +168,6 @@
 }
 
 @media (prefers-reduced-motion: reduce) {
-
   :root:not([data-motion="reduce"], [data-motion="full"]) .hud *,
   :root:not([data-motion="reduce"], [data-motion="full"]) .hud *::before,
   :root:not([data-motion="reduce"], [data-motion="full"]) .hud *::after {
@@ -247,7 +246,6 @@ body,
 }
 
 @keyframes map-sketch-draw {
-
   0%,
   8% {
     stroke-dashoffset: 1;
@@ -439,16 +437,22 @@ body,
   border-radius: 0;
   padding-inline: 22px;
   background:
-    radial-gradient(circle at 50% 50%,
-      #f3d58a 0 1.5px,
-      #b98a3c 2.5px 4.5px,
-      #5a3a14 5.5px,
-      transparent 6px) 5px 50% / 14px 14px no-repeat,
-    radial-gradient(circle at 50% 50%,
-      #f3d58a 0 1.5px,
-      #b98a3c 2.5px 4.5px,
-      #5a3a14 5.5px,
-      transparent 6px) calc(100% - 5px) 50% / 14px 14px no-repeat,
+    radial-gradient(
+        circle at 50% 50%,
+        #f3d58a 0 1.5px,
+        #b98a3c 2.5px 4.5px,
+        #5a3a14 5.5px,
+        transparent 6px
+      )
+      5px 50% / 14px 14px no-repeat,
+    radial-gradient(
+        circle at 50% 50%,
+        #f3d58a 0 1.5px,
+        #b98a3c 2.5px 4.5px,
+        #5a3a14 5.5px,
+        transparent 6px
+      )
+      calc(100% - 5px) 50% / 14px 14px no-repeat,
     linear-gradient(180deg, #8a4a2a 0%, #6b3720 45%, #512a18 100%);
   box-shadow:
     inset 0 0 0 1.5px #c9a04e,
@@ -492,6 +496,53 @@ body,
   filter: brightness(1.2);
 }
 
+/* Radio option as a parchment circle that takes a red wax seal when picked (SealRadio). The
+   hidden <input> before it is the peer that carries checked and focus. */
+.seal-radio {
+  position: relative;
+  flex: none;
+  width: 22px;
+  height: 22px;
+  border-radius: 50%;
+  border: 2px solid var(--color-leather);
+  background: radial-gradient(circle at 40% 35%, #fbf3df, #e6d3ab);
+  box-shadow: inset 0 1px 2px rgb(74 44 26 / 35%);
+  transition: transform 150ms;
+}
+.seal-radio::after {
+  content: "";
+  position: absolute;
+  inset: 2px;
+  border-radius: 47% 53% 50% 50% / 52% 48% 53% 47%;
+  background:
+    radial-gradient(circle at 50% 50%, transparent 38%, rgb(60 10 6 / 35%) 40%, transparent 46%),
+    radial-gradient(circle at 34% 30%, #d9604f, #a3291d 55%, #5e140d);
+  box-shadow:
+    0 1px 1px rgb(0 0 0 / 40%),
+    inset 0 -1px 1px rgb(0 0 0 / 30%);
+  transform: scale(0) rotate(-20deg);
+  transition: transform 160ms cubic-bezier(0.3, 1.6, 0.5, 1);
+}
+.peer:checked + .seal-radio {
+  border-color: #5e140d;
+}
+.peer:checked + .seal-radio::after {
+  transform: scale(1) rotate(0deg);
+}
+.peer:focus-visible + .seal-radio {
+  outline: 2px solid var(--color-ring);
+  outline-offset: 2px;
+}
+label:hover > .peer:not(:disabled):not(:checked) + .seal-radio {
+  transform: scale(1.08);
+}
+@media (prefers-reduced-motion: reduce) {
+  .seal-radio,
+  .seal-radio::after {
+    transition: none;
+  }
+}
+
 /* Zoom slider: dark brass track, gold knob. */
 .hud-range {
   appearance: none;
@@ -523,6 +574,160 @@ body,
 .hud-range:focus-visible {
   outline: 2px solid var(--color-ring);
   outline-offset: 3px;
+}
+
+/* Text field as inked parchment: inset paper, leather underline, gold edge when focused. */
+.hud-field {
+  border: 1px solid rgb(135 98 53 / 45%);
+  border-bottom: 2px solid var(--color-leather);
+  border-radius: 0;
+  background: linear-gradient(180deg, #e9d8b2 0%, #f6ecd3 35%, #fbf4e2 100%);
+  box-shadow: inset 0 2px 3px rgb(74 44 26 / 22%);
+  color: var(--color-ink);
+  caret-color: var(--color-leather);
+  outline: none;
+  transition:
+    border-color 150ms,
+    box-shadow 150ms;
+}
+.hud-field::placeholder {
+  color: var(--color-ink-muted);
+  opacity: 0.75;
+  font-style: italic;
+}
+.hud-field::selection {
+  background: var(--color-leather);
+  color: var(--color-cream);
+}
+.hud-field:focus {
+  border-color: var(--color-gold);
+  border-bottom-color: #5d3a14;
+  box-shadow:
+    inset 0 2px 3px rgb(74 44 26 / 22%),
+    0 0 0 2px #c9a04e;
+}
+.hud-field:read-only {
+  background: linear-gradient(180deg, #e2cfa6 0%, #efe2c3 100%);
+}
+.hud-field[aria-invalid="true"] {
+  border-bottom-color: var(--color-bad);
+}
+.hud-field:disabled {
+  cursor: not-allowed;
+  opacity: 0.5;
+}
+
+/* On/off switch (Switch): parchment groove when off, brown leather when on, brass knob. */
+.hud-switch {
+  position: relative;
+  display: inline-flex;
+  flex: none;
+  align-items: center;
+  width: 48px;
+  height: 26px;
+  border-radius: 9999px;
+  border: 1.5px solid var(--color-leather);
+  background: linear-gradient(180deg, #d9c59c, #efe2c3);
+  box-shadow: inset 0 2px 3px rgb(74 44 26 / 35%);
+  cursor: pointer;
+  outline: none;
+  transition:
+    background-color 150ms,
+    border-color 150ms;
+}
+/* Bigger hit area without a bigger switch. */
+.hud-switch::before {
+  content: "";
+  position: absolute;
+  inset: -7px -4px;
+}
+.hud-switch[aria-checked="true"] {
+  border-color: #c9a04e;
+  background: linear-gradient(180deg, #6b4228, var(--color-leather));
+  box-shadow:
+    inset 0 0 0 1px #2a160b,
+    inset 0 2px 3px rgb(0 0 0 / 40%);
+}
+.hud-switch-knob {
+  pointer-events: none;
+  display: block;
+  width: 20px;
+  height: 20px;
+  margin-left: 2px;
+  border-radius: 9999px;
+  border: 1px solid #5d3a14;
+  background: radial-gradient(circle at 35% 30%, #fff1b0, #e8bc4a 55%, #a8741c);
+  box-shadow: 0 1px 3px rgb(0 0 0 / 50%);
+  transition: transform 150ms;
+}
+.hud-switch[aria-checked="true"] .hud-switch-knob {
+  transform: translateX(22px);
+}
+.hud-switch:focus-visible {
+  outline: 2px solid var(--color-ring);
+  outline-offset: 3px;
+}
+.hud-switch:disabled {
+  cursor: not-allowed;
+  opacity: 0.5;
+}
+.hud-switch:not(:disabled):hover .hud-switch-knob {
+  filter: brightness(1.08);
+}
+
+/* Radix slider (Slider) in the zoom slider's look: dark brass groove, gold fill, gold knob. */
+.hud-slider-track {
+  position: relative;
+  flex-grow: 1;
+  height: 12px;
+  overflow: hidden;
+  border-radius: 6px;
+  background: linear-gradient(180deg, #1b0f08, #4a2c1a);
+  border: 1px solid #c9a04e;
+}
+.hud-slider-range {
+  position: absolute;
+  height: 100%;
+  background: linear-gradient(180deg, #e8bc4a, #a8741c);
+}
+.hud-slider-thumb {
+  display: block;
+  width: 22px;
+  height: 22px;
+  border-radius: 9999px;
+  border: 1px solid #5d3a14;
+  background: radial-gradient(circle at 35% 30%, #fff1b0, #e8bc4a 55%, #a8741c);
+  box-shadow: 0 1px 3px rgb(0 0 0 / 60%);
+  cursor: grab;
+  transition: transform 120ms;
+}
+.hud-slider-thumb:active {
+  cursor: grabbing;
+}
+.hud-slider-thumb:hover {
+  transform: scale(1.08);
+}
+.hud-slider-thumb:focus-visible {
+  outline: 2px solid var(--color-ring);
+  outline-offset: 3px;
+}
+[data-disabled] > .hud-slider-thumb {
+  cursor: not-allowed;
+}
+@media (max-width: 639px) {
+  .hud-slider-thumb {
+    width: 28px;
+    height: 28px;
+  }
+}
+:root[data-motion="reduce"] :is(.hud-field, .hud-switch, .hud-switch-knob, .hud-slider-thumb) {
+  transition: none;
+}
+@media (prefers-reduced-motion: reduce) {
+  :root:not([data-motion="full"])
+    :is(.hud-field, .hud-switch, .hud-switch-knob, .hud-slider-thumb) {
+    transition: none;
+  }
 }
 
 .paper-solid {
@@ -604,25 +809,26 @@ body,
 .edge-hand {
   --slot-w: 72px;
   --hand-gap: 10px;
-  --overlap: clamp(calc(var(--slot-w) * -0.6),
-      calc((100vw - 24px - var(--n, 5) * var(--slot-w)) / max(1, var(--n, 5) - 1)),
-      var(--hand-gap));
+  --overlap: clamp(
+    calc(var(--slot-w) * -0.6),
+    calc((100vw - 24px - var(--n, 5) * var(--slot-w)) / max(1, var(--n, 5) - 1)),
+    var(--hand-gap)
+  );
 }
 
-@media (max-width: 639px),
-(max-height: 599px) {
+@media (max-width: 639px), (max-height: 599px) {
   .edge-hand {
     --slot-w: 52px;
     --hand-gap: 6px;
   }
 }
 
-.edge-hand>li+li {
+.edge-hand > li + li {
   margin-left: var(--overlap);
 }
 
 /* Small extra gap between the resource cards and the development cards. */
-.edge-hand>li[data-dev-start] {
+.edge-hand > li[data-dev-start] {
   margin-left: calc(var(--overlap) + 8px);
 }
 
@@ -651,16 +857,18 @@ body,
  * Explicit component classes win by specificity where they differ (e.g. informational disabled).
  */
 @layer base {
-
-  .hud :where(a[href],
-    button:not(:disabled),
-    [role="button"]:not([aria-disabled="true"]),
-    [role="tab"],
-    [role="menuitem"],
-    [role="option"],
-    summary,
-    label[for],
-    select:not(:disabled)) {
+  .hud
+    :where(
+      a[href],
+      button:not(:disabled),
+      [role="button"]:not([aria-disabled="true"]),
+      [role="tab"],
+      [role="menuitem"],
+      [role="option"],
+      summary,
+      label[for],
+      select:not(:disabled)
+    ) {
     cursor: pointer;
   }
 

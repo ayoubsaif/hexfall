@@ -13,6 +13,7 @@ import { resourceLabel } from "../i18n/labels.ts";
 import { act } from "../net/actions.ts";
 import { openDialog, useUiStore } from "../store/ui.ts";
 import { GameCard } from "./cards/GameCard.tsx";
+import { Counter } from "./cards/Stepper.tsx";
 import { useInFlight, useLegal, useOwn, useView } from "./state.ts";
 
 /** One selectable card in a give/get row: a radio button wrapping a picture card. */
@@ -151,18 +152,24 @@ export function MaritimePanel() {
             ))}
           </div>
         </fieldset>
-        <label className="flex items-center gap-2 text-sm">
-          <span>{t("dialogs.maritime.howMany")}</span>
-          <input
-            type="number"
-            min={1}
-            max={Math.max(1, max)}
+        <div
+          role="group"
+          aria-labelledby="maritime-how-many"
+          data-testid="maritime-count"
+          className="flex items-center gap-3 text-sm"
+        >
+          <span id="maritime-how-many">{t("dialogs.maritime.howMany")}</span>
+          <Counter
             value={count}
+            min={1}
+            canAdd={count < max}
+            leather
             disabled={max === 0}
-            onChange={(e) => setCount(Math.max(1, Math.floor(Number(e.target.value) || 1)))}
-            className="pointer-events-auto w-16 rounded-none border border-border bg-cream/70 px-2 py-1 text-foreground disabled:opacity-50"
+            lessLabel={t("dialogs.maritime.less")}
+            moreLabel={t("dialogs.maritime.more")}
+            onChange={(n) => setCount(Math.min(Math.max(1, max), Math.max(1, n)))}
           />
-        </label>
+        </div>
         {give && get && (
           <p className="mt-2 text-xs text-muted-foreground" role="status">
             {ok

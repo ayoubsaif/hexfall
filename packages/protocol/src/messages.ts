@@ -87,13 +87,13 @@ export const StartGameMessage = msg(
     turnTimer: TurnTimerPreset.optional(),
   }),
 );
-/** Host only, lobby only: seat a bot in the next free seat. */
-export const AddBotMessage = msg("addBot", z.object({}));
-/** Host only, lobby only: remove the bot in `seat`; later seats close up. */
-export const RemoveBotMessage = msg("removeBot", z.object({ seat: Seat }));
 /** Bot difficulty (specs/bots "Bot difficulty levels"); same strings as @hexfall/bots. */
 export const BotLevel = z.enum(["easy", "normal", "hard"]);
 export type BotLevel = z.infer<typeof BotLevel>;
+/** Host only, lobby only: seat a bot in the next free seat, at `level` (Normal if absent). */
+export const AddBotMessage = msg("addBot", z.object({ level: BotLevel.optional() }));
+/** Host only, lobby only: remove the bot in `seat`; later seats close up. */
+export const RemoveBotMessage = msg("removeBot", z.object({ seat: Seat }));
 /** Host only, lobby only: set the level of the bot in `seat`. */
 export const SetBotLevelMessage = msg("setBotLevel", z.object({ seat: Seat, level: BotLevel }));
 export const GameActionMessage = msg("gameAction", z.object({ action: ClientActionSchema }));

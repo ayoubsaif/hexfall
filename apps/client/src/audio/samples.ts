@@ -4,6 +4,7 @@
 /** Every sound file the game uses. */
 export const SAMPLE_URLS = {
   build: "/sounds/build.mp3",
+  burn: "/sounds/burn.mp3",
 } as const;
 
 export type SampleName = keyof typeof SAMPLE_URLS;

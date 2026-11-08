@@ -23,7 +23,7 @@ describe("selected tile", () => {
     );
     const b = el.querySelector("button")!;
     expect(b.getAttribute("aria-pressed")).toBe("true");
-    expect(b.className).toContain("aria-pressed:bg-forest");
+    expect(b.className).toContain("aria-pressed:to-leather");
     act(() => root.unmount());
     el.remove();
   });

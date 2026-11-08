@@ -17,6 +17,7 @@ export const session: Catalog["session"] = {
     playSolo: "Jugar solo contra bots",
     soloOpponents: "Bots rivales",
     soloOpponentsOption: "{{count}} bots",
+    soloLevel: "Nivel de los bots",
     waitingForServer: "Esperando al servidor…",
   },
   modes: {

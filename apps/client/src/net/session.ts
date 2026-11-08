@@ -75,6 +75,7 @@ export class SessionController implements SessionApi {
   private roomRequest: RoomRequest | null = null;
   /** Bots to seat (then start) as soon as the room created for "Play solo" is joined. */
   private soloOpponents: 2 | 3 | null = null;
+  private soloLevel: BotLevel | undefined = undefined;
   /** A `lookupSeats` was sent and not answered. */
   private lookingUp = false;
   /** Room of an `endSavedGame` sent and not answered. */
@@ -171,7 +172,8 @@ export class SessionController implements SessionApi {
         if (this.soloOpponents !== null && token) {
           const n = this.soloOpponents;
           this.soloOpponents = null;
-          for (let i = 0; i < n; i++) this.conn.send("addBot", {});
+          const payload = this.soloLevel ? { level: this.soloLevel } : {};
+          for (let i = 0; i < n; i++) this.conn.send("addBot", payload);
           this.startGame("variable", undefined, "off");
         }
         break;
@@ -377,13 +379,16 @@ export class SessionController implements SessionApi {
     );
   }
 
-  playSolo(name: string, opponents: 2 | 3, avatar?: AvatarId): boolean {
+  playSolo(name: string, opponents: 2 | 3, avatar?: AvatarId, level?: BotLevel): boolean {
     const n = cleanName(name);
     if (!n) return false;
     const sent = this.request("create", () =>
       this.conn.send("createRoom", avatar ? { name: n, avatar } : { name: n }),
     );
-    if (sent) this.soloOpponents = opponents;
+    if (sent) {
+      this.soloOpponents = opponents;
+      this.soloLevel = level;
+    }
     return sent;
   }
 

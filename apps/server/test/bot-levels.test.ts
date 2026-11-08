@@ -46,6 +46,17 @@ describe("bot levels", () => {
     expect(levels(ana)).toEqual([undefined, undefined, "normal"]);
   });
 
+  it("addBot with a level seats the bot at that level (practice form)", async () => {
+    const t = service();
+    const { conns, code } = await makeLobby(t.svc, ["Ana"]);
+    const ana = conns[0] as FakeConn;
+    expect(await t.svc.addBot(req(ana), "easy")).toEqual({ ok: true });
+    await t.svc.addBot(req(ana), "hard");
+    await t.svc.addBot(req(ana));
+    expect(levels(ana)).toEqual([undefined, "easy", "hard", "normal"]);
+    expect((await t.store.loadRoom(code))?.meta.seats[1]?.level).toBe("easy");
+  });
+
   it("the host sets a level; it is stored and sent to everyone", async () => {
     const t = service();
     const { conns, code } = await makeLobby(t.svc, ["Ana", "Ben"]);

@@ -41,6 +41,8 @@ export const dialogs: Catalog["dialogs"] = {
     have: "tienes {{count}}",
     bank: "banca {{count}}",
     howMany: "Cuántas recibir",
+    less: "Recibir una menos",
+    more: "Recibir una más",
     summary: "Das {{giveCount}} de {{give}} por {{getCount}} de {{get}}.",
     impossible: "No es posible con tus cartas y las existencias de la banca.",
     atMost: "Puedes recibir como máximo {{max}}.",

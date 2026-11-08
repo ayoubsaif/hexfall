@@ -19,6 +19,10 @@ export interface Prefs {
   notify: boolean;
   /** Master volume of game sounds, 0..1 in steps of 0.05 (default 0.6). */
   volume: number;
+  /** Background music on (default) or off; separate from game sounds. */
+  music: boolean;
+  /** Background music volume, 0..1 in steps of 0.05 (default 0.3). */
+  musicVolume: number;
   /** Motion choice; "system" follows `prefers-reduced-motion`. */
   motion: MotionPref;
   /** Plain wheel events over the board: "auto" detects touchpads (pan), "zoom" always zooms. */
@@ -48,6 +52,8 @@ export const DEFAULT_PREFS: Prefs = {
   sound: true,
   notify: false,
   volume: 0.6,
+  music: true,
+  musicVolume: 0.3,
   motion: "system",
   wheel: "auto",
   avatar: null,
@@ -79,6 +85,8 @@ export function readPrefs(storage: PrefsStorage | null = defaultStorage()): Pref
       sound: typeof p.sound === "boolean" ? p.sound : DEFAULT_PREFS.sound,
       notify: typeof p.notify === "boolean" ? p.notify : DEFAULT_PREFS.notify,
       volume: normalizeVolume(p.volume) ?? DEFAULT_PREFS.volume,
+      music: typeof p.music === "boolean" ? p.music : DEFAULT_PREFS.music,
+      musicVolume: normalizeVolume(p.musicVolume) ?? DEFAULT_PREFS.musicVolume,
       motion: MOTION_PREFS.includes(p.motion as MotionPref)
         ? (p.motion as MotionPref)
         : DEFAULT_PREFS.motion,

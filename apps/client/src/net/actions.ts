@@ -22,7 +22,8 @@ export interface SessionApi {
   /** Host only, lobby: set the difficulty of the bot in `seat`. */
   setBotLevel(seat: number, level: BotLevel): boolean;
   /** Start screen: create a room, seat `opponents` bots and start the game at once. */
-  playSolo(name: string, opponents: 2 | 3, avatar?: AvatarId): boolean;
+  /** Create a room, seat `opponents` bots at `level` (Normal if absent) and start at once. */
+  playSolo(name: string, opponents: 2 | 3, avatar?: AvatarId, level?: BotLevel): boolean;
   /** After a Replaced close: reconnect here and take the seat back. */
   playHere(): void;
   /** After game over: forget the seat and get a fresh, unseated connection. */
@@ -88,8 +89,8 @@ export const sendChat = (text: string): boolean => api.chat(text);
 export const addBot = (): boolean => api.addBot();
 export const removeBot = (seat: number): boolean => api.removeBot(seat);
 export const setBotLevel = (seat: number, level: BotLevel): boolean => api.setBotLevel(seat, level);
-export const playSolo = (name: string, opponents: 2 | 3, avatar?: AvatarId): boolean =>
-  api.playSolo(name, opponents, avatar);
+export const playSolo = (...args: Parameters<SessionApi["playSolo"]>): boolean =>
+  api.playSolo(...args);
 export const playHere = (): void => api.playHere();
 export const backToStart = (...args: Parameters<SessionApi["backToStart"]>): void =>
   api.backToStart(...args);

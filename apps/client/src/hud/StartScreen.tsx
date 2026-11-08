@@ -3,7 +3,10 @@ import { AVATAR_IDS } from "@hexfall/protocol";
 import { useEffect, useState } from "react";
 import { useTranslation } from "react-i18next";
 import { Button } from "@/components/ui/button.tsx";
+import type { BotLevel } from "@hexfall/protocol";
+import { ChoiceGroup } from "@/components/ui/choice-group.tsx";
 import { createRoom, joinRoom, playSolo } from "../net/actions.ts";
+import { LEVEL_OPTIONS } from "./botLevels.ts";
 import { SEAT_LOST_NOTICE } from "../net/session.ts";
 import { useConnectionStore } from "../store/connection.ts";
 import { setPref, usePrefsStore } from "../store/prefs.ts";
@@ -14,14 +17,14 @@ import type { GameMode } from "./GameModeButtons.tsx";
 import { SavedGames } from "./SavedGames.tsx";
 
 export const NAME_MAX = 20;
-export const GAME_NAME = import.meta.env.VITE_GAME_NAME || "Hexfall"
+export const GAME_NAME = import.meta.env.VITE_GAME_NAME || "Hexfall";
 /** Shared looks for the start screen and lobby (both centered HUD cards). */
 export const panelClass =
   "pointer-events-auto absolute top-1/2 left-1/2 flex max-h-[calc(100%-112px)] w-[min(440px,calc(100%-32px))] -translate-x-1/2 -translate-y-1/2 flex-col overflow-hidden frame frame-brass frame-corners paper rounded-none text-sm";
 /** The scrolling body inside the fixed panel box (keeps the corner plates on the border). */
 export const panelBodyClass = "flex min-h-0 flex-1 flex-col gap-1.5 overflow-auto p-7";
 export const inputClass =
-  "min-h-9 w-full min-w-0 rounded-none border border-ink/30 bg-cream/70 px-2 py-1.5 text-hud-fg outline-none focus-visible:ring-2 focus-visible:ring-ring max-sm:min-h-10";
+  "hud-field min-h-9 w-full min-w-0 px-2 py-1.5 max-sm:min-h-10";
 export const fieldClass = "my-1.5 flex flex-col gap-1";
 export const hintClass = "my-1 text-muted-foreground data-[bad]:text-bad";
 export const errorClass = "my-1.5 text-bad";
@@ -47,6 +50,7 @@ export function StartScreen({
   const [code, setCode] = useState(prefill ?? "");
   const avatar = usePrefsStore((s) => s.avatar) ?? AVATAR_IDS[0];
   const [opponents, setOpponents] = useState<2 | 3>(2);
+  const [level, setLevel] = useState<BotLevel>("normal");
   // An invite code can arrive after mount (read from the address by the session).
   useEffect(() => {
     if (prefill) setCode((c) => (c === "" ? prefill : c));
@@ -114,26 +118,33 @@ export function StartScreen({
         )}
 
         {!invited && (!mode || mode === "solo") && (
-          <div className="flex items-end gap-2">
-            <label className={`${fieldClass} flex-1`}>
+          <div className="flex flex-col gap-2">
+            <div className={fieldClass}>
               <span>{t("session.start.soloOpponents")}</span>
-              <select
-                className={inputClass}
+              <ChoiceGroup
+                data-testid="solo-opponents"
+                label={t("session.start.soloOpponents")}
+                options={([2, 3] as const).map((n) => ({
+                  value: n,
+                  label: t("session.start.soloOpponentsOption", { count: n }),
+                }))}
                 value={opponents}
-                onChange={(e) => setOpponents(e.target.value === "3" ? 3 : 2)}
-              >
-                {([2, 3] as const).map((n) => (
-                  <option key={n} value={n}>
-                    {t("session.start.soloOpponentsOption", { count: n })}
-                  </option>
-                ))}
-              </select>
-            </label>
+                onChange={setOpponents}
+              />
+            </div>
+            <div className={fieldClass}>
+              <span>{t("session.start.soloLevel")}</span>
+              <ChoiceGroup
+                data-testid="solo-level"
+                label={t("session.start.soloLevel")}
+                options={LEVEL_OPTIONS.map((o) => ({ value: o.value, label: t(o.label) }))}
+                value={level}
+                onChange={setLevel}
+              />
+            </div>
             <Button
-              className="mb-1.5"
-              variant="secondary"
               disabled={!canCreate}
-              onClick={() => valid && playSolo(valid, opponents, avatar)}
+              onClick={() => valid && playSolo(valid, opponents, avatar, level)}
             >
               {t("session.start.playSolo")}
             </Button>

@@ -94,7 +94,7 @@ describe("Play solo", () => {
     expect(solo.disabled).toBe(false);
     click(solo);
     expect(calls.filter((c) => c.fn === "playSolo")).toEqual([
-      { fn: "playSolo", args: ["Ana", 2, "villager-beard"] },
+      { fn: "playSolo", args: ["Ana", 2, "villager-beard", "normal"] },
     ]);
   });
 });

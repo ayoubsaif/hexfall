@@ -65,6 +65,10 @@ export const settings = {
     enabledHint: "Dice rolls and the chime when your turn starts.",
     volume: "Volume",
     test: "Test sound",
+    music: "Music",
+    musicHint: "Background soundtrack while you play.",
+    musicVolume: "Music volume",
+    nowPlaying: "Now playing: {{title}} by {{artist}}",
   },
   notifications: {
     enabled: "Turn notifications",

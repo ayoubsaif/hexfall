@@ -27,6 +27,12 @@ import {
   type Mounted,
 } from "./helpers.tsx";
 
+const held = vi.hoisted(() => [] as boolean[]);
+vi.mock("../../src/audio/music.ts", async (importOriginal) => ({
+  ...(await importOriginal<typeof import("../../src/audio/music.ts")>()),
+  holdMusic: (on: boolean) => held.push(on),
+}));
+
 let m: Mounted;
 let calls: Call[];
 
@@ -311,8 +317,7 @@ describe("DiceTray", () => {
     vi.unstubAllGlobals();
   });
 
-  const visual = () =>
-    m.container.querySelector<HTMLElement>('[data-testid="dice-tray"] > div')!;
+  const visual = () => m.container.querySelector<HTMLElement>('[data-testid="dice-tray"] > div')!;
 
   it("is drawn only while the viewer has a roll to make", () => {
     seatRoom(0);
@@ -433,6 +438,21 @@ describe("feed", () => {
     expect(first?.textContent).toContain("incl. 1 VP card");
     click(byText(document.body, "button", "Back to start"));
     expect(calls).toEqual([{ fn: "backToStart", args: [] }]);
+  });
+
+  it("game over holds the background music while it is up and releases it after", () => {
+    const s = playState();
+    seatRoom(0);
+    showGame(s, 0);
+    held.length = 0;
+    m = mount(<GameOver />);
+    expect(held.at(-1)).toBe(false);
+    s.phase = { kind: "ended" };
+    s.winner = 1;
+    showGame(s, 0);
+    expect(held.at(-1)).toBe(true);
+    m.unmount();
+    expect(held.at(-1)).toBe(false);
   });
 });
 

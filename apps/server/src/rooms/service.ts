@@ -94,7 +94,7 @@ export interface RoomService {
   leaveRoom(req: Request): Promise<ServiceResult>;
   startGame(req: Request, opts: StartOptions): Promise<ServiceResult>;
   /** Host only, lobby only: seat a bot / remove the bot in `seat`. */
-  addBot(req: Request): Promise<ServiceResult>;
+  addBot(req: Request, level?: BotLevel): Promise<ServiceResult>;
   removeBot(req: Request, seat: number): Promise<ServiceResult>;
   /** Host only, lobby only: set the level of the bot in `seat`. */
   setBotLevel(req: Request, seat: number, level: BotLevel): Promise<ServiceResult>;
@@ -416,8 +416,8 @@ export function createRoomService(opts: RoomServiceOptions): RoomService {
       return seated("setAvatar", req.conn, (room) => room.setAvatar(req, avatar));
     },
 
-    addBot(req) {
-      return seated("addBot", req.conn, (room) => room.addBot(req));
+    addBot(req, level) {
+      return seated("addBot", req.conn, (room) => room.addBot(req, level));
     },
 
     removeBot(req, seat) {

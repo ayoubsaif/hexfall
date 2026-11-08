@@ -1,7 +1,9 @@
 ## ADDED Requirements
 
 ### Requirement: Bot difficulty levels
-Every bot seat SHALL have a level: `easy`, `normal` or `hard`. A bot added in the lobby, or added on start to fill the room, SHALL be `normal`. A seat a human left during the game SHALL play at `normal`. A stored room or saved game whose bot seat has no level, or an unknown level, SHALL play that seat at `normal`. The room state SHALL report the level of every bot seat to everyone in the room; human seats SHALL have no level.
+Every bot seat SHALL have a level: `easy`, `normal` or `hard`. `addBot` MAY carry a `level`; a bot added with it SHALL start at that level, and a bot added without it, or added on start to fill the room, SHALL be `normal`. A seat a human left during the game SHALL play at `normal`. A stored room or saved game whose bot seat has no level, or an unknown level, SHALL play that seat at `normal`. The room state SHALL report the level of every bot seat to everyone in the room; human seats SHALL have no level.
+
+The "practice with bots" form SHALL offer a bot level (Easy, Normal, Hard; Normal selected by default) next to the number of opponents, and every bot it seats SHALL start at the chosen level.
 
 In the lobby the host SHALL be able to change a bot seat's level with `setBotLevel { seat, level }`. It SHALL fail with `not_host` from other seats, `game_started` outside the lobby, and `not_a_bot` for a human seat. The change SHALL be stored before it is sent to everyone in the room. After the start the level of each seat SHALL be fixed.
 
@@ -14,6 +16,14 @@ The level SHALL change only which legal move a bot picks, never which moves are 
 #### Scenario: Default level
 - **WHEN** the host adds a bot in the lobby
 - **THEN** the room state shows that bot seat at Normal
+
+#### Scenario: Bot added with a level
+- **WHEN** the host sends `addBot` with `level: "easy"`
+- **THEN** the new bot seat is stored and shown at Easy
+
+#### Scenario: Practice against Hard bots
+- **WHEN** a player picks 3 bots and Hard in the practice form and starts
+- **THEN** the game starts with three bot seats, all at Hard
 
 #### Scenario: Host sets a level
 - **WHEN** the host sends `setBotLevel` with seat 1 and `hard`, and seat 1 is a bot

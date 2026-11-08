@@ -1,3 +1,4 @@
+// Radix slider in the zoom slider's look: brass groove, gold fill and knob (`.hud-slider-*`).
 import * as React from "react";
 import { cn } from "@/lib/utils";
 import { Slider as SliderPrimitive } from "radix-ui";
@@ -23,7 +24,7 @@ function Slider({
       min={min}
       max={max}
       className={cn(
-        "relative flex w-full touch-none items-center select-none data-[disabled]:opacity-50 data-[orientation=vertical]:h-full data-[orientation=vertical]:min-h-44 data-[orientation=vertical]:w-auto data-[orientation=vertical]:flex-col",
+        "relative flex min-h-7 w-full touch-none items-center select-none data-[disabled]:opacity-50 data-[orientation=vertical]:h-full data-[orientation=vertical]:min-h-44 data-[orientation=vertical]:w-auto data-[orientation=vertical]:flex-col",
         className,
       )}
       {...props}
@@ -31,21 +32,19 @@ function Slider({
       <SliderPrimitive.Track
         data-slot="slider-track"
         className={cn(
-          "relative grow overflow-hidden rounded-full bg-ink/20 data-[orientation=horizontal]:h-1.5 data-[orientation=horizontal]:w-full data-[orientation=vertical]:h-full data-[orientation=vertical]:w-1.5",
+          "hud-slider-track data-[orientation=horizontal]:w-full data-[orientation=vertical]:h-full data-[orientation=vertical]:w-3",
         )}
       >
         <SliderPrimitive.Range
           data-slot="slider-range"
-          className={cn(
-            "absolute bg-forest data-[orientation=horizontal]:h-full data-[orientation=vertical]:w-full",
-          )}
+          className={cn("hud-slider-range data-[orientation=vertical]:w-full")}
         />
       </SliderPrimitive.Track>
       {Array.from({ length: _values.length }, (_, index) => (
         <SliderPrimitive.Thumb
           data-slot="slider-thumb"
           key={index}
-          className="block size-4 shrink-0 rounded-full border border-forest bg-cream shadow-sm ring-ring/50 transition-[color,box-shadow] hover:ring-4 focus-visible:ring-4 focus-visible:outline-hidden cursor-grab active:cursor-grabbing disabled:cursor-not-allowed disabled:opacity-50"
+          className="hud-slider-thumb shrink-0"
         />
       ))}
     </SliderPrimitive.Root>
