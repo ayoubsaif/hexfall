@@ -50,6 +50,12 @@ function within(node: Object3D, root: Object3D): boolean {
 
 const scratch = new Vector3();
 
+/**
+ * How much larger the sail rig is drawn than in the model: the model's sail is about
+ * 0.26 × 0.22 world units, this makes it about 0.44 wide, the width of a number chip.
+ */
+export const SAIL_SCALE = 1.7;
+
 /** Finds the sail rig under `root` and prepares it; null until a sail is mounted. */
 export function findRig(root: Object3D, type: HarborType): Rig | null {
   let sail: Mesh | null = null;
@@ -87,12 +93,18 @@ export function findRig(root: Object3D, type: HarborType): Rig | null {
     const c = box.getCenter(new Vector3());
     pivot = { x: c.x, y: box.min.y, z: c.z };
   }
+  // The rig is drawn SAIL_SCALE× larger about the mast foot, so the rate and icon read at
+  // number-chip size while the hull keeps its own size.
+  const grow = new Matrix4()
+    .makeTranslation(pivot.x, pivot.y, pivot.z)
+    .multiply(new Matrix4().makeScale(SAIL_SCALE, SAIL_SCALE, SAIL_SCALE))
+    .multiply(new Matrix4().makeTranslation(-pivot.x, -pivot.y, -pivot.z));
   const nodes = parent.children
     .filter((n) => n === found || /yard|sheet|mast|lashing/i.test(n.name))
     .map((node) => {
       node.updateMatrix();
       node.matrixAutoUpdate = false;
-      return { node, original: node.matrix.clone() };
+      return { node, original: grow.clone().multiply(node.matrix) };
     });
   return { sail: found, parent, pivot, nodes, heading: 0 };
 }

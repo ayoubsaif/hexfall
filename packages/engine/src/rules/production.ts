@@ -1,8 +1,15 @@
 // Dice roll and resource production (AGENTS.md §6). Owner: flow agent.
 import { TERRAIN_RESOURCE, type Resource } from "../board.ts";
 import type { ActionOf, GameState, ResourceBundle, Seat } from "../state.ts";
-import { TOPOLOGY } from "../topology.ts";
-import { RESOURCES, assertActive, assertPhase, emit, rollTwoDice, takeFromBank } from "./common.ts";
+import {
+  RESOURCES,
+  assertActive,
+  assertPhase,
+  emit,
+  rollTwoDice,
+  takeFromBank,
+  topo,
+} from "./common.ts";
 import { check } from "./errors.ts";
 import { startSeven } from "./robber.ts";
 
@@ -39,7 +46,7 @@ export function produce(s: GameState, total: number): void {
     if (hex.token !== total || id === s.robber) return;
     const res = TERRAIN_RESOURCE[hex.terrain];
     if (!res) return;
-    const info = TOPOLOGY.hexes[id];
+    const info = topo(s).hexes[id];
     if (!info) return;
     for (const v of info.vertices) {
       const b = s.vertices[v];

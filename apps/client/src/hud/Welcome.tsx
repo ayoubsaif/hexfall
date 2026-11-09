@@ -21,7 +21,7 @@ export const resetWelcome = (): void => {
 };
 
 const LOGO = "/icons/icon-192.png";
-const GAME_NAME = import.meta.env.VITE_GAME_NAME || "Hexfall"
+const GAME_NAME = import.meta.env.VITE_GAME_NAME || "Hexfall";
 
 const STEPS = ["s1", "s2", "s3"] as const;
 const TIPS = ["t1", "t2", "t3"] as const;
@@ -29,11 +29,11 @@ const EXAMPLES: {
   key: "road" | "settlement" | "city" | "devCard";
   cost: ResourceBundle;
 }[] = [
-    { key: "road", cost: COSTS.road },
-    { key: "settlement", cost: COSTS.settlement },
-    { key: "city", cost: COSTS.city },
-    { key: "devCard", cost: COSTS.devCard },
-  ];
+  { key: "road", cost: COSTS.road },
+  { key: "settlement", cost: COSTS.settlement },
+  { key: "city", cost: COSTS.city },
+  { key: "devCard", cost: COSTS.devCard },
+];
 
 export function Welcome({ onPlay }: { onPlay: (mode: GameMode) => void }) {
   const { t } = useTranslation();
@@ -46,21 +46,12 @@ export function Welcome({ onPlay }: { onPlay: (mode: GameMode) => void }) {
         className="welcome-sheet paper pointer-events-auto"
       >
         <header className="welcome-brand">
-          <img
-            src={LOGO}
-            alt=""
-            aria-hidden="true"
-            width={56}
-            height={56}
-            className="size-14"
-          />
+          <img src={LOGO} alt="" aria-hidden="true" width={56} height={56} className="size-14" />
           <div className="text-left">
             <h1 className="font-serif text-4xl leading-none font-semibold text-forest">
               {GAME_NAME}
             </h1>
-            <p className="font-serif text-lg text-ink-muted">
-              {t("session.start.tagline")}
-            </p>
+            <p className="font-serif text-lg text-ink-muted">{t("session.start.tagline")}</p>
           </div>
         </header>
 
@@ -70,9 +61,7 @@ export function Welcome({ onPlay }: { onPlay: (mode: GameMode) => void }) {
             <h2>{t("session.welcome.headline")}</h2>
             <p className="welcome-intro">{t("session.welcome.intro")}</p>
 
-            <p className="welcome-reassurance">
-              {t("session.welcome.reassurance")}
-            </p>
+            <p className="welcome-reassurance">{t("session.welcome.reassurance")}</p>
           </div>
           <GameModeButtons onSelect={onPlay} />
         </div>
@@ -82,10 +71,7 @@ export function Welcome({ onPlay }: { onPlay: (mode: GameMode) => void }) {
         <details className="welcome-guide">
           <summary>{t("session.welcome.guide")}</summary>
           <div className="welcome-guide-content">
-            <section
-              className="w-full text-left"
-              aria-label={t("session.welcome.howTitle")}
-            >
+            <section className="w-full text-left" aria-label={t("session.welcome.howTitle")}>
               <h2 className="mb-1 text-[11px] font-semibold tracking-[0.15em] text-gold uppercase">
                 {t("session.welcome.howTitle")}
               </h2>
@@ -101,10 +87,7 @@ export function Welcome({ onPlay }: { onPlay: (mode: GameMode) => void }) {
               </ol>
             </section>
 
-            <section
-              className="w-full text-left"
-              aria-label={t("session.welcome.cardsTitle")}
-            >
+            <section className="w-full text-left" aria-label={t("session.welcome.cardsTitle")}>
               <h2 className="mb-1 text-[11px] font-semibold tracking-[0.15em] text-gold uppercase">
                 {t("session.welcome.cardsTitle")}
               </h2>
@@ -115,9 +98,7 @@ export function Welcome({ onPlay }: { onPlay: (mode: GameMode) => void }) {
                     data-testid="welcome-example"
                     className="flex flex-col items-start gap-1 border border-ink/15 bg-cream/50 p-1.5"
                   >
-                    <span className="font-semibold">
-                      {t(`session.welcome.examples.${key}`)}
-                    </span>
+                    <span className="font-semibold">{t(`session.welcome.examples.${key}`)}</span>
                     <span className="flex flex-wrap gap-0.5">
                       <CostCards cost={cost} />
                     </span>
@@ -126,10 +107,7 @@ export function Welcome({ onPlay }: { onPlay: (mode: GameMode) => void }) {
               </ul>
             </section>
 
-            <section
-              className="w-full text-left"
-              aria-label={t("session.welcome.tipsTitle")}
-            >
+            <section className="w-full text-left" aria-label={t("session.welcome.tipsTitle")}>
               <h2 className="mb-1 text-[11px] font-semibold tracking-[0.15em] text-gold uppercase">
                 {t("session.welcome.tipsTitle")}
               </h2>

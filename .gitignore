@@ -38,3 +38,4 @@ assets/
 
 # Local tool indexes
 .codegraph/
+*.blend1

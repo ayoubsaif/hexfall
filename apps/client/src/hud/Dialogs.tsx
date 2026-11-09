@@ -23,6 +23,7 @@ import { GameCard } from "./cards/GameCard.tsx";
 import { Stepper } from "./cards/Stepper.tsx";
 import { useCountdown } from "./countdown.ts";
 import { useNames } from "./names.ts";
+import { HelpMark } from "./tutorial/TutorialHelp.tsx";
 import { useInFlight, useLegal, useOwn, useView } from "./state.ts";
 
 /** Blocks Escape and outside clicks for dialogs that must be answered. */
@@ -70,6 +71,7 @@ export function DiscardDialog() {
           {countdown && viewer !== null && countdown.seats.includes(viewer) && (
             <CountdownText countdown={countdown} className="mr-auto self-center" />
           )}
+          <HelpMark topic="discard" className="self-center" />
           <Button
             disabled={!ok || inFlight}
             onClick={() => act({ type: "discard", cards: compact(chosen) })}
@@ -227,6 +229,7 @@ export function VictimDialog() {
           })}
         </ul>
         <DialogFooter>
+          <HelpMark topic="robber" className="mr-auto self-center" />
           <Button variant="secondary" onClick={() => setVictimHex(null)}>
             {t("dialogs.victim.pickAnother")}
           </Button>

@@ -1,6 +1,6 @@
 import { describe, expect, it } from "vite-plus/test";
 import {
-  TOPOLOGY,
+  STANDARD_TOPOLOGY,
   edgeMidpoint,
   edgeOutward,
   hexCenter,
@@ -8,7 +8,8 @@ import {
   vertexPosition,
 } from "../src/index.ts";
 
-const { hexes, vertices, edges, coastalEdges, harborSlots, cornerHexes, seaRing } = TOPOLOGY;
+const { hexes, vertices, edges, coastalEdges, harborSlots, cornerHexes, seaRing } =
+  STANDARD_TOPOLOGY;
 const EPS = 1e-9;
 
 function hexDistance(q: number, r: number): number {
@@ -253,23 +254,23 @@ describe("world coordinates", () => {
   });
 });
 
-describe("TOPOLOGY is frozen", () => {
+describe("STANDARD_TOPOLOGY is frozen", () => {
   it("throws on mutation at every depth", () => {
-    expect(Object.isFrozen(TOPOLOGY)).toBe(true);
+    expect(Object.isFrozen(STANDARD_TOPOLOGY)).toBe(true);
     expect(() => {
-      (TOPOLOGY as { hexes: unknown }).hexes = [];
+      (STANDARD_TOPOLOGY as { hexes: unknown }).hexes = [];
     }).toThrow(TypeError);
     expect(() => {
-      (TOPOLOGY.hexes as unknown[]).push({});
+      (STANDARD_TOPOLOGY.hexes as unknown[]).push({});
     }).toThrow(TypeError);
     expect(() => {
-      (TOPOLOGY.hexes[0] as { q: number }).q = 5;
+      (STANDARD_TOPOLOGY.hexes[0] as { q: number }).q = 5;
     }).toThrow(TypeError);
     expect(() => {
-      (TOPOLOGY.vertices[0]!.neighbors as number[])[0] = 99;
+      (STANDARD_TOPOLOGY.vertices[0]!.neighbors as number[])[0] = 99;
     }).toThrow(TypeError);
     expect(() => {
-      (TOPOLOGY.seaRing[0] as { q: number }).q = 0;
+      (STANDARD_TOPOLOGY.seaRing[0] as { q: number }).q = 0;
     }).toThrow(TypeError);
   });
 });

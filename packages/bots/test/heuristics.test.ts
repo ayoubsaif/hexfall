@@ -1,6 +1,6 @@
 import { describe, expect, it } from "vite-plus/test";
 import {
-  TOPOLOGY,
+  STANDARD_TOPOLOGY,
   createGame,
   legalActions,
   playerView,
@@ -71,7 +71,7 @@ describe("setup", () => {
     const road = act(after, 0)!;
     expect(road.type).toBe("placeRoad");
     if (road.type === "placeRoad") {
-      expect(TOPOLOGY.edges[road.edge]!.vertices).toContain(first.vertex);
+      expect(STANDARD_TOPOLOGY.edges[road.edge]!.vertices).toContain(first.vertex);
     }
   });
 });
@@ -90,7 +90,7 @@ describe("turn", () => {
     const a = act(s, 0)!;
     expect(a.type).toBe("moveRobber");
     if (a.type === "moveRobber") {
-      const own = TOPOLOGY.hexes[a.hex]!.vertices.some((v) => s.vertices[v]?.owner === 0);
+      const own = STANDARD_TOPOLOGY.hexes[a.hex]!.vertices.some((v) => s.vertices[v]?.owner === 0);
       expect(own).toBe(false);
     }
   });

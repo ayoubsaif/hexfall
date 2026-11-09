@@ -1,7 +1,7 @@
 // Roll for order and the setup snake (AGENTS.md §4c, §13.2). Owner: flow agent.
 import { TERRAIN_RESOURCE } from "../board.ts";
 import type { ActionOf, GameState, ResourceBundle, Seat } from "../state.ts";
-import { TOPOLOGY, type EdgeId, type VertexId } from "../topology.ts";
+import { type EdgeId, type VertexId } from "../topology.ts";
 import {
   assertActive,
   assertPhase,
@@ -9,6 +9,7 @@ import {
   normalizeBundle,
   rollTwoDice,
   takeFromBank,
+  topo,
 } from "./common.ts";
 import { check } from "./errors.ts";
 import { canPlaceSettlementAt, putRoad, putSettlement } from "./placement.ts";
@@ -30,7 +31,9 @@ export function canRollForOrder(s: GameState, seat: Seat): boolean {
 /** Setup settlement spots for the seat right now (empty unless it is their settlement step). */
 export function legalSetupSettlements(s: GameState, seat: Seat): VertexId[] {
   if (s.phase.kind !== "setup" || s.phase.step !== "settlement" || s.turn.seat !== seat) return [];
-  return TOPOLOGY.vertices.map((v) => v.id).filter((v) => canPlaceSettlementAt(s, v));
+  return topo(s)
+    .vertices.map((v) => v.id)
+    .filter((v) => canPlaceSettlementAt(s, v));
 }
 
 /** Setup road paths for the seat right now (touching the settlement just placed). */
@@ -38,7 +41,7 @@ export function legalSetupRoads(s: GameState, seat: Seat): EdgeId[] {
   if (s.phase.kind !== "setup" || s.phase.step !== "road" || s.turn.seat !== seat) return [];
   const last = s.phase.lastSettlement;
   if (last === null) return [];
-  const info = TOPOLOGY.vertices[last];
+  const info = topo(s).vertices[last];
   if (!info) return [];
   return info.edges.filter((e) => s.edges[e] === null).sort((a, b) => a - b);
 }
@@ -76,7 +79,7 @@ export function placeSettlement(s: GameState, a: ActionOf<"placeSettlement">): v
   const phase = s.phase;
   check(phase.step === "settlement", "wrong_phase", "place a road first");
   check(
-    Number.isInteger(a.vertex) && a.vertex >= 0 && a.vertex < TOPOLOGY.vertices.length,
+    Number.isInteger(a.vertex) && a.vertex >= 0 && a.vertex < topo(s).vertices.length,
     "illegal_placement",
     `no intersection ${String(a.vertex)}`,
   );
@@ -84,7 +87,7 @@ export function placeSettlement(s: GameState, a: ActionOf<"placeSettlement">): v
   putSettlement(s, a.seat, a.vertex, true);
   if (phase.index >= s.playerCount) {
     const gain: ResourceBundle = {};
-    for (const h of TOPOLOGY.vertices[a.vertex]?.hexes ?? []) {
+    for (const h of topo(s).vertices[a.vertex]?.hexes ?? []) {
       const hex = s.board.hexes[h];
       const r = hex ? TERRAIN_RESOURCE[hex.terrain] : null;
       if (r) gain[r] = (gain[r] ?? 0) + 1;

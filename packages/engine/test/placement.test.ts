@@ -10,18 +10,20 @@ import {
 } from "../src/rules/placement.ts";
 import type { GameState, Seat } from "../src/state.ts";
 import { failCode, give, makePlayState, putBuilding, putRoadAt, step } from "../src/testing.ts";
-import { TOPOLOGY, hexAt, type EdgeId, type VertexId } from "../src/topology.ts";
+import { STANDARD_TOPOLOGY, hexAt, type EdgeId, type VertexId } from "../src/topology.ts";
 
-const CENTER = TOPOLOGY.hexes[hexAt(0, 0)!]!;
+const CENTER = STANDARD_TOPOLOGY.hexes[hexAt(0, 0)!]!;
 
 function edgeBetween(a: VertexId, b: VertexId): EdgeId {
-  const e = TOPOLOGY.vertices[a]!.edges.find((x) => TOPOLOGY.edges[x]!.vertices.includes(b));
+  const e = STANDARD_TOPOLOGY.vertices[a]!.edges.find((x) =>
+    STANDARD_TOPOLOGY.edges[x]!.vertices.includes(b),
+  );
   if (e === undefined) throw new Error(`no path ${a}-${b}`);
   return e;
 }
 
 function other(e: EdgeId, v: VertexId): VertexId {
-  const [a, b] = TOPOLOGY.edges[e]!.vertices;
+  const [a, b] = STANDARD_TOPOLOGY.edges[e]!.vertices;
   return a === v ? b : a;
 }
 
@@ -88,7 +90,7 @@ describe("road connectivity", () => {
     expect(connectedRoadEdges(s, 0)).toEqual([]);
     putBuilding(s, c0, 0);
     expect(connectedRoadEdges(s, 0)).toEqual(
-      [...TOPOLOGY.vertices[c0]!.edges].sort((a, b) => a - b),
+      [...STANDARD_TOPOLOGY.vertices[c0]!.edges].sort((a, b) => a - b),
     );
     expect(connectedRoadEdges(s, 1)).toEqual([]);
   });
@@ -123,13 +125,13 @@ describe("road connectivity", () => {
   it("allows coastal roads", () => {
     const s = makePlayState();
     rich(s, 0);
-    const e = TOPOLOGY.coastalEdges[0]!;
-    const e2 = TOPOLOGY.coastalEdges[1]!;
-    const shared = TOPOLOGY.edges[e]!.vertices.find((x) =>
-      TOPOLOGY.edges[e2]!.vertices.includes(x),
+    const e = STANDARD_TOPOLOGY.coastalEdges[0]!;
+    const e2 = STANDARD_TOPOLOGY.coastalEdges[1]!;
+    const shared = STANDARD_TOPOLOGY.edges[e]!.vertices.find((x) =>
+      STANDARD_TOPOLOGY.edges[e2]!.vertices.includes(x),
     )!;
     const v = other(e, shared);
-    expect(TOPOLOGY.edges[e]!.coastal).toBe(true);
+    expect(STANDARD_TOPOLOGY.edges[e]!.coastal).toBe(true);
     putBuilding(s, v, 0);
     expect(buildableRoads(s, 0)).toContain(e);
     const next = step(s, { type: "buildRoad", seat: 0, edge: e });
@@ -279,15 +281,15 @@ describe("buildable* lists", () => {
     putBuilding(s, c0, 1);
     putRoadAt(s, edgeBetween(c0, c1), 1);
     putRoadAt(s, edgeBetween(c1, c2), 1);
-    const out = TOPOLOGY.vertices[c2]!.edges.find((e) => !CENTER.edges.includes(e))!;
+    const out = STANDARD_TOPOLOGY.vertices[c2]!.edges.find((e) => !CENTER.edges.includes(e))!;
     putRoadAt(s, out, 1);
     putBuilding(s, c3, 2);
     putRoadAt(
       s,
-      TOPOLOGY.vertices[c3]!.edges.find((e) => other(e, c3) !== c2)!,
+      STANDARD_TOPOLOGY.vertices[c3]!.edges.find((e) => other(e, c3) !== c2)!,
       2,
     );
-    const coastV = TOPOLOGY.edges[TOPOLOGY.coastalEdges[5]!]!.vertices[0];
+    const coastV = STANDARD_TOPOLOGY.edges[STANDARD_TOPOLOGY.coastalEdges[5]!]!.vertices[0];
     putBuilding(s, coastV, 1, "settlement");
     give(s, 1, { brick: 2, lumber: 2, wool: 1, grain: 3, ore: 3 });
     const roads = buildableRoads(s, 1);
@@ -305,9 +307,9 @@ describe("buildable* lists", () => {
     for (const vertex of cities)
       expect(applyAction(s, { type: "buildCity", seat: 1, vertex }).ok).toBe(true);
     // And nothing unlisted is accepted.
-    for (let edge = 0; edge < TOPOLOGY.edges.length; edge++)
+    for (let edge = 0; edge < STANDARD_TOPOLOGY.edges.length; edge++)
       expect(applyAction(s, { type: "buildRoad", seat: 1, edge }).ok).toBe(roads.includes(edge));
-    for (let vertex = 0; vertex < TOPOLOGY.vertices.length; vertex++) {
+    for (let vertex = 0; vertex < STANDARD_TOPOLOGY.vertices.length; vertex++) {
       expect(applyAction(s, { type: "buildSettlement", seat: 1, vertex }).ok).toBe(
         settlements.includes(vertex),
       );

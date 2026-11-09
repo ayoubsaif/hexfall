@@ -13,7 +13,7 @@ export const errors = {
     room_full: "That room is full.",
     game_started: "That game has already started.",
     not_host: "Only the host can do that.",
-    not_enough_players: "3 or 4 players are needed to start.",
+    not_enough_players: "3 to 6 players are needed to start.",
     not_a_bot: "That seat is not a bot.",
     bad_avatar: "That avatar does not exist.",
     avatar_taken: "Another player already has that avatar.",
@@ -47,5 +47,7 @@ export const errors = {
     invalid_trade: "That trade is not valid.",
     unknown_offer: "That trade offer is gone.",
     bank_empty: "The bank does not have those cards.",
+    not_allowed_in_special_build:
+      "In a building window you can only build, buy development cards or pass.",
   } as const satisfies Record<RuleErrorCode, string>,
 } as const;

@@ -115,7 +115,10 @@ describe("samples", () => {
 
   it("drops a sound that loads too late, and a missing file never throws", async () => {
     let finish!: (r: Response) => void;
-    vi.stubGlobal("fetch", vi.fn(() => new Promise<Response>((r) => (finish = r))));
+    vi.stubGlobal(
+      "fetch",
+      vi.fn(() => new Promise<Response>((r) => (finish = r))),
+    );
     const now = vi.spyOn(performance, "now").mockReturnValue(0);
     const { ctx, started } = fakeCtx();
     playSample(ctx, {} as AudioNode, "build");
@@ -125,7 +128,10 @@ describe("samples", () => {
     await Promise.resolve();
     expect(started).toEqual([]);
 
-    vi.stubGlobal("fetch", vi.fn(async () => new Response(null, { status: 404 })));
+    vi.stubGlobal(
+      "fetch",
+      vi.fn(async () => new Response(null, { status: 404 })),
+    );
     const other = fakeCtx();
     await expect(loadSample(other.ctx, "build")).resolves.toBeNull();
     now.mockRestore();

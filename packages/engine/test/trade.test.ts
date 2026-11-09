@@ -3,15 +3,15 @@ import { beginnerBoard, type HarborType } from "../src/board.ts";
 import { harborsOf, maritimeRates, tradeOptions } from "../src/rules/trade.ts";
 import type { GameState } from "../src/state.ts";
 import { failCode, give, makePlayState, putBuilding, step } from "../src/testing.ts";
-import { TOPOLOGY } from "../src/topology.ts";
+import { STANDARD_TOPOLOGY } from "../src/topology.ts";
 
 const HARBORS = beginnerBoard().harbors;
 
 /** An intersection of the first beginner harbor slot of this type. */
 function slotVertex(type: HarborType, end: 0 | 1 = 0): number {
   const slot = HARBORS.indexOf(type);
-  const edge = TOPOLOGY.harborSlots[slot]!;
-  return TOPOLOGY.edges[edge]!.vertices[end];
+  const edge = STANDARD_TOPOLOGY.harborSlots[slot]!;
+  return STANDARD_TOPOLOGY.edges[edge]!.vertices[end];
 }
 
 function offerState(): GameState {

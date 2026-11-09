@@ -23,6 +23,17 @@ export const ASSET_KEYS = [
   "dice.die",
   "prop.boat",
   "prop.jetty",
+  "prop.boulder",
+  "prop.cliff",
+  "prop.wall",
+  "prop.tree",
+  "prop.bush",
+  "prop.sheep",
+  "prop.camp",
+  "prop.woods",
+  "prop.peak",
+  "prop.ore",
+  "prop.gull",
 ] as const;
 
 export type AssetKey = (typeof ASSET_KEYS)[number];
@@ -61,6 +72,17 @@ export const ASSET_KIND: Readonly<Record<AssetKey, AssetKind>> = {
   "dice.die": "model",
   "prop.boat": "model",
   "prop.jetty": "model",
+  "prop.boulder": "model",
+  "prop.cliff": "model",
+  "prop.wall": "model",
+  "prop.tree": "model",
+  "prop.bush": "model",
+  "prop.sheep": "model",
+  "prop.camp": "model",
+  "prop.woods": "model",
+  "prop.peak": "model",
+  "prop.ore": "model",
+  "prop.gull": "model",
 };
 
 export function assetKind(key: AssetKey): AssetKind {

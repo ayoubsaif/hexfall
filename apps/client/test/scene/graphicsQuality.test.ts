@@ -16,6 +16,12 @@ describe("graphics preferences", () => {
       graphicsQuality: "high",
     });
   });
+
+  it("keeps screen filters on by default and only accepts a boolean", () => {
+    expect(readPrefs(storage({})).screenFilters).toBe(true);
+    expect(readPrefs(storage({ screenFilters: false })).screenFilters).toBe(false);
+    expect(readPrefs(storage({ screenFilters: "off" })).screenFilters).toBe(true);
+  });
 });
 
 describe("automatic quality", () => {

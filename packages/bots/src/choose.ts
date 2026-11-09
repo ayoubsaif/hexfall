@@ -5,7 +5,7 @@
 import {
   COSTS,
   RESOURCES,
-  TOPOLOGY,
+  topologyOf,
   type Action,
   type LegalActions,
   type PlayerView,
@@ -93,7 +93,7 @@ function robberAction(
   const leader = level === "hard" ? leaderOf(view, seat) : null;
   const score = (o: { hex: number; victims: Seat[] }): number => {
     let s = 0;
-    for (const v of TOPOLOGY.hexes[o.hex]!.vertices) {
+    for (const v of topologyOf(view.board).hexes[o.hex]!.vertices) {
       const b = view.vertices[v];
       if (!b) continue;
       const w = pips(view.board.hexes[o.hex]!.token) * (b.kind === "city" ? 2 : 1);
@@ -181,7 +181,31 @@ function yearOfPlenty(view: PlayerView, hand: ResourceCounts): Resource[] {
 }
 
 function ownsHexBuilding(view: PlayerView, seat: Seat, hex: number): boolean {
-  return TOPOLOGY.hexes[hex]!.vertices.some((v) => view.vertices[v]?.owner === seat);
+  return topologyOf(view.board).hexes[hex]!.vertices.some((v) => view.vertices[v]?.owner === seat);
+}
+
+/** One move in the bot's building window: the same build order as its turn, else pass. */
+function specialBuild(
+  view: PlayerView,
+  legal: LegalActions,
+  seat: Seat,
+  owned: ReadonlySet<Resource>,
+  pick: Picker,
+): Action {
+  if (legal.buildCity.length > 0) {
+    const vertex = pick(legal.buildCity, (v) => vertexPips(view, v))!;
+    return { type: "buildCity", seat, vertex };
+  }
+  if (legal.buildSettlement.length > 0) {
+    const vertex = pick(legal.buildSettlement, (v) => vertexValue(view, v, owned))!;
+    return { type: "buildSettlement", seat, vertex };
+  }
+  if (legal.buyDevCard) return { type: "buyDevCard", seat };
+  if (legal.buildRoad.length > 0 && legal.buildSettlement.length === 0) {
+    const edge = pick(legal.buildRoad, (e) => roadValue(view, e, owned))!;
+    if (roadValue(view, edge, owned) >= 5) return { type: "buildRoad", seat, edge };
+  }
+  return { type: "passSpecialBuild", seat };
 }
 
 export interface ChooseOptions {
@@ -246,6 +270,9 @@ export function chooseAction(
     }
     return { type: "rejectTrade", seat, offerId: answer };
   }
+
+  // Special Building Phase window: build or buy only, then pass (no trades, no cards).
+  if (legal.passSpecialBuild) return specialBuild(view, legal, seat, owned, pick);
 
   if (legal.rollDice) {
     // A Knight before the roll moves the robber off our own hex.

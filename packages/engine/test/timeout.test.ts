@@ -15,7 +15,7 @@ import type {
   Seat,
 } from "../src/state.ts";
 import { failCode, give, makePlayState, makeState, putBuilding, step } from "../src/testing.ts";
-import { TOPOLOGY, hexAt, type HexId } from "../src/topology.ts";
+import { STANDARD_TOPOLOGY, hexAt, type HexId } from "../src/topology.ts";
 
 /** Where a `built` event placed its piece (-1 for anything else). */
 function builtAt(e: GameEvent | undefined): number {
@@ -45,7 +45,7 @@ function cards(n: number): ResourceBundle {
 }
 
 const CENTER: HexId = hexAt(0, 0)!;
-const INNER = TOPOLOGY.vertices.find((v) => v.edges.length === 3)!;
+const INNER = STANDARD_TOPOLOGY.vertices.find((v) => v.edges.length === 3)!;
 
 describe("timeout: dispatch", () => {
   it("fails with game_over in a finished game", () => {
@@ -84,7 +84,7 @@ describe("timeout: main turn", () => {
   it("before the roll rolls the dice for the active player, with production", () => {
     for (let seed = 1; seed <= 20; seed++) {
       const s = makePlayState({ seed, seat: 2, rolled: false });
-      for (const h of TOPOLOGY.hexes) putBuilding(s, h.vertices[0]!, 1);
+      for (const h of STANDARD_TOPOLOGY.hexes) putBuilding(s, h.vertices[0]!, 1);
       const { state, events } = timeout(s);
       expect(events[0]).toEqual({ type: "timedOut", phase: "turn", seats: [2] });
       expect(events[1]).toMatchObject({ type: "diceRolled", seat: 2 });
@@ -170,15 +170,15 @@ describe("timeout: setup", () => {
       const e = builtAt(built[1]);
       expect(legal).toContain(v);
       // Distance Rule: no building next to it.
-      for (const n of TOPOLOGY.vertices[v]!.neighbors) expect(s.vertices[n]).toBeNull();
-      expect(TOPOLOGY.edges[e]!.vertices).toContain(v);
+      for (const n of STANDARD_TOPOLOGY.vertices[v]!.neighbors) expect(s.vertices[n]).toBeNull();
+      expect(STANDARD_TOPOLOGY.edges[e]!.vertices).toContain(v);
       expect(before.vertices[v]).toBeNull();
       const gained = r.events.find((x) => x.type === "startingResources");
       if (placements < 4) {
         expect(gained).toBeUndefined();
       } else {
         const want: ResourceBundle = {};
-        for (const h of TOPOLOGY.vertices[v]!.hexes) {
+        for (const h of STANDARD_TOPOLOGY.vertices[v]!.hexes) {
           const res = TERRAIN_RESOURCE[s.board.hexes[h]!.terrain];
           if (res) want[res] = (want[res] ?? 0) + 1;
         }
@@ -242,7 +242,7 @@ describe("timeout: seven", () => {
     for (let seed = 1; seed <= 40; seed++) {
       const s = makePlayState({ seed, seat: 0 });
       // Seat 2 on a few hexes only, so some picks have no victim.
-      putBuilding(s, TOPOLOGY.hexes[CENTER]!.vertices[0]!, 2);
+      putBuilding(s, STANDARD_TOPOLOGY.hexes[CENTER]!.vertices[0]!, 2);
       give(s, 2, cards(3));
       s.phase = { kind: "moveRobber", source: "seven" };
       const from = s.robber;
@@ -309,7 +309,7 @@ describe("timeout: Road Building", () => {
     for (let seed = 1; seed <= 30; seed++) {
       const s = makePlayState({ seed, seat: 0 });
       s.players[0]!.devCards = ["roadBuilding"];
-      const h = TOPOLOGY.hexes[CENTER]!;
+      const h = STANDARD_TOPOLOGY.hexes[CENTER]!;
       putBuilding(s, h.vertices[0]!, 0);
       // Four connected roads around the center hex: one more at either end makes 5.
       let t = s;

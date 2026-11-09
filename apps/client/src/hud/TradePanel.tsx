@@ -9,7 +9,7 @@ import { useTranslation } from "react-i18next";
 import { Button } from "@/components/ui/button.tsx";
 import { Dialog, DialogContent, DialogFooter } from "@/components/ui/dialog.tsx";
 import { cn } from "@/lib/utils.ts";
-import { MAX_ASK, compact, formatBundle, isValidOffer, total } from "../game/cards.ts";
+import { maxAsk, compact, formatBundle, isValidOffer, total } from "../game/cards.ts";
 import { resourceLabel } from "../i18n/labels.ts";
 import { act } from "../net/actions.ts";
 import { type TradeDraft, openDialog, useUiStore } from "../store/ui.ts";
@@ -113,7 +113,7 @@ function Composer({
               <span data-side="get">
                 <Counter
                   value={a}
-                  canAdd={a < MAX_ASK}
+                  canAdd={a < maxAsk(opponents.length + 1)}
                   lessLabel={t("dialogs.trade.askLess", { resource: label })}
                   moreLabel={t("dialogs.trade.askMore", { resource: label })}
                   onChange={(n) => setSides(setSide(sides, "get", r, n))}

@@ -5,6 +5,7 @@
 // soft lace foam, caustic light and a wet-sand band add the softer look. A tiling noise texture
 // (the theme's caustics image) breaks the lines up; with no texture, hash noise stands in. The
 // sand texture is optional too: nothing here needs an asset file.
+import type { Topology } from "@hexfall/engine/geometry";
 import { useFrame, useThree } from "@react-three/fiber";
 import { useEffect, useMemo, useRef, useState } from "react";
 import { Color, type DataTexture, type ShaderMaterial, Texture } from "three";
@@ -18,7 +19,7 @@ import { usePrefsStore } from "../store/prefs.ts";
 import { SEA } from "./graphicsQuality.ts";
 import { visibleSeaHalf } from "./seaBounds.ts";
 import { CoastTerrain } from "./CoastTerrain.tsx";
-import { coastRocks } from "./coastTerrain.ts";
+import { coastScatter, propsAsRocks } from "./coastScatter.ts";
 import { SEA_ORDER } from "./hullMask.ts";
 import { supportsWaterSimulation, WaterSimulation } from "./waterSimulation.ts";
 import { realisticVertex, realisticFragment } from "./realisticWater.ts";
@@ -179,11 +180,12 @@ void main() {
 
 export function Water({
   land,
-  harbors,
+  topology,
   y,
 }: {
   land: readonly XZ[];
-  harbors: readonly XZ[];
+  /** Topology of the board shown; its paths and harbors keep the coast props clear. */
+  topology?: Topology;
   y: number;
 }) {
   const renderer = useThree((s) => s.gl);
@@ -194,7 +196,9 @@ export function Water({
   const realistic = mode === "realistic";
   // The sea ignores the quality tier (specs/graphics-quality "Uniform sea across quality levels").
   const physical = realistic && SEA.physical && supportsWaterSimulation(renderer);
-  const rocks = useMemo(() => coastRocks(land, harbors), [land, harbors]);
+  // The coast dressing; its rocks are also obstacles for the waves (specs/coast-dressing).
+  const coast = useMemo(() => coastScatter(land, topology), [land, topology]);
+  const rocks = useMemo(() => propsAsRocks(coast.props), [coast]);
   useEffect(() => {
     if (!physical) {
       setSimulation(null);
@@ -280,10 +284,9 @@ export function Water({
       {realistic && (
         <CoastTerrain
           land={land}
-          rocks={rocks}
+          props={coast.props}
           y={y}
           raisedBeach={physical && !!simulation}
-          detail={SEA.rockDetail}
         />
       )}
       <mesh

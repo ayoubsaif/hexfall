@@ -4,7 +4,7 @@ import type { Catalog } from "../index.ts";
 export const session: Catalog["session"] = {
   start: {
     tagline: "Recolecta. Comercia. Construye.",
-    description: "Compite con tus amigos hasta 10 puntos de victoria en una pequeña isla.",
+    description: "Compite con tus amigos por los puntos de victoria en una pequeña isla.",
     newAdventure: "Empieza una nueva aventura",
     yourName: "Tu nombre",
     seatLost: "No se pudo recuperar tu asiento.",
@@ -18,6 +18,7 @@ export const session: Catalog["session"] = {
     soloOpponents: "Bots rivales",
     soloOpponentsOption: "{{count}} bots",
     soloLevel: "Nivel de los bots",
+    soloLargeBoard: "Con 4 o 5 bots se juega en el tablero grande.",
     waitingForServer: "Esperando al servidor…",
   },
   modes: {
@@ -44,7 +45,7 @@ export const session: Catalog["session"] = {
     headline: "Una pequeña isla. Una gran rivalidad.",
     intro:
       "Reúne a tus amigos, negocia un buen trato y construye tu camino a la victoria. Cada tirada abre nuevas posibilidades.",
-    reassurance: "Juega con amigos o practica contra bots · 3–4 jugadores",
+    reassurance: "Juega con amigos o practica contra bots · 3–6 jugadores",
     guide: "¿Primera vez en la isla? Guía rápida",
     install: "Instalar la app",
     play: "Jugar",
@@ -52,7 +53,7 @@ export const session: Catalog["session"] = {
     steps: {
       s1: "Tira los dados: las casillas con ese número dan recursos.",
       s2: "Comercia con jugadores o con el banco para conseguir lo que necesitas.",
-      s3: "Construye carreteras, poblados y ciudades. Gana quien llegue a 10 puntos.",
+      s3: "Construye carreteras, poblados y ciudades. Gana quien llegue a la meta (10 puntos).",
     },
     cardsTitle: "Lo que cuesta cada cosa",
     examples: {
@@ -81,7 +82,7 @@ export const session: Catalog["session"] = {
     tips: {
       t1: {
         title: "Empieza con ingresos estables.",
-        body: "Llega a 10 puntos en tu turno. Poblar junto a 6 y 8 te da más ingresos.",
+        body: "Llega a la meta de puntos en tu turno. Poblar junto a 6 y 8 te da más ingresos.",
       },
       t2: {
         title: "Reparte tus números.",
@@ -138,6 +139,12 @@ export const session: Catalog["session"] = {
     timerRelaxed: "Tranquilo (60 s · 120 s)",
     startingPlayer: "Jugador inicial",
     rollForIt: "Tirar los dados",
+    victoryTarget: "Puntos para ganar",
+    victoryTargetOption: "{{count}} puntos",
+    victoryTargetDefault: "{{count}} puntos (estándar)",
+    largeBoard: "5–6 jugadores: tablero grande",
+    largeBoardHint:
+      "Con 5 o 6 asientos la partida usa la isla grande y una fase de construcción tras cada turno.",
     bot: "bot",
     addBot: "Añadir bot",
     removeBot: "Quitar",

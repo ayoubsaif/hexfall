@@ -78,6 +78,7 @@ export function pickMove(view: PlayerView, legal: LegalActions): ClientAction | 
     return { type: "buildRoad", edge: free };
   }
   if (legal.endTurn) return { type: "endTurn" };
+  if (legal.passSpecialBuild) return { type: "passSpecialBuild" };
   return null;
 }
 

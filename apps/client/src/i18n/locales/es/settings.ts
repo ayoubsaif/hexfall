@@ -32,6 +32,9 @@ export const settings: Catalog["settings"] = {
     medium: "Media",
     high: "Alta",
     active: "Calidad actual: {{quality}}",
+    filters: "Filtros de pantalla",
+    filtersHint:
+      "Un tono de color cálido y un viñeteado suave. En Media y Alta añaden también sombras de contacto suaves.",
   },
   keyboard: {
     hint: "Los atajos funcionan en tu turno cuando el botón está activo. Se desactivan al escribir o con un diálogo abierto.",

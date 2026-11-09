@@ -44,11 +44,16 @@ describe("createGame", () => {
     expect(s.longestRoad).toBeNull();
     expect(s.largestArmy).toBeNull();
     expect(s.phase.kind).toBe("rollForOrder");
-    expect(s.log[0]).toEqual({ type: "gameCreated", playerCount: 3, mode: "variable" });
+    expect(s.log[0]).toEqual({
+      type: "gameCreated",
+      playerCount: 3,
+      mode: "variable",
+      victoryTarget: 10,
+    });
   });
 
   it("rejects bad configs", () => {
-    for (const playerCount of [2, 5, 0]) {
+    for (const playerCount of [2, 7, 0]) {
       expect(() =>
         createGame({ seed: 1, playerCount: playerCount as 3, mode: "beginner" }),
       ).toThrow(RuleError);

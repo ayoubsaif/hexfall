@@ -42,8 +42,8 @@ export function sailLayout(type: HarborType): SailLayout {
     background: HARBOR_SAIL_BASE[type],
     icon: special ? `/ui/resources/${type}.webp` : null,
     rate: harborLabel(type).rate,
-    rateSize: special ? 0.36 : 0.46,
-    rateY: special ? 0.64 : 0.46,
+    rateSize: special ? 0.4 : 0.56,
+    rateY: special ? 0.73 : 0.5,
   };
 }
 
@@ -73,8 +73,8 @@ function drawSail(
   ctx.scale(1 / SAIL_ASPECT, 1);
   ctx.translate(-s / 2, 0);
   if (icon) {
-    const size = s * 0.4;
-    ctx.drawImage(icon, (s - size) / 2, s * 0.05, size, size);
+    const size = s * 0.5;
+    ctx.drawImage(icon, (s - size) / 2, s * 0.04, size, size);
   }
   ctx.textAlign = "center";
   ctx.textBaseline = "middle";

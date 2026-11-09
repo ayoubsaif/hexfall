@@ -11,6 +11,9 @@ export const QUALITY = {
   high: { dpr: 2, shadows: true, shadowSize: 2048 },
 } as const;
 
+/** Tiers that get the richer scenery: 3D forests on forest hexes (specs/forest-trees). */
+export const QUALITY_RICH: Record<QualityTier, boolean> = { low: false, medium: true, high: true };
+
 /** One sea for every tier ("Uniform sea across quality levels"): High's sea. 7 wave octaves on
  * a fine mesh, full shading, detailed rocks, and the GPU water simulation (waves reflect off
  * the rocks and foam where they hit; raised beach) wherever float render targets work. */

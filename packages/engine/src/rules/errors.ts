@@ -20,7 +20,8 @@ export type RuleErrorCode =
   | "cannot_reveal"
   | "invalid_trade"
   | "unknown_offer"
-  | "bank_empty";
+  | "bank_empty"
+  | "not_allowed_in_special_build";
 
 export class RuleError extends Error {
   readonly code: RuleErrorCode;

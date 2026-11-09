@@ -2,7 +2,7 @@ import { describe, expect, it } from "vite-plus/test";
 import { robberOptions } from "../src/rules/robber.ts";
 import type { GameState } from "../src/state.ts";
 import { give, makePlayState, putBuilding, step } from "../src/testing.ts";
-import { TOPOLOGY } from "../src/topology.ts";
+import { STANDARD_TOPOLOGY } from "../src/topology.ts";
 import { playerView } from "../src/view.ts";
 
 function handState(): GameState {
@@ -110,7 +110,7 @@ describe("playerView", () => {
     s.players[0]!.devCards = ["knight"];
     give(s, 1, { ore: 1 });
     // Seat 1 on a corner of some hex other than the robber's.
-    const hex = TOPOLOGY.hexes.find((h) => h.id !== s.robber)!;
+    const hex = STANDARD_TOPOLOGY.hexes.find((h) => h.id !== s.robber)!;
     putBuilding(s, hex.vertices[0]!, 1);
     s = step(s, { type: "playKnight", seat: 0 });
     expect(robberOptions(s, 0).find((o) => o.hex === hex.id)!.victims).toEqual([1]);

@@ -5,6 +5,10 @@ import type { AvatarId, BotLevel, ClientAction, TurnTimerPreset } from "@hexfall
 
 export type BoardModeChoice = "beginner" | "variable";
 
+/** Number of bots "Play solo" can seat: 4 or 5 bots play on the large board. */
+export type SoloOpponents = 2 | 3 | 4 | 5;
+export const SOLO_OPPONENTS: readonly SoloOpponents[] = [2, 3, 4, 5];
+
 export interface SessionApi {
   /** Sends a game action (no seat). Returns false if not sent (offline or another action in flight). */
   act(action: ClientAction): boolean;
@@ -13,7 +17,12 @@ export interface SessionApi {
   /** Lobby: change your avatar. */
   setAvatar(avatar: AvatarId): boolean;
   leaveRoom(): boolean;
-  startGame(mode: BoardModeChoice, startingPlayer?: number, turnTimer?: TurnTimerPreset): boolean;
+  startGame(
+    mode: BoardModeChoice,
+    startingPlayer?: number,
+    turnTimer?: TurnTimerPreset,
+    victoryTarget?: number,
+  ): boolean;
   /** Says something to the room (in-game chat). False when not sent. */
   chat(text: string): boolean;
   /** Host only, lobby: seat a bot / remove the bot in `seat`. */
@@ -23,7 +32,7 @@ export interface SessionApi {
   setBotLevel(seat: number, level: BotLevel): boolean;
   /** Start screen: create a room, seat `opponents` bots and start the game at once. */
   /** Create a room, seat `opponents` bots at `level` (Normal if absent) and start at once. */
-  playSolo(name: string, opponents: 2 | 3, avatar?: AvatarId, level?: BotLevel): boolean;
+  playSolo(name: string, opponents: SoloOpponents, avatar?: AvatarId, level?: BotLevel): boolean;
   /** After a Replaced close: reconnect here and take the seat back. */
   playHere(): void;
   /** After game over: forget the seat and get a fresh, unseated connection. */
@@ -84,7 +93,8 @@ export const startGame = (
   mode: BoardModeChoice,
   startingPlayer?: number,
   turnTimer?: TurnTimerPreset,
-): boolean => api.startGame(mode, startingPlayer, turnTimer);
+  victoryTarget?: number,
+): boolean => api.startGame(mode, startingPlayer, turnTimer, victoryTarget);
 export const sendChat = (text: string): boolean => api.chat(text);
 export const addBot = (): boolean => api.addBot();
 export const removeBot = (seat: number): boolean => api.removeBot(seat);

@@ -4,18 +4,18 @@ import { longestRoadLength, updateLongestRoad } from "../src/rules/longestRoad.t
 import { putRoad, putSettlement } from "../src/rules/placement.ts";
 import type { GameState } from "../src/state.ts";
 import { give, makePlayState, putBuilding, putRoadAt, step } from "../src/testing.ts";
-import { TOPOLOGY, hexAt, type EdgeId, type HexId } from "../src/topology.ts";
+import { STANDARD_TOPOLOGY, hexAt, type EdgeId, type HexId } from "../src/topology.ts";
 
 const CENTER: HexId = hexAt(0, 0)!;
 
 /** Side i of a hex runs from corner i to corner i+1. */
 function sides(hex: HexId, from: number, count: number): EdgeId[] {
-  const h = TOPOLOGY.hexes[hex]!;
+  const h = STANDARD_TOPOLOGY.hexes[hex]!;
   return Array.from({ length: count }, (_, k) => h.edges[(from + k) % 6]!);
 }
 
 function corner(hex: HexId, i: number) {
-  return TOPOLOGY.hexes[hex]!.vertices[i % 6]!;
+  return STANDARD_TOPOLOGY.hexes[hex]!.vertices[i % 6]!;
 }
 
 function lrEvents(s: GameState) {
@@ -24,9 +24,9 @@ function lrEvents(s: GameState) {
 
 /** Three corner hexes that share no intersection. */
 function disjointHexes(): [HexId, HexId, HexId] {
-  const c = TOPOLOGY.cornerHexes;
+  const c = STANDARD_TOPOLOGY.cornerHexes;
   const hs: [HexId, HexId, HexId] = [c[0]!, c[2]!, c[4]!];
-  const vs = hs.map((h) => new Set(TOPOLOGY.hexes[h]!.vertices));
+  const vs = hs.map((h) => new Set(STANDARD_TOPOLOGY.hexes[h]!.vertices));
   for (let i = 0; i < 3; i++)
     for (let j = i + 1; j < 3; j++) for (const v of vs[i]!) expect(vs[j]!.has(v)).toBe(false);
   return hs;
@@ -34,9 +34,9 @@ function disjointHexes(): [HexId, HexId, HexId] {
 
 describe("geometry used by these tests", () => {
   it("hex sides chain corner to corner", () => {
-    const h = TOPOLOGY.hexes[CENTER]!;
+    const h = STANDARD_TOPOLOGY.hexes[CENTER]!;
     for (let i = 0; i < 6; i++) {
-      const vs = TOPOLOGY.edges[h.edges[i]!]!.vertices;
+      const vs = STANDARD_TOPOLOGY.edges[h.edges[i]!]!.vertices;
       const byId = (a: number, b: number) => a - b;
       expect([...vs].sort(byId)).toEqual([h.vertices[i]!, h.vertices[(i + 1) % 6]!].sort(byId));
     }
@@ -58,8 +58,8 @@ describe("longestRoadLength", () => {
   it("counts only the longest branch of a fork", () => {
     const s = makePlayState();
     const c3 = corner(CENTER, 3);
-    const out = TOPOLOGY.vertices[c3]!.edges.find(
-      (e) => !TOPOLOGY.hexes[CENTER]!.edges.includes(e),
+    const out = STANDARD_TOPOLOGY.vertices[c3]!.edges.find(
+      (e) => !STANDARD_TOPOLOGY.hexes[CENTER]!.edges.includes(e),
     );
     expect(out).toBeDefined();
     // sides 0..2 reach corner 3, which forks into side 3 and an outward path.
@@ -73,13 +73,13 @@ describe("longestRoadLength", () => {
     const s = makePlayState();
     const loop = sides(CENTER, 0, 6);
     const c0 = corner(CENTER, 0);
-    const e1 = TOPOLOGY.vertices[c0]!.edges.find((e) => !loop.includes(e))!;
-    const [a, b] = TOPOLOGY.edges[e1]!.vertices;
+    const e1 = STANDARD_TOPOLOGY.vertices[c0]!.edges.find((e) => !loop.includes(e))!;
+    const [a, b] = STANDARD_TOPOLOGY.edges[e1]!.vertices;
     const w = a === c0 ? b : a;
-    const e2 = TOPOLOGY.vertices[w]!.edges.find((e) => e !== e1)!;
-    const far = TOPOLOGY.edges[e2]!.vertices.find((v) => v !== w)!;
-    expect(TOPOLOGY.hexes[CENTER]!.vertices).not.toContain(w);
-    expect(TOPOLOGY.hexes[CENTER]!.vertices).not.toContain(far);
+    const e2 = STANDARD_TOPOLOGY.vertices[w]!.edges.find((e) => e !== e1)!;
+    const far = STANDARD_TOPOLOGY.edges[e2]!.vertices.find((v) => v !== w)!;
+    expect(STANDARD_TOPOLOGY.hexes[CENTER]!.vertices).not.toContain(w);
+    expect(STANDARD_TOPOLOGY.hexes[CENTER]!.vertices).not.toContain(far);
     for (const e of [...loop, e1, e2]) putRoadAt(s, e, 0);
     expect(longestRoadLength(s, 0)).toBe(8);
   });
@@ -111,7 +111,7 @@ describe("longestRoadLength", () => {
     expect(s.longestRoad).toBe(0);
     // Seat 1 reaches corner 2 by a road from outside the hex.
     const c2 = corner(CENTER, 2);
-    const spur = TOPOLOGY.vertices[c2]!.edges.find((e) => !road.includes(e))!;
+    const spur = STANDARD_TOPOLOGY.vertices[c2]!.edges.find((e) => !road.includes(e))!;
     putRoadAt(s, spur, 1);
     give(s, 1, { brick: 1, lumber: 1, wool: 1, grain: 1 });
     const next = step(s, { type: "buildSettlement", seat: 1, vertex: c2 });

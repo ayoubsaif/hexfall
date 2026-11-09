@@ -72,6 +72,8 @@ export function useHotkeys(): void {
         });
         return true;
       case "endTurn":
+        // In a building window the same key closes it ("Done building").
+        if (c.passSpecialBuild) return (act({ type: "passSpecialBuild" }), true);
         return c.endTurn && (act({ type: "endTurn" }), true);
       case "playKnight":
         return c.devCards.includes("knight") && (act({ type: "playKnight" }), true);

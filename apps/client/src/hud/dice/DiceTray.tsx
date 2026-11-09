@@ -9,6 +9,7 @@ import { useEffect, useLayoutEffect, useRef, useState } from "react";
 import type { Seat } from "@hexfall/engine";
 import { useTranslation } from "react-i18next";
 import { cn } from "@/lib/utils.ts";
+import { TutorialHelp } from "../tutorial/TutorialHelp.tsx";
 import { THROW_MS, useDiceThrow } from "../../game/diceThrow.ts";
 import { controlsOf, latestRoll, type DiceRoll } from "../../game/status.ts";
 import type { T } from "../../i18n/index.ts";
@@ -148,31 +149,33 @@ export function DiceTray({ onSettled = closeFocusOnOwnRoll }: DiceTrayProps = {}
       style={centered ? undefined : { right: dock.right, bottom: dock.bottom }}
     >
       <div ref={moveRef} hidden={!shown} className="relative motion-reduce:transition-none">
-        <button
-          type="button"
-          data-testid="dice"
-          data-ready={action ? true : undefined}
-          aria-label={name}
-          aria-describedby={showCountdown ? "dice-countdown" : undefined}
-          title={action ? `${name} (${hotkeyLabel("rollDice")})` : undefined}
-          aria-keyshortcuts={action ? "Space r" : undefined}
-          disabled={action === null}
-          onClick={() => {
-            if (action) act({ type: action });
-          }}
-          className={cn(
-            "flex items-center bg-transparent p-1 outline-none",
-            "transition-[translate,filter] duration-150 focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-leather",
-            "data-[ready]:cursor-pointer data-[ready]:[filter:drop-shadow(0_0_6px_var(--color-wait))] data-[ready]:hover:-translate-y-0.5",
-            "disabled:cursor-default",
-          )}
-        >
-          <DiceArt
-            dice={null}
-            rolling={thrown.mode === "animate" && !settled}
-            className="h-[calc(var(--die)*1.7)] w-[calc(var(--die)*2)] data-[rolling]:opacity-60"
-          />
-        </button>
+        <TutorialHelp topic="roll" side="left">
+          <button
+            type="button"
+            data-testid="dice"
+            data-ready={action ? true : undefined}
+            aria-label={name}
+            aria-describedby={showCountdown ? "dice-countdown" : undefined}
+            title={action ? `${name} (${hotkeyLabel("rollDice")})` : undefined}
+            aria-keyshortcuts={action ? "Space r" : undefined}
+            disabled={action === null}
+            onClick={() => {
+              if (action) act({ type: action });
+            }}
+            className={cn(
+              "flex items-center bg-transparent p-1 outline-none",
+              "transition-[translate,filter] duration-150 focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-leather",
+              "data-[ready]:cursor-pointer data-[ready]:[filter:drop-shadow(0_0_6px_var(--color-wait))] data-[ready]:hover:-translate-y-0.5",
+              "disabled:cursor-default",
+            )}
+          >
+            <DiceArt
+              dice={null}
+              rolling={thrown.mode === "animate" && !settled}
+              className="h-[calc(var(--die)*1.7)] w-[calc(var(--die)*2)] data-[rolling]:opacity-60"
+            />
+          </button>
+        </TutorialHelp>
         {showCountdown && (
           <span
             id="dice-countdown"

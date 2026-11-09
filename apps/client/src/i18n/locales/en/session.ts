@@ -3,7 +3,7 @@
 export const session = {
   start: {
     tagline: "Gather. Trade. Build.",
-    description: "Race your friends to 10 victory points on a little island.",
+    description: "Race your friends to victory points on a little island.",
     newAdventure: "Begin a new adventure",
     yourName: "Your name",
     seatLost: "Your seat could not be restored.",
@@ -17,6 +17,7 @@ export const session = {
     soloOpponents: "Bot opponents",
     soloOpponentsOption: "{{count}} bots",
     soloLevel: "Bot level",
+    soloLargeBoard: "With 4 or 5 bots you play on the large board.",
     waitingForServer: "Waiting for the server…",
   },
   modes: {
@@ -43,7 +44,7 @@ export const session = {
     headline: "A little island. A great rivalry.",
     intro:
       "Gather your friends, strike a clever trade, and build your way to victory. Every roll brings a new possibility.",
-    reassurance: "Play with friends or practice against bots · 3–4 players",
+    reassurance: "Play with friends or practice against bots · 3–6 players",
     guide: "New to the island? A quick guide",
     install: "Install the app",
     play: "Play Game",
@@ -51,7 +52,7 @@ export const session = {
     steps: {
       s1: "Roll the dice: hexes with that number pay out resources.",
       s2: "Trade with players or the bank to get what you need.",
-      s3: "Build roads, settlements and cities. First to 10 points wins.",
+      s3: "Build roads, settlements and cities. First to the victory target (10 points) wins.",
     },
     cardsTitle: "What things cost",
     examples: {
@@ -80,7 +81,7 @@ export const session = {
     tips: {
       t1: {
         title: "Start with steady income.",
-        body: "Reach 10 points on your turn. Settling near 6s and 8s gives you stronger income.",
+        body: "Reach the victory target on your turn. Settling near 6s and 8s gives you stronger income.",
       },
       t2: {
         title: "Spread your numbers.",
@@ -137,6 +138,12 @@ export const session = {
     timerRelaxed: "Relaxed (60 s · 120 s)",
     startingPlayer: "Starting player",
     rollForIt: "Roll for it",
+    victoryTarget: "Points to win",
+    victoryTargetOption: "{{count}} points",
+    victoryTargetDefault: "{{count}} points (standard)",
+    largeBoard: "5–6 players: large board",
+    largeBoardHint:
+      "With 5 or 6 seats the game uses the large island and a building window after each turn.",
     bot: "bot",
     addBot: "Add bot",
     removeBot: "Remove",
