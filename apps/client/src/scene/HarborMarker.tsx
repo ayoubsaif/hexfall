@@ -5,6 +5,7 @@
 import { useMemo } from "react";
 import { Asset, JETTY_LENGTH, useLandRelief } from "../theme/index.ts";
 import { LAND_CENTERS, boatDistance } from "./boatFloat.ts";
+import type { XZ } from "./layout.ts";
 import { type BoatHandle, HarborBoat } from "./HarborBoat.tsx";
 import type { HarborItem } from "./layout.ts";
 
@@ -14,9 +15,12 @@ const BOAT_GAP = 0.135;
 export function HarborMarker({
   item,
   boatRef,
+  land = LAND_CENTERS,
 }: {
   item: HarborItem;
   boatRef: (boat: BoatHandle | null) => void;
+  /** Land hex centres of the board shown (the boat floats clear of its beach). */
+  land?: readonly XZ[];
 }) {
   // On a raised island the sea sits lower, and the boat floats on it.
   const { seaLevel } = useLandRelief();
@@ -34,9 +38,8 @@ export function HarborMarker({
   const el = Math.hypot(ex, ez);
   // Just past the jetty, or further out where the beach is wide, so the boat always floats.
   const boatOut = useMemo(
-    () =>
-      boatDistance(LAND_CENTERS, [mx, mz], [sx, sz], [ex / el, ez / el], JETTY_LENGTH + BOAT_GAP),
-    [mx, mz, sx, sz, ex, ez, el],
+    () => boatDistance(land, [mx, mz], [sx, sz], [ex / el, ez / el], JETTY_LENGTH + BOAT_GAP),
+    [land, mx, mz, sx, sz, ex, ez, el],
   );
   return (
     <group>

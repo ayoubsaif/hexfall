@@ -11,13 +11,25 @@ import type {
   ResourceCounts,
   Seat,
 } from "../state.ts";
-import { TOPOLOGY, type HexId, type VertexId } from "../topology.ts";
+import { topologyOf, type HexId, type Topology, type VertexId } from "../topology.ts";
 import { RuleError, check } from "./errors.ts";
 
 export { COSTS, RESOURCES } from "../costs.ts";
 
-export const BANK_PER_RESOURCE = 19;
-export const WIN_VP = 10;
+/** Victory target when none is chosen (AGENTS.md §12). */
+export const DEFAULT_VICTORY_TARGET = 10;
+export const MIN_VICTORY_TARGET = 8;
+export const MAX_VICTORY_TARGET = 15;
+
+/** The topology of the game's board. */
+export function topo(s: { readonly board: GameState["board"] }): Topology {
+  return topologyOf(s.board);
+}
+
+/** VP needed to win (states stored before the option existed play to 10). */
+export function victoryTargetOf(s: Partial<Pick<GameState, "victoryTarget">>): number {
+  return s.victoryTarget ?? DEFAULT_VICTORY_TARGET;
+}
 
 export function emptyCounts(): ResourceCounts {
   return { brick: 0, grain: 0, lumber: 0, ore: 0, wool: 0 };
@@ -128,6 +140,27 @@ export function inBuildWindow(s: GameState, seat: Seat): boolean {
   return s.phase.kind === "turn" && s.turn.seat === seat && s.turn.rolled;
 }
 
+/** True if it is the seat's Special Building Phase window. */
+export function inSpecialBuild(s: GameState, seat: Seat): boolean {
+  return s.phase.kind === "specialBuild" && s.phase.current === seat;
+}
+
+/** The seat may build and buy now: its own rolled turn, or its Special Building Phase window. */
+export function mayBuildNow(s: GameState, seat: Seat): boolean {
+  return inBuildWindow(s, seat) || inSpecialBuild(s, seat);
+}
+
+/** Guard for building and buying, with the same codes as before for normal turns. */
+export function assertMayBuild(s: GameState, seat: Seat): void {
+  if (s.phase.kind === "specialBuild") {
+    check(s.phase.current === seat, "not_your_turn", `it is not seat ${seat}'s building window`);
+    return;
+  }
+  assertPhase(s, "turn");
+  assertActive(s, seat);
+  assertRolled(s);
+}
+
 // ---- Board queries
 
 export function buildingAt(s: GameState, v: VertexId): Building | null {
@@ -136,7 +169,7 @@ export function buildingAt(s: GameState, v: VertexId): Building | null {
 
 /** Opponents of `seat` with a building on a corner of `hex`, ascending. */
 export function opponentsOnHex(s: GameState, hex: HexId, seat: Seat): Seat[] {
-  const info = TOPOLOGY.hexes[hex];
+  const info = topo(s).hexes[hex];
   if (!info) return [];
   const out = new Set<Seat>();
   for (const v of info.vertices) {

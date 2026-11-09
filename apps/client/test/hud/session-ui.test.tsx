@@ -155,7 +155,7 @@ describe("Lobby", () => {
     const beginner = m.container.querySelector<HTMLInputElement>('input[value="beginner"]')!;
     click(beginner);
     click(byText(m.container, "button", "Start game"));
-    expect(calls).toEqual([{ fn: "startGame", args: ["beginner", undefined, "standard"] }]);
+    expect(calls).toEqual([{ fn: "startGame", args: ["beginner", undefined, "standard", 10] }]);
   });
 
   it("start with 2 players is allowed: a bot fills the third seat", () => {

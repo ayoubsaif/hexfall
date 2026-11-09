@@ -1,7 +1,8 @@
 import { beginnerBoard } from "@hexfall/engine/geometry";
 import { describe, expect, it, vi } from "vite-plus/test";
 import { boardLayout } from "../../src/scene/layout.ts";
-import { beachGeometry, beachHeight, coastRocks } from "../../src/scene/coastTerrain.ts";
+import { beachGeometry, beachHeight } from "../../src/scene/coastTerrain.ts";
+import { coastScatter, propsAsRocks } from "../../src/scene/coastScatter.ts";
 import { landDistance } from "../../src/scene/coastField.ts";
 import {
   bathymetry,
@@ -19,7 +20,6 @@ import { Color, type WebGLRenderer } from "three";
 
 const layout = boardLayout(beginnerBoard());
 const land = layout.tiles.map((t) => t.position);
-const harbors = layout.harbors.map((h) => h.position);
 
 describe("physical coast", () => {
   it("slopes from dry berm to submerged shelf and stays below playable land", () => {
@@ -36,23 +36,12 @@ describe("physical coast", () => {
     for (let i = 0; i < p.count; i++) expect(p.getY(i)).toBeLessThan(0);
     geometry.dispose();
   });
-  it("places deterministic rocks clear of roads and harbor approaches", () => {
-    const rocks = coastRocks(land, harbors);
-    expect(rocks.length).toBeGreaterThan(4);
-    expect(rocks.length).toBeLessThanOrEqual(8);
-    // At least two adjacent pairs form outcrops rather than an evenly spaced ring.
-    const clustered = rocks.filter((r, i) =>
-      rocks.some(
-        (other, j) => i !== j && Math.hypot(r.x - other.x, r.z - other.z) < r.radius + other.radius,
-      ),
-    );
-    expect(clustered.length).toBeGreaterThanOrEqual(4);
-    expect(rocks).toEqual(coastRocks(land, harbors));
-    for (const r of rocks) {
-      expect(landDistance(land, r.x, r.z)).toBeGreaterThanOrEqual(r.radius + 0.24);
-      for (const [x, z] of harbors)
-        expect(Math.hypot(r.x - x, r.z - z)).toBeGreaterThanOrEqual(0.85 + r.radius);
-    }
+  it("uses the coast dressing's rocks as wave obstacles", () => {
+    const rocks = propsAsRocks(coastScatter(land).props);
+    expect(rocks.length).toBeGreaterThan(5);
+    for (const r of rocks) expect(landDistance(land, r.x, r.z)).toBeGreaterThan(0);
+    const field = bathymetry(land, rocks, -0.16, 64);
+    expect(field.length).toBe(64 * 64 * 4);
   });
   it("makes land and rocks closed cells and open ocean finite depth", () => {
     const size = 32;

@@ -13,7 +13,7 @@ import { BotRng, chooseAction } from "../src/index.ts";
 function checkInvariants(s: GameState): void {
   for (const r of RESOURCES) {
     const held = s.players.reduce((n, pl) => n + pl.resources[r], 0);
-    expect(s.bank[r] + held, `resource ${r}`).toBe(19);
+    expect(s.bank[r] + held, `resource ${r}`).toBe(s.bankPerResource);
   }
   s.players.forEach((pl, seat) => {
     const roads = s.edges.filter((o) => o === seat).length;
@@ -30,7 +30,7 @@ function botMove(s: GameState, rngs: BotRng[], trade = false): Action | null {
   return null;
 }
 
-function playGame(seed: number, n: 3 | 4, mode: "beginner" | "variable", trade = false) {
+function playGame(seed: number, n: 3 | 4 | 5 | 6, mode: "beginner" | "variable", trade = false) {
   let s = createGame({ seed, playerCount: n, mode });
   const rngs = Array.from({ length: n }, (_, i) => new BotRng(seed * 31 + i));
   const actions: Action[] = [];
@@ -67,6 +67,22 @@ describe("bots play full games", () => {
     });
   }
 
+  for (const [seed, n] of [
+    [4, 5],
+    [9, 6],
+    [13, 5],
+    [21, 6],
+  ] as const) {
+    it(`seed ${seed}, ${n} bots on the large board, with building windows`, () => {
+      const { s, actions } = playGame(seed, n, "variable", true);
+      expect(s.phase.kind).toBe("ended");
+      expect(s.winner).not.toBeNull();
+      expect(s.board.layout).toBe("large");
+      expect(actions.some((a) => a.type === "passSpecialBuild")).toBe(true);
+      expect(actions.some((a) => a.type === "proposeTrade")).toBe(false);
+    });
+  }
+
   it("is deterministic for the same seeds", () => {
     const a = playGame(7, 4, "variable");
     const b = playGame(7, 4, "variable");
@@ -86,5 +102,38 @@ describe("bot behaviour", () => {
     const rng = new BotRng(1);
     const a = chooseAction(playerView(s, 0), legalActions(s, 0), rng);
     expect(a).toEqual({ type: "rollForOrder", seat: 0 });
+  });
+
+  it("builds in its building window, then passes", () => {
+    // Play a 5-bot game until the first building window opens.
+    let s = createGame({ seed: 4, playerCount: 5, mode: "variable" });
+    const rngs = Array.from({ length: 5 }, (_, i) => new BotRng(i));
+    while (s.phase.kind !== "specialBuild") {
+      const r = applyAction(s, botMove(s, rngs)!);
+      if (!r.ok) throw new Error(r.code);
+      s = r.state;
+    }
+    if (s.phase.kind !== "specialBuild") throw new Error("no window");
+    const seat = s.phase.current;
+    // Enough for a city on one of its settlements.
+    const p = s.players[seat]!;
+    for (const r of RESOURCES) {
+      s.bank[r] += p.resources[r];
+      p.resources[r] = 0;
+    }
+    p.resources.ore = 3;
+    p.resources.grain = 2;
+    s.bank.ore -= 3;
+    s.bank.grain -= 2;
+    const build = chooseAction(playerView(s, seat), legalActions(s, seat), new BotRng(1));
+    expect(build?.type).toBe("buildCity");
+    const r = applyAction(s, build!);
+    if (!r.ok) throw new Error(r.code);
+    const next = chooseAction(
+      playerView(r.state, seat),
+      legalActions(r.state, seat),
+      new BotRng(1),
+    );
+    expect(next).toEqual({ type: "passSpecialBuild", seat });
   });
 });

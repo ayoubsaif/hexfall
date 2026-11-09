@@ -1,7 +1,7 @@
 import { z } from "zod";
 
 /** Bump on any breaking wire change. Client and server must match exactly. */
-export const PROTOCOL_VERSION = 8;
+export const PROTOCOL_VERSION = 9;
 
 /** WebSocket close codes used by the server. */
 export const CloseCode = {

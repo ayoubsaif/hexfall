@@ -11,7 +11,7 @@ export const errors: Catalog["errors"] = {
     room_full: "Esa sala está llena.",
     game_started: "Esa partida ya ha empezado.",
     not_host: "Solo el anfitrión puede hacer eso.",
-    not_enough_players: "Se necesitan 3 o 4 jugadores para empezar.",
+    not_enough_players: "Se necesitan de 3 a 6 jugadores para empezar.",
     not_a_bot: "Ese asiento no es un bot.",
     bad_avatar: "Ese avatar no existe.",
     avatar_taken: "Otro jugador ya tiene ese avatar.",
@@ -45,5 +45,7 @@ export const errors: Catalog["errors"] = {
     invalid_trade: "Ese intercambio no es válido.",
     unknown_offer: "Esa oferta de intercambio ya no existe.",
     bank_empty: "La banca no tiene esas cartas.",
+    not_allowed_in_special_build:
+      "En una fase de construcción solo puedes construir, comprar cartas de desarrollo o pasar.",
   },
 };

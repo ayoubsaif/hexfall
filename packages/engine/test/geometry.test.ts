@@ -23,6 +23,8 @@ describe("geometry subpath (client allow-list)", () => {
       "hexCenter",
       "hexRing",
       "hexToWorld",
+      "topologyFor",
+      "topologyOf",
       "vertexPosition",
     ]);
   });

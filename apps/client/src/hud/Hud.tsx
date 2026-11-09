@@ -19,7 +19,9 @@ import { useRoomStore } from "../store/room.ts";
 import { type LogTab, setLogTab, useUiStore } from "../store/ui.ts";
 import { useHotkeys } from "../hotkeys/useHotkeys.ts";
 import { SettingsButton, SettingsHost } from "../settings/SettingsButton.tsx";
+import { RulesButton, RulesGuide } from "./RulesGuide.tsx";
 import { ViewControls } from "./ViewControls.tsx";
+import { PhaseHint } from "./tutorial/PhaseHint.tsx";
 import type { GameMode } from "./GameModeButtons.tsx";
 import { Welcome, dismissWelcome, welcomeDismissed } from "./Welcome.tsx";
 import { GameAlerts } from "./GameAlerts.tsx";
@@ -185,7 +187,7 @@ function LogDrawer() {
           data-interactive
           aria-label={label}
           title={label}
-          className="pointer-events-auto relative grid size-10 cursor-pointer place-items-center hud-leather-round outline-none transition-[filter] duration-150 focus-visible:ring-2 focus-visible:ring-ring max-sm:size-11 short:size-11 pointer-coarse:size-11 motion-reduce:transition-none"
+          className="btn-light pointer-events-auto relative grid size-10 cursor-pointer place-items-center hud-leather-round outline-none transition-[filter] duration-150 focus-visible:ring-2 focus-visible:ring-ring max-sm:size-11 short:size-11 pointer-coarse:size-11 motion-reduce:transition-none"
         >
           <ScrollText aria-hidden className="size-6" />
           {unread > 0 && (
@@ -224,6 +226,7 @@ function GameHud({ corner }: { corner: HTMLElement | null }) {
         <PlayerPanels />
         <ViewControls />
         <StatusPill />
+        <PhaseHint />
       </div>
       <Hand ref={setHand} />
       <div
@@ -319,6 +322,7 @@ export function Hud() {
           >
             <div className="flex items-center gap-2">
               <SettingsButton />
+              <RulesButton />
               {inGame && <GameMenu />}
               {inGame && <LogDrawer />}
             </div>
@@ -346,6 +350,7 @@ export function Hud() {
           <GameOver />
           <ReplacedNotice />
           <SettingsHost />
+          <RulesGuide />
         </div>
       </TooltipProvider>
     </HudRootContext>

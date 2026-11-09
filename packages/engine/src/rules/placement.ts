@@ -1,31 +1,30 @@
 // Building legality and build handlers (AGENTS.md §7, §13.3-4, §13.11). Owner: board agent.
 import type { ActionOf, GameState, Seat } from "../state.ts";
-import { TOPOLOGY, type EdgeId, type VertexId } from "../topology.ts";
+import type { EdgeId, VertexId } from "../topology.ts";
 import {
   COSTS,
-  assertActive,
-  assertPhase,
-  assertRolled,
+  assertMayBuild,
   emit,
   hasCards,
-  inBuildWindow,
+  mayBuildNow,
   payToBank,
   playerOf,
+  topo,
 } from "./common.ts";
 import { check } from "./errors.ts";
 import { updateLongestRoad } from "./longestRoad.ts";
 
-function isEdgeId(e: unknown): e is EdgeId {
-  return typeof e === "number" && Number.isInteger(e) && e >= 0 && e < TOPOLOGY.edges.length;
+function isEdgeId(s: GameState, e: unknown): e is EdgeId {
+  return typeof e === "number" && Number.isInteger(e) && e >= 0 && e < topo(s).edges.length;
 }
 
-function isVertexId(v: unknown): v is VertexId {
-  return typeof v === "number" && Number.isInteger(v) && v >= 0 && v < TOPOLOGY.vertices.length;
+function isVertexId(s: GameState, v: unknown): v is VertexId {
+  return typeof v === "number" && Number.isInteger(v) && v >= 0 && v < topo(s).vertices.length;
 }
 
 /** True if `seat` has a road on one of `v`'s paths. */
 function touchesOwnRoad(s: GameState, seat: Seat, v: VertexId): boolean {
-  return TOPOLOGY.vertices[v]!.edges.some((e) => s.edges[e] === seat);
+  return topo(s).vertices[v]!.edges.some((e) => s.edges[e] === seat);
 }
 
 /** True if a new road of `seat` ending at `v` joins the seat's network there. */
@@ -37,7 +36,7 @@ function connectsAt(s: GameState, seat: Seat, v: VertexId): boolean {
 
 function roadLegal(s: GameState, seat: Seat, e: EdgeId): boolean {
   if (s.edges[e] != null) return false;
-  const [a, b] = TOPOLOGY.edges[e]!.vertices;
+  const [a, b] = topo(s).edges[e]!.vertices;
   return connectsAt(s, seat, a) || connectsAt(s, seat, b);
 }
 
@@ -52,20 +51,20 @@ function cityLegal(s: GameState, seat: Seat, v: VertexId): boolean {
 
 /** Empty intersection whose neighbors are all empty (Distance Rule, every player). */
 export function canPlaceSettlementAt(s: GameState, v: VertexId): boolean {
-  if (!isVertexId(v) || s.vertices[v]) return false;
-  return TOPOLOGY.vertices[v]!.neighbors.every((n) => !s.vertices[n]);
+  if (!isVertexId(s, v) || s.vertices[v]) return false;
+  return topo(s).vertices[v]!.neighbors.every((n) => !s.vertices[n]);
 }
 
 /** Empty paths connected to the seat's network (own road, settlement or city), never only through an intersection holding an opponent's building. Topology only: ignores phase, cost and pieces. Ascending. */
 export function connectedRoadEdges(s: GameState, seat: Seat): EdgeId[] {
   const out: EdgeId[] = [];
-  for (let e = 0; e < TOPOLOGY.edges.length; e++) if (roadLegal(s, seat, e)) out.push(e);
+  for (let e = 0; e < topo(s).edges.length; e++) if (roadLegal(s, seat, e)) out.push(e);
   return out;
 }
 
 /** Paid roads the seat may build right now (build window, cost, pieces), ascending. */
 export function buildableRoads(s: GameState, seat: Seat): EdgeId[] {
-  if (!inBuildWindow(s, seat)) return [];
+  if (!mayBuildNow(s, seat)) return [];
   const p = s.players[seat];
   if (!p || p.pieces.roads <= 0 || !hasCards(p.resources, COSTS.road)) return [];
   return connectedRoadEdges(s, seat);
@@ -73,21 +72,21 @@ export function buildableRoads(s: GameState, seat: Seat): EdgeId[] {
 
 /** Settlements the seat may build right now, ascending. */
 export function buildableSettlements(s: GameState, seat: Seat): VertexId[] {
-  if (!inBuildWindow(s, seat)) return [];
+  if (!mayBuildNow(s, seat)) return [];
   const p = s.players[seat];
   if (!p || p.pieces.settlements <= 0 || !hasCards(p.resources, COSTS.settlement)) return [];
   const out: VertexId[] = [];
-  for (let v = 0; v < TOPOLOGY.vertices.length; v++) if (settlementLegal(s, seat, v)) out.push(v);
+  for (let v = 0; v < topo(s).vertices.length; v++) if (settlementLegal(s, seat, v)) out.push(v);
   return out;
 }
 
 /** Own settlements the seat may upgrade right now, ascending. */
 export function buildableCities(s: GameState, seat: Seat): VertexId[] {
-  if (!inBuildWindow(s, seat)) return [];
+  if (!mayBuildNow(s, seat)) return [];
   const p = s.players[seat];
   if (!p || p.pieces.cities <= 0 || !hasCards(p.resources, COSTS.city)) return [];
   const out: VertexId[] = [];
-  for (let v = 0; v < TOPOLOGY.vertices.length; v++) if (cityLegal(s, seat, v)) out.push(v);
+  for (let v = 0; v < topo(s).vertices.length; v++) if (cityLegal(s, seat, v)) out.push(v);
   return out;
 }
 
@@ -107,15 +106,9 @@ export function putSettlement(s: GameState, seat: Seat, vertex: VertexId, free: 
   updateLongestRoad(s);
 }
 
-function assertBuildTurn(s: GameState, seat: Seat): void {
-  assertPhase(s, "turn");
-  assertActive(s, seat);
-  assertRolled(s);
-}
-
 export function buildRoad(s: GameState, a: ActionOf<"buildRoad">): void {
-  assertBuildTurn(s, a.seat);
-  check(isEdgeId(a.edge), "invalid_action", `no path ${String(a.edge)}`);
+  assertMayBuild(s, a.seat);
+  check(isEdgeId(s, a.edge), "invalid_action", `no path ${String(a.edge)}`);
   check(playerOf(s, a.seat).pieces.roads > 0, "no_pieces", "no roads left");
   check(roadLegal(s, a.seat, a.edge), "illegal_placement", `cannot build a road on ${a.edge}`);
   payToBank(s, a.seat, COSTS.road);
@@ -123,8 +116,8 @@ export function buildRoad(s: GameState, a: ActionOf<"buildRoad">): void {
 }
 
 export function buildSettlement(s: GameState, a: ActionOf<"buildSettlement">): void {
-  assertBuildTurn(s, a.seat);
-  check(isVertexId(a.vertex), "invalid_action", `no intersection ${String(a.vertex)}`);
+  assertMayBuild(s, a.seat);
+  check(isVertexId(s, a.vertex), "invalid_action", `no intersection ${String(a.vertex)}`);
   check(playerOf(s, a.seat).pieces.settlements > 0, "no_pieces", "no settlements left");
   check(
     settlementLegal(s, a.seat, a.vertex),
@@ -136,8 +129,8 @@ export function buildSettlement(s: GameState, a: ActionOf<"buildSettlement">): v
 }
 
 export function buildCity(s: GameState, a: ActionOf<"buildCity">): void {
-  assertBuildTurn(s, a.seat);
-  check(isVertexId(a.vertex), "invalid_action", `no intersection ${String(a.vertex)}`);
+  assertMayBuild(s, a.seat);
+  check(isVertexId(s, a.vertex), "invalid_action", `no intersection ${String(a.vertex)}`);
   const p = playerOf(s, a.seat);
   check(p.pieces.cities > 0, "no_pieces", "no cities left");
   check(

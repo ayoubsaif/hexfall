@@ -1,5 +1,10 @@
 import type { Board } from "@hexfall/engine";
-import { TOPOLOGY, beginnerBoard, edgeMidpoint, hexCenter } from "@hexfall/engine/geometry";
+import {
+  STANDARD_TOPOLOGY,
+  beginnerBoard,
+  edgeMidpoint,
+  hexCenter,
+} from "@hexfall/engine/geometry";
 import { describe, expect, it } from "vite-plus/test";
 import { harborLabel } from "../../src/scene/labels.ts";
 import { ROBBER_TOKEN_OFFSET, boardLayout } from "../../src/scene/layout.ts";
@@ -62,7 +67,7 @@ describe("boardLayout (beginner board)", () => {
   it("draws 9 harbor markers outside their slot paths, linked to both ends", () => {
     expect(layout.harbors).toHaveLength(9);
     for (const h of layout.harbors) {
-      const edge = TOPOLOGY.harborSlots[h.slot] ?? -1;
+      const edge = STANDARD_TOPOLOGY.harborSlots[h.slot] ?? -1;
       const m = edgeMidpoint(edge);
       expect(len(h.position)).toBeGreaterThan(len([m.x, m.z]));
       expect(Math.hypot(h.position[0] - m.x, h.position[1] - m.z)).toBeCloseTo(0.55);

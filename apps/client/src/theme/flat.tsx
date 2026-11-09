@@ -164,9 +164,7 @@ function roundedSquare(size: number, radius: number): Shape {
 }
 
 /** Lazily built, shared geometries (never disposed: they live as long as the page). */
-let cache:
-  | Record<FlatShapeKind, { fill: BufferGeometry; outline: BufferGeometry }>
-  | undefined;
+let cache: Record<FlatShapeKind, { fill: BufferGeometry; outline: BufferGeometry }> | undefined;
 
 export function flatGeometry(shape: FlatShapeKind): {
   fill: BufferGeometry;
@@ -190,13 +188,7 @@ function buildGeometries() {
     hex: {
       fill: onBoardPlane(new CircleGeometry(HEX_RADIUS, 6, Math.PI / 2)),
       outline: onBoardPlane(
-        new RingGeometry(
-          HEX_RADIUS - HEX_OUTLINE_WIDTH,
-          HEX_RADIUS,
-          6,
-          1,
-          Math.PI / 2,
-        ),
+        new RingGeometry(HEX_RADIUS - HEX_OUTLINE_WIDTH, HEX_RADIUS, 6, 1, Math.PI / 2),
       ),
     },
     token: {
@@ -208,10 +200,7 @@ function buildGeometries() {
     badge: {
       fill: onBoardPlane(
         squareUvs(
-          new ShapeGeometry(
-            roundedSquare(HARBOR_BADGE_SIZE, HARBOR_BADGE_CORNER),
-            6,
-          ),
+          new ShapeGeometry(roundedSquare(HARBOR_BADGE_SIZE, HARBOR_BADGE_CORNER), 6),
           HARBOR_BADGE_SIZE,
         ),
       ),
@@ -244,8 +233,7 @@ export function isoGeometry(): { top: BufferGeometry; sides: BufferGeometry } {
   const top = flatGeometry("hex").fill.clone();
   const pos = top.getAttribute("position");
   const uv = top.getAttribute("uv");
-  for (let i = 0; i < pos.count; i++)
-    uv.setXY(i, ...isoTopUv(pos.getX(i), pos.getZ(i)));
+  for (let i = 0; i < pos.count; i++) uv.setXY(i, ...isoTopUv(pos.getX(i), pos.getZ(i)));
   uv.needsUpdate = true;
 
   const positions: number[] = [];
@@ -259,9 +247,7 @@ export function isoGeometry(): { top: BufferGeometry; sides: BufferGeometry } {
     const [bx, bz] = corner((i + 1) % 6);
     // Faces 5→0 and 0→1 face +Z (the camera); the rest borrow face 0→1's band.
     const visible = i === 5 || i === 0;
-    const [ux, uz, vx, vz] = visible
-      ? [ax, az, bx, bz]
-      : [...corner(0), ...corner(1)];
+    const [ux, uz, vx, vz] = visible ? [ax, az, bx, bz] : [...corner(0), ...corner(1)];
     const t = -ISO_THICKNESS;
     const quad: [number, number, number, [number, number]][] = [
       [ax, 0, az, band(ux, uz, false)],
@@ -287,10 +273,7 @@ export function isoGeometry(): { top: BufferGeometry; sides: BufferGeometry } {
 const SOIL_TILES_PER_UNIT = 0.9;
 export const SOIL_URL = "/textures/soil.webp";
 
-const blockCache = new Map<
-  string,
-  { top: BufferGeometry; sides: BufferGeometry }
->();
+const blockCache = new Map<string, { top: BufferGeometry; sides: BufferGeometry }>();
 
 /** Hex ring of `inset` units inside the hex outline, at height y (corner i, mitred). */
 function ring(inset: number, y: number): [number, number, number][] {
@@ -330,9 +313,7 @@ export function landBlockGeometry(
   const uv: number[] = [];
   // Isometric art squashes the top face; top-down art spans the hex corners.
   const topUv = (x: number, z: number): [number, number] =>
-    iso
-      ? isoTopUv(x, z)
-      : [0.5 + x / (2 * HEX_RADIUS), 0.5 - z / (2 * HEX_RADIUS)];
+    iso ? isoTopUv(x, z) : [0.5 + x / (2 * HEX_RADIUS), 0.5 - z / (2 * HEX_RADIUS)];
   const push = (x: number, y: number, z: number) => {
     pos.push(x, y, z);
     uv.push(...topUv(x, z));
@@ -435,13 +416,7 @@ function SoilWalls({ geometry }: { geometry: BufferGeometry }) {
   });
   return (
     <mesh geometry={geometry} castShadow receiveShadow>
-      <meshStandardMaterial
-        vertexColors
-        map={map}
-        roughness={1}
-        metalness={0}
-        side={DoubleSide}
-      />
+      <meshStandardMaterial vertexColors map={map} roughness={1} metalness={0} side={DoubleSide} />
     </mesh>
   );
 }
@@ -468,16 +443,10 @@ const softenLandMaterial = (shader: { fragmentShader: string }): void => {
  * the edge of a pointy-top hex (flat sides at ±X): apothem minus the largest projection on the
  * three edge normals.
  */
-const fadeLandEdge = (shader: {
-  vertexShader: string;
-  fragmentShader: string;
-}): void => {
+const fadeLandEdge = (shader: { vertexShader: string; fragmentShader: string }): void => {
   shader.vertexShader = shader.vertexShader
     .replace("#include <common>", "#include <common>\nvarying vec2 vHexP;")
-    .replace(
-      "#include <begin_vertex>",
-      "#include <begin_vertex>\nvHexP = position.xz;",
-    );
+    .replace("#include <begin_vertex>", "#include <begin_vertex>\nvHexP = position.xz;");
   shader.fragmentShader = shader.fragmentShader
     .replace("#include <common>", "#include <common>\nvarying vec2 vHexP;")
     .replace(
@@ -509,9 +478,7 @@ function sandRimProps(sand: Texture | null, soften: boolean, iso: boolean) {
   const apothem = HEX_RADIUS * Math.cos(Math.PI / 6);
   const gap = (apothem * (1 - LAND_TILE_SCALE)).toFixed(4);
   const fadeEnd = (apothem * (1 - LAND_TILE_SCALE) + LAND_EDGE_FADE).toFixed(4);
-  const artUv = iso
-    ? "vMapUv"
-    : `(0.5 + (vMapUv - 0.5) / ${LAND_TILE_SCALE.toFixed(4)})`;
+  const artUv = iso ? "vMapUv" : `(0.5 + (vMapUv - 0.5) / ${LAND_TILE_SCALE.toFixed(4)})`;
   return {
     onBeforeCompile: (shader: {
       vertexShader: string;
@@ -605,10 +572,7 @@ function RaisedLandTop({
 /** Land material hooks: the edge fade, plus the optional contrast softening. */
 function landProps(soften: boolean) {
   return {
-    onBeforeCompile: (shader: {
-      vertexShader: string;
-      fragmentShader: string;
-    }) => {
+    onBeforeCompile: (shader: { vertexShader: string; fragmentShader: string }) => {
       fadeLandEdge(shader);
       if (soften) softenLandMaterial(shader);
     },
@@ -630,18 +594,12 @@ export interface FlatShapeProps {
  * Draws a flat key's shape on its layer. Fallback and themed rendering both go through
  * this component; only the material's color/map differ.
  */
-export function FlatShape({
-  assetKey,
-  color,
-  map,
-  projection = "top",
-}: FlatShapeProps) {
+export function FlatShape({ assetKey, color, map, projection = "top" }: FlatShapeProps) {
   const softTiles = useViewStore((s) => s.softTiles);
   const relief = useLandRelief();
   const shape = FLAT_SHAPE[assetKey];
   const { fill: hexFill, outline } = flatGeometry(shape);
-  const iso =
-    shape === "hex" && projection === "isometric" && map !== undefined;
+  const iso = shape === "hex" && projection === "isometric" && map !== undefined;
   const fill = iso ? isoGeometry().top : hexFill;
   const marker = shape !== "hex";
   // On a raised island the sea and the harbors on it sit at sea level; land tops stay at 0.
@@ -649,9 +607,7 @@ export function FlatShape({
   const base = onSea ? relief.seaLevel : 0;
   const land = shape === "hex" && assetKey !== "sea";
   const chip = shape === "token";
-  const y = chip
-    ? CHIP.face
-    : base + (marker ? FLAT_LAYER.marker : FLAT_LAYER.tile);
+  const y = chip ? CHIP.face : base + (marker ? FLAT_LAYER.marker : FLAT_LAYER.tile);
   // A raised land block draws its own textured top and rounded rim, so no flat fill/outline.
   const block = land && relief.raised;
   const outlineY = chip
@@ -672,17 +628,8 @@ export function FlatShape({
         </>
       )}
       {chip && (
-        <mesh
-          geometry={chipSideGeometry()}
-          name="chip-side"
-          castShadow
-          receiveShadow
-        >
-          <meshStandardMaterial
-            color={CHIP_EDGE}
-            roughness={0.9}
-            metalness={0}
-          />
+        <mesh geometry={chipSideGeometry()} name="chip-side" castShadow receiveShadow>
+          <meshStandardMaterial color={CHIP_EDGE} roughness={0.9} metalness={0} />
         </mesh>
       )}
       {!block && (

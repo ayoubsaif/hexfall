@@ -1,5 +1,10 @@
 import type { Building, Seat } from "@hexfall/engine";
-import { TOPOLOGY, edgeMidpoint, hexCenter, vertexPosition } from "@hexfall/engine/geometry";
+import {
+  STANDARD_TOPOLOGY,
+  edgeMidpoint,
+  hexCenter,
+  vertexPosition,
+} from "@hexfall/engine/geometry";
 import { describe, expect, it } from "vite-plus/test";
 import { SEAT_COLORS } from "../../src/game/colors.ts";
 import type { Pick } from "../../src/game/pick.ts";
@@ -13,10 +18,10 @@ const RAISED: LandRelief = { raised: true, thickness: LAND_THICKNESS, seaLevel: 
 
 function emptyBoard() {
   const vertices: (Building | null)[] = Array.from(
-    { length: TOPOLOGY.vertices.length },
+    { length: STANDARD_TOPOLOGY.vertices.length },
     () => null,
   );
-  const edges: (Seat | null)[] = Array.from({ length: TOPOLOGY.edges.length }, () => null);
+  const edges: (Seat | null)[] = Array.from({ length: STANDARD_TOPOLOGY.edges.length }, () => null);
   return { vertices, edges };
 }
 
@@ -29,7 +34,7 @@ describe("pieceLayout", () => {
     const vs = [0, 4, 8, 12, 20, 24, 30, 40];
     vs.forEach((v, i) => {
       vertices[v] = { owner: i % 4, kind: "settlement" };
-      edges[TOPOLOGY.vertices[v]!.edges[0]!] = i % 4;
+      edges[STANDARD_TOPOLOGY.vertices[v]!.edges[0]!] = i % 4;
     });
     const items = pieceLayout(vertices, edges, FLAT);
     const roads = items.filter((p) => p.kind === "road");
@@ -53,9 +58,9 @@ describe("pieceLayout", () => {
 
   it("turns each road's local +X along its path", () => {
     const { vertices, edges } = emptyBoard();
-    for (let e = 0; e < TOPOLOGY.edges.length; e++) edges[e] = 0;
+    for (let e = 0; e < STANDARD_TOPOLOGY.edges.length; e++) edges[e] = 0;
     for (const r of pieceLayout(vertices, edges, FLAT)) {
-      const [a, b] = TOPOLOGY.edges[r.at]!.vertices.map(vertexPosition);
+      const [a, b] = STANDARD_TOPOLOGY.edges[r.at]!.vertices.map((v) => vertexPosition(v));
       const len = Math.hypot(b![0] - a![0], b![1] - a![1]);
       const dir = [(b![0] - a![0]) / len, (b![1] - a![1]) / len];
       const [x, z] = localX(r.yaw);

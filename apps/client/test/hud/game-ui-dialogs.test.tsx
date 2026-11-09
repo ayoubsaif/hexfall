@@ -1,5 +1,5 @@
 // Dialogs and maritime trade (moved from game-ui.test.tsx).
-import { TOPOLOGY } from "@hexfall/engine/geometry";
+import { STANDARD_TOPOLOGY } from "@hexfall/engine/geometry";
 import { act } from "react";
 import { afterEach, beforeEach, describe, expect, it, vi } from "vite-plus/test";
 import {
@@ -206,14 +206,14 @@ describe("dialogs", () => {
 });
 
 function cornersOf(hex: number): number[] {
-  return TOPOLOGY.vertices.filter((v) => v.hexes.includes(hex)).map((v) => v.id);
+  return STANDARD_TOPOLOGY.vertices.filter((v) => v.hexes.includes(hex)).map((v) => v.id);
 }
 
 /** Opens the maritime panel for seat 0 with a settlement on the 2:1 ore harbor. */
 function openOreHarborTrade(): void {
   const s = playState();
   const oreSlot = s.board.harbors.findIndex((h) => h === "ore");
-  const v = TOPOLOGY.vertices.find((x) => x.harborSlot === oreSlot)!;
+  const v = STANDARD_TOPOLOGY.vertices.find((x) => x.harborSlot === oreSlot)!;
   put(s, v.id, 0);
   give(s, 0, { ore: 4, wool: 3 });
   seatRoom(0);

@@ -88,12 +88,15 @@ describe("bot seats", () => {
     expect(seats).toHaveLength(3);
     expect(seats?.[2]).toMatchObject({ seat: 2, connected: true, bot: true });
     expect(await t.svc.addBot(req(ana))).toEqual({ ok: true });
+    expect(await t.svc.addBot(req(ana))).toEqual({ ok: true });
+    expect(await t.svc.addBot(req(ana))).toEqual({ ok: true });
     expect(await t.svc.addBot(req(ana))).toEqual(err("room_full"));
+    expect(lastRoomState(ana)?.seats).toHaveLength(6);
     expect(await t.svc.removeBot(req(ana), 1)).toEqual(err("not_a_bot"));
     expect(await t.svc.removeBot(req(ana), 9)).toEqual(err("not_a_bot"));
     expect(await t.svc.removeBot(req(ben), 2)).toEqual(err("not_host"));
     expect(await t.svc.removeBot(req(ana), 2)).toEqual({ ok: true });
-    expect(lastRoomState(ben)?.seats.map((s) => s.bot)).toEqual([false, false, true]);
+    expect(lastRoomState(ben)?.seats.map((s) => s.bot)).toEqual([false, false, true, true, true]);
   });
 
   it("gives bots unique names", async () => {
@@ -150,6 +153,28 @@ describe("auto-fill and the bot driver", () => {
     for (const bot of [1, 2]) {
       expect(view.vertices.filter((b) => b?.owner === bot).length).toBeGreaterThanOrEqual(2);
     }
+    expect(t.logs.filter((l) => /refused|stalled|failed/.test(l))).toEqual([]);
+  });
+
+  it("plays a 6-player game through Special Building Phase windows", async () => {
+    const t = setup();
+    const { conns } = await makeLobby(t.svc, ["Ana"]);
+    const ana = conns[0] as FakeConn;
+    for (let i = 0; i < 5; i++) expect(await t.svc.addBot(req(ana))).toEqual({ ok: true });
+    await t.svc.startGame(req(ana), { mode: "variable" });
+    expect(ana.game()?.view.board.layout).toBe("large");
+    let windows = 0;
+    await play(
+      t,
+      ana,
+      () => {
+        if (ana.game()?.view.phase.kind === "specialBuild") windows++;
+        return (ana.game()?.view.turn.number ?? 0) >= 8;
+      },
+      1500,
+    );
+    expect(ana.game()!.view.turn.number).toBeGreaterThanOrEqual(8);
+    expect(windows).toBeGreaterThan(0);
     expect(t.logs.filter((l) => /refused|stalled|failed/.test(l))).toEqual([]);
   });
 

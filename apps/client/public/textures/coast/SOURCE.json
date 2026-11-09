@@ -1,9 +1,29 @@
-{
-  "name": "Rock 2",
-  "author": "Rob Tuytel",
-  "source": "https://polyhaven.com/a/rock_2",
-  "license": "CC0-1.0",
-  "licenseUrl": "https://polyhaven.com/license",
-  "input": "Owner-supplied local rock_2_4k material",
-  "processing": "512px WebP color, displacement (bump), and roughness maps"
-}
+[
+  {
+    "name": "Mossy Rock",
+    "author": "Rob Tuytel",
+    "source": "https://polyhaven.com/a/mossy_rock",
+    "license": "CC0-1.0",
+    "licenseUrl": "https://polyhaven.com/license",
+    "input": "Owner-downloaded 1K JPG maps (diff)",
+    "processing": "512px WebP color maps (mossy-rock-*.webp) by tools/coast-textures.mjs"
+  },
+  {
+    "name": "Aerial Grass Rock",
+    "author": "Rob Tuytel",
+    "source": "https://polyhaven.com/a/aerial_grass_rock",
+    "license": "CC0-1.0",
+    "licenseUrl": "https://polyhaven.com/license",
+    "input": "Owner-downloaded 1K JPG maps (diff)",
+    "processing": "512px WebP color maps (grass-*.webp) by tools/coast-textures.mjs"
+  },
+  {
+    "name": "Coast Sand 01",
+    "author": "Rob Tuytel",
+    "source": "https://polyhaven.com/a/coast_sand_01",
+    "license": "CC0-1.0",
+    "licenseUrl": "https://polyhaven.com/license",
+    "input": "Owner-downloaded 1K JPG maps (diff)",
+    "processing": "512px WebP color maps (sand-*.webp) by tools/coast-textures.mjs"
+  }
+]

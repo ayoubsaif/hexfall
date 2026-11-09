@@ -84,6 +84,13 @@ export function statusOf(view: PlayerView, names: Names, t: T): Status {
             yourMove: false,
           };
     }
+    case "specialBuild":
+      return viewer === p.current
+        ? { text: t("game.status.specialBuildYou"), yourMove: true }
+        : {
+            text: t("game.status.specialBuildTheirs", { name: names(p.current) }),
+            yourMove: false,
+          };
     case "ended":
       return {
         text:
@@ -111,6 +118,8 @@ const BUILD_PHASES: ReadonlySet<PlayerView["phase"]["kind"]> = new Set([
  */
 export function showBuildControls(view: PlayerView | null, seat: Seat | null): boolean {
   if (!view || seat === null || view.winner !== null) return false;
+  // Special Building Phase: only the seat whose building window is open.
+  if (view.phase.kind === "specialBuild") return view.phase.current === seat;
   return BUILD_PHASES.has(view.phase.kind) && view.turn.seat === seat;
 }
 
@@ -127,6 +136,8 @@ export interface Controls {
   proposeTrade: boolean;
   devCards: PlayableDevCard[];
   revealVictoryPoints: boolean;
+  /** Closing the viewer's Special Building Phase window ("Done building"). */
+  passSpecialBuild: boolean;
 }
 
 const NONE: Controls = {
@@ -141,6 +152,7 @@ const NONE: Controls = {
   proposeTrade: false,
   devCards: [],
   revealVictoryPoints: false,
+  passSpecialBuild: false,
 };
 
 /** Controls the viewer may use now. Everything is off while an action is in flight. */
@@ -150,8 +162,11 @@ export function controlsOf(
   inFlight = false,
 ): Controls {
   if (!view || !legal || inFlight || view.winner !== null) return NONE;
-  // Paid builds only in the main turn; Road Building's free roads are picked on the board.
-  const main = view.phase.kind === "turn";
+  // Paid builds only in the main turn or the viewer's building window; Road Building's free
+  // roads are picked on the board.
+  const main =
+    view.phase.kind === "turn" ||
+    (view.phase.kind === "specialBuild" && view.phase.current === view.viewer);
   return {
     rollForOrder: legal.rollForOrder,
     rollDice: legal.rollDice,
@@ -164,6 +179,7 @@ export function controlsOf(
     proposeTrade: legal.proposeTrade,
     devCards: [...legal.playDevCard],
     revealVictoryPoints: legal.revealVictoryPoints,
+    passSpecialBuild: legal.passSpecialBuild,
   };
 }
 

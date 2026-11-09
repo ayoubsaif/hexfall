@@ -4,6 +4,15 @@
 import { useTranslation } from "react-i18next";
 import type { ResolvedTheme } from "../theme/resolve.ts";
 
+/** Readable names for non-SPDX license ids. */
+const LICENSE_LABELS: Record<string, string> = {
+  "LicenseRef-BlendKit-RF": "BlendKit Royalty Free",
+};
+
+export function licenseLabel(id: string): string {
+  return LICENSE_LABELS[id] ?? id;
+}
+
 export function CreditsList({ theme }: { theme: ResolvedTheme }) {
   const { t } = useTranslation();
   const credits = theme.credits ?? [];
@@ -22,7 +31,7 @@ export function CreditsList({ theme }: { theme: ResolvedTheme }) {
                 {c.title}
               </a>{" "}
               {t("settings.about.by")} {c.author},{" "}
-              <span className="whitespace-nowrap tabular-nums">{c.license}</span>
+              <span className="whitespace-nowrap tabular-nums">{licenseLabel(c.license)}</span>
             </li>
           ))}
         </ul>

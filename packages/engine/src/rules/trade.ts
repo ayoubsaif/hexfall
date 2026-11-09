@@ -8,7 +8,6 @@ import type {
   Seat,
   TradeOffer,
 } from "../state.ts";
-import { TOPOLOGY } from "../topology.ts";
 import {
   RESOURCES,
   assertActive,
@@ -25,14 +24,15 @@ import {
   playerOf,
   takeFromBank,
   transfer,
+  topo,
 } from "./common.ts";
 import { check } from "./errors.ts";
 
 /** Harbor types the seat owns (a building on either slot intersection), deduplicated. */
 export function harborsOf(s: GameState, seat: Seat): HarborType[] {
   const out: HarborType[] = [];
-  TOPOLOGY.harborSlots.forEach((edge, slot) => {
-    const info = TOPOLOGY.edges[edge];
+  topo(s).harborSlots.forEach((edge, slot) => {
+    const info = topo(s).edges[edge];
     const type = s.board.harbors[slot];
     if (!info || type === undefined) return;
     const owned = info.vertices.some((v) => s.vertices[v]?.owner === seat);

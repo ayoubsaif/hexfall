@@ -51,13 +51,24 @@ describe("Lobby bots", () => {
     expect(calls[0]?.fn).toBe("startGame");
   });
 
-  it("Add bot sends addBot until 4 seats, then it is gone", () => {
+  it("Add bot sends addBot until 6 seats, then it is gone", () => {
     lobbyOf([seat(0, "Ana")]);
     m = mount(<Lobby inviteLink="l" />);
     click(byText(m.container, "button", "Add bot"));
     expect(calls).toEqual([{ fn: "addBot", args: [] }]);
     act(() =>
       lobbyOf([seat(0, "Ana"), seat(1, "Ben"), seat(2, "Atlas", true), seat(3, "Bramble", true)]),
+    );
+    expect(byText(m.container, "button", "Add bot")).toBeTruthy();
+    act(() =>
+      lobbyOf([
+        seat(0, "Ana"),
+        seat(1, "Ben"),
+        seat(2, "Atlas", true),
+        seat(3, "Bramble", true),
+        seat(4, "Cedar", true),
+        seat(5, "Dune", true),
+      ]),
     );
     expect(byText(m.container, "button", "Add bot")).toBeFalsy();
   });

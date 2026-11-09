@@ -8,6 +8,12 @@ import { ChoiceGroup } from "@/components/ui/choice-group.tsx";
 import { SealRadio } from "@/components/ui/seal-radio.tsx";
 import { seatColor, seatColorName } from "../game/colors.ts";
 import {
+  DEFAULT_VICTORY_TARGET,
+  LARGE_BOARD_SEATS,
+  MAX_VICTORY_TARGET,
+  MIN_VICTORY_TARGET,
+} from "../game/extension.ts";
+import {
   addBot,
   leaveRoom,
   removeBot,
@@ -63,6 +69,36 @@ function saveTurnTimer(v: TurnTimerPreset): void {
   }
 }
 
+/** Most seats a room holds (specs/game-server "Joining and leaving the lobby"). */
+export const MAX_SEATS = 6;
+
+/** localStorage key of the host's last victory-target choice. */
+export const VICTORY_TARGET_KEY = "hexfall.victoryTarget";
+
+const TARGET_OPTIONS: readonly number[] = Array.from(
+  { length: MAX_VICTORY_TARGET - MIN_VICTORY_TARGET + 1 },
+  (_, i) => MIN_VICTORY_TARGET + i,
+);
+
+/** The remembered target, or the default (10). Storage may be blocked: never throws. */
+export function loadVictoryTarget(): number {
+  try {
+    const v = Number(window.localStorage.getItem(VICTORY_TARGET_KEY));
+    if (Number.isInteger(v) && v >= MIN_VICTORY_TARGET && v <= MAX_VICTORY_TARGET) return v;
+  } catch {
+    // Storage unavailable.
+  }
+  return DEFAULT_VICTORY_TARGET;
+}
+
+function saveVictoryTarget(v: number): void {
+  try {
+    window.localStorage.setItem(VICTORY_TARGET_KEY, String(v));
+  } catch {
+    // Not remembered; the choice still applies to this start.
+  }
+}
+
 /** Shown while seated in a room whose status is "lobby". */
 export function Lobby({ inviteLink }: { inviteLink?: string }) {
   const { t } = useTranslation();
@@ -76,6 +112,7 @@ export function Lobby({ inviteLink }: { inviteLink?: string }) {
   const [mode, setMode] = useState<BoardModeChoice>("variable");
   const [starter, setStarter] = useState<string>("");
   const [timer, setTimer] = useState<TurnTimerPreset>(loadTurnTimer);
+  const [target, setTarget] = useState<number>(loadVictoryTarget);
   const [copied, setCopied] = useState(false);
 
   if (room === null) return null;
@@ -86,7 +123,8 @@ export function Lobby({ inviteLink }: { inviteLink?: string }) {
     seats.filter((s) => s.seat !== seat).map((s) => [s.avatar, s.name]),
   );
   // Bots fill empty seats up to 3 on start, so the host can start alone.
-  const enough = seats.length >= 1 && seats.length <= 4;
+  const enough = seats.length >= 1 && seats.length <= MAX_SEATS;
+  const large = seats.length >= LARGE_BOARD_SEATS;
   const busy = pending !== null || !online;
   const lobbyError =
     error && (error.request === "start" || error.request === "leave") ? error : null;
@@ -106,7 +144,7 @@ export function Lobby({ inviteLink }: { inviteLink?: string }) {
       <div className={panelBodyClass}>
         <h2 className="mb-2.5 font-serif text-2xl font-semibold">
           {t("session.lobby.room")}{" "}
-          <span className="tracking-[0.12em] uppercase tabular-nums">{room}</span>
+          <span className="selectable tracking-[0.12em] uppercase tabular-nums">{room}</span>
         </h2>
         <div className="flex gap-1.5">
           <input
@@ -187,16 +225,23 @@ export function Lobby({ inviteLink }: { inviteLink?: string }) {
           })}
         </ul>
 
+        {large && (
+          <div className="mb-2" data-testid="large-board-note">
+            <p className="m-0 font-semibold">{t("session.lobby.largeBoard")}</p>
+            <p className={hintClass}>{t("session.lobby.largeBoardHint")}</p>
+          </div>
+        )}
+
         {isHost ? (
           <div className="flex flex-col gap-1.5">
             <fieldset className="m-0 flex flex-col gap-1 border-0 p-0">
               <legend className="mb-1 font-semibold">{t("session.lobby.board")}</legend>
-              {(["variable", "beginner"] as const).map((m) => (
+              {(large ? (["variable"] as const) : (["variable", "beginner"] as const)).map((m) => (
                 <SealRadio
                   key={m}
                   name="hud-mode"
                   value={m}
-                  checked={mode === m}
+                  checked={large || mode === m}
                   onChange={() => setMode(m)}
                 >
                   {m === "variable" ? t("session.lobby.variable") : t("session.lobby.beginner")}
@@ -220,6 +265,26 @@ export function Lobby({ inviteLink }: { inviteLink?: string }) {
                 </SealRadio>
               ))}
             </fieldset>
+            <div className="flex flex-col gap-1">
+              <span className="mb-1 font-semibold">{t("session.lobby.victoryTarget")}</span>
+              <ChoiceGroup
+                size="sm"
+                data-testid="victory-target"
+                label={t("session.lobby.victoryTarget")}
+                options={TARGET_OPTIONS.map((n) => ({ value: n, label: String(n) }))}
+                value={target}
+                disabled={busy}
+                onChange={(n: number) => {
+                  setTarget(n);
+                  saveVictoryTarget(n);
+                }}
+              />
+              <p className={hintClass}>
+                {target === DEFAULT_VICTORY_TARGET
+                  ? t("session.lobby.victoryTargetDefault", { count: target })
+                  : t("session.lobby.victoryTargetOption", { count: target })}
+              </p>
+            </div>
             <fieldset className="m-0 flex flex-col gap-1 border-0 p-0">
               <legend className="mb-1 font-semibold">{t("session.lobby.startingPlayer")}</legend>
               {[
@@ -237,7 +302,7 @@ export function Lobby({ inviteLink }: { inviteLink?: string }) {
                 </SealRadio>
               ))}
             </fieldset>
-            {seats.length < 4 && (
+            {seats.length < MAX_SEATS && (
               <Button variant="secondary" disabled={busy} onClick={() => addBot()}>
                 {t("session.lobby.addBot")}
               </Button>
@@ -245,7 +310,14 @@ export function Lobby({ inviteLink }: { inviteLink?: string }) {
             {seats.length < 3 && <p className={hintClass}>{t("session.lobby.botsWillFill")}</p>}
             <Button
               disabled={!enough || busy}
-              onClick={() => startGame(mode, starter === "" ? undefined : Number(starter), timer)}
+              onClick={() =>
+                startGame(
+                  large ? "variable" : mode,
+                  starter === "" ? undefined : Number(starter),
+                  timer,
+                  target,
+                )
+              }
             >
               {t("session.lobby.startGame")}
             </Button>

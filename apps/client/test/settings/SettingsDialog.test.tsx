@@ -220,6 +220,16 @@ describe("Settings dialog layout", () => {
     expect(byTestId("settings-section-graphics")!.textContent).toContain("Current quality: Low");
   });
 
+  it("the screen filters switch is on by default, applies at once and persists", () => {
+    render();
+    act(() => setSettingsSection("graphics"));
+    const filters = byTestId("settings-screen-filters")!;
+    expect(filters.getAttribute("aria-checked")).toBe("true");
+    act(() => filters.click());
+    expect(usePrefsStore.getState().screenFilters).toBe(false);
+    expect(readPrefs().screenFilters).toBe(false);
+  });
+
   it("About shows the version", () => {
     render();
     act(() => setSettingsSection("about"));
@@ -240,5 +250,23 @@ describe("Settings dialog layout", () => {
     ]);
     for (const l of links) expect(l.getAttribute("rel")).toBe("noopener noreferrer");
     expect(byTestId("settings-section-credits")?.textContent).toContain("Art");
+  });
+});
+
+describe("Tutorial switch", () => {
+  it("turns tutorial off and back on, writing the cookie", async () => {
+    const { useTutorial, setTutorialEnabled } = await import("../../src/store/tutorial.ts");
+    act(() => setTutorialEnabled(true));
+    openSettings("accessibility");
+    m = mount(<SettingsDialog />);
+    const sw = byTestId<HTMLButtonElement>("settings-tutorial")!;
+    expect(sw.getAttribute("aria-checked")).toBe("true");
+    act(() => sw.click());
+    expect(useTutorial.getState().enabled).toBe(false);
+    expect(document.cookie).toContain("hexfall_tutorial=off");
+    expect(sw.getAttribute("aria-checked")).toBe("false");
+    act(() => sw.click());
+    expect(useTutorial.getState().enabled).toBe(true);
+    expect(document.cookie).toContain("hexfall_tutorial=on");
   });
 });

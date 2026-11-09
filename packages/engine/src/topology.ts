@@ -1,9 +1,14 @@
-// Static board graph: 19 hexes, 54 intersections, 72 paths, coast and harbor slots
-// (specs/board-topology). Pure data, built once and deep-frozen. See design.md 1–2.
+// Static board graphs, one per layout (specs/board-topology, specs/large-board):
+// standard = 19 hexes, 54 intersections, 72 paths, 9 harbor slots;
+// large = 30 hexes, 80 intersections, 109 paths, 11 harbor slots.
+// Pure data, built once and deep-frozen. See design.md 1–2.
 
 export type HexId = number;
 export type VertexId = number;
 export type EdgeId = number;
+
+/** Which island a board uses: the 19-hex standard board or the 30-hex 5–6 player board. */
+export type BoardLayout = "standard" | "large";
 
 export interface HexInfo {
   readonly id: HexId;
@@ -32,16 +37,17 @@ export interface EdgeInfo {
 }
 
 export interface Topology {
+  readonly layout: BoardLayout;
   readonly hexes: readonly HexInfo[];
   readonly vertices: readonly VertexInfo[];
   readonly edges: readonly EdgeInfo[];
-  /** 30 coastal paths, clockwise (row 1 at the top) from hex 0's upper-left side. */
+  /** Coastal paths (30 standard, 38 large), clockwise (row 1 at the top) from hex 0's upper-left side. */
   readonly coastalEdges: readonly EdgeId[];
-  /** 9 harbor slot paths, at coastal positions 0,3,6,10,13,16,20,23,26. */
+  /** Harbor slot paths (9 standard, 11 large) at fixed coastal positions. */
   readonly harborSlots: readonly EdgeId[];
-  /** The 6 ring-2 corner hexes, indexed by axial direction (counter-clockwise on screen). */
+  /** The 6 corner hexes (3 land neighbors), indexed by axial direction (counter-clockwise on screen). */
   readonly cornerHexes: readonly HexId[];
-  /** The 18 ring-3 sea cells around the island (rendering only). */
+  /** The sea cells around the island (18 standard, 22 large; rendering only). */
   readonly seaRing: readonly { readonly q: number; readonly r: number }[];
 }
 
@@ -67,8 +73,22 @@ const CORNER_OFFSETS: readonly (readonly [number, number])[] = [
   [-1, 1],
 ];
 
-/** Coastal positions of the 9 harbor slots (gaps 3, 3, 4 repeating). */
+/** Coastal positions of the 9 standard harbor slots (gaps 3, 3, 4 repeating). */
 const HARBOR_POSITIONS: readonly number[] = [0, 3, 6, 10, 13, 16, 20, 23, 26];
+
+/** Coastal positions of the 11 large-board harbor slots (gaps 3, 4 alternating, then 3). */
+const LARGE_HARBOR_POSITIONS: readonly number[] = [0, 3, 7, 10, 14, 17, 21, 24, 28, 31, 35];
+
+/** [r, first q, last q] per row of the large board (rows of 3, 4, 5, 6, 5, 4, 3). */
+const LARGE_ROWS: readonly (readonly [number, number, number])[] = [
+  [-3, 1, 3],
+  [-2, 0, 3],
+  [-1, -1, 3],
+  [0, -2, 3],
+  [1, -2, 2],
+  [2, -2, 1],
+  [3, -2, 0],
+];
 
 const SQRT3_2 = Math.sqrt(3) / 2;
 
@@ -113,14 +133,34 @@ interface Built {
   vertexLattice: readonly Lattice[];
 }
 
-function build(): Built {
-  // ---- Hexes, sorted by (r, q).
+interface LayoutSpec {
+  readonly layout: BoardLayout;
+  /** Land cells; sorted by (r, q) inside build(). */
+  readonly cells: readonly { q: number; r: number }[];
+  readonly harborPositions: readonly number[];
+  /** Explicit sea ring order, or derived (sorted by r, q) when omitted. */
+  readonly seaRing?: readonly { q: number; r: number }[];
+}
+
+function standardCells(): { q: number; r: number }[] {
   const cells: { q: number; r: number }[] = [];
   for (let r = -2; r <= 2; r++) {
     for (let q = -2; q <= 2; q++) {
       if (Math.abs(q + r) <= 2) cells.push({ q, r });
     }
   }
+  return cells;
+}
+
+function largeCells(): { q: number; r: number }[] {
+  const cells: { q: number; r: number }[] = [];
+  for (const [r, lo, hi] of LARGE_ROWS) for (let q = lo; q <= hi; q++) cells.push({ q, r });
+  return cells;
+}
+
+function build(spec: LayoutSpec): Built {
+  // ---- Hexes, sorted by (r, q).
+  const cells = [...spec.cells].sort((a, b) => a.r - b.r || a.q - b.q);
   const hexIdByAxial = new Map<string, HexId>();
   cells.forEach((c, i) => hexIdByAxial.set(`${c.q},${c.r}`, i));
   const hexLattice: Lattice[] = cells.map((c) => ({ X: 2 * c.q + c.r, Z: 3 * c.r }));
@@ -207,19 +247,55 @@ function build(): Built {
     const [a, b] = sortedEdges[next]?.[1] ?? [-1, -1];
     end = a === end ? b : a;
     current = next;
-  } while (current !== startEdge && coastalEdges.length <= 72);
+  } while (current !== startEdge && coastalEdges.length <= sortedEdges.length);
 
-  const harborSlots: EdgeId[] = HARBOR_POSITIONS.map((p) => coastalEdges[p] ?? -1);
+  const harborSlots: EdgeId[] = spec.harborPositions.map((p) => coastalEdges[p] ?? -1);
   const vHarbor: (number | null)[] = vertexLattice.map(() => null);
   harborSlots.forEach((e, slot) => {
     for (const v of sortedEdges[e]?.[1] ?? []) vHarbor[v] = slot;
   });
 
-  const cornerHexes: HexId[] = AXIAL_DIRECTIONS.map(
-    ([dq, dr]) => hexIdByAxial.get(`${2 * dq},${2 * dr}`) ?? -1,
-  );
+  // ---- Corner hexes: the 6 land hexes with exactly 3 land neighbors, matched to
+  // each axial direction by the largest projection onto it (standard: 2·D[k]).
+  const landNeighbors = (c: { q: number; r: number }): number =>
+    AXIAL_DIRECTIONS.filter(([dq, dr]) => hexIdByAxial.has(`${c.q + dq},${c.r + dr}`)).length;
+  const corners = cells.map((c, id) => ({ c, id })).filter(({ c }) => landNeighbors(c) === 3);
+  const meanX = hexLattice.reduce((a, h) => a + h.X, 0) / hexLattice.length;
+  const meanZ = hexLattice.reduce((a, h) => a + h.Z, 0) / hexLattice.length;
+  const cornerHexes: HexId[] = AXIAL_DIRECTIONS.map(([dq, dr]) => {
+    const dx = (2 * dq + dr) * SQRT3_2;
+    const dz = (3 * dr) / 2;
+    let best = -1;
+    let bestDot = -Infinity;
+    for (const { id } of corners) {
+      const h = hexLattice[id] as Lattice;
+      const dot = (h.X - meanX) * SQRT3_2 * dx + ((h.Z - meanZ) / 2) * dz;
+      if (dot > bestDot) {
+        bestDot = dot;
+        best = id;
+      }
+    }
+    return best;
+  });
+
+  // ---- Sea ring: explicit order, or every non-land neighbor cell sorted by (r, q).
+  let seaRing: { q: number; r: number }[];
+  if (spec.seaRing) {
+    seaRing = [...spec.seaRing];
+  } else {
+    const seen = new Map<string, { q: number; r: number }>();
+    for (const c of cells) {
+      for (const [dq, dr] of AXIAL_DIRECTIONS) {
+        const n = { q: c.q + dq, r: c.r + dr };
+        const key = `${n.q},${n.r}`;
+        if (!hexIdByAxial.has(key)) seen.set(key, n);
+      }
+    }
+    seaRing = [...seen.values()].sort((a, b) => a.r - b.r || a.q - b.q);
+  }
 
   const topology: Topology = {
+    layout: spec.layout,
     hexes: cells.map((c, id) => ({
       id,
       q: c.q,
@@ -244,24 +320,69 @@ function build(): Built {
     coastalEdges,
     harborSlots,
     cornerHexes,
-    seaRing: hexRing(3, 0),
+    seaRing,
   };
   return { topology, hexLattice, vertexLattice };
 }
 
-const BUILT = build();
-const HEX_LATTICE = BUILT.hexLattice;
-const VERTEX_LATTICE = BUILT.vertexLattice;
+interface Geo {
+  readonly hexLattice: readonly Lattice[];
+  readonly vertexLattice: readonly Lattice[];
+  readonly hexIdByAxial: ReadonlyMap<string, HexId>;
+  /** World offset that centers the island at the origin. */
+  readonly origin: XZ;
+}
 
-export const TOPOLOGY: Topology = deepFreeze(BUILT.topology);
+const GEO = new WeakMap<Topology, Geo>();
 
-const HEX_ID_BY_AXIAL: ReadonlyMap<string, HexId> = new Map(
-  TOPOLOGY.hexes.map((h) => [`${h.q},${h.r}`, h.id]),
+function finish(built: Built): Topology {
+  const topology = deepFreeze(built.topology);
+  const hexes = built.hexLattice;
+  const ox = (hexes.reduce((a, h) => a + h.X, 0) / hexes.length) * SQRT3_2;
+  const oz = hexes.reduce((a, h) => a + h.Z, 0) / hexes.length / 2;
+  GEO.set(topology, {
+    hexLattice: built.hexLattice,
+    vertexLattice: built.vertexLattice,
+    hexIdByAxial: new Map(topology.hexes.map((h) => [`${h.q},${h.r}`, h.id])),
+    origin: [ox, oz],
+  });
+  return topology;
+}
+
+/** The 19-hex standard island (3–4 players). */
+export const STANDARD_TOPOLOGY: Topology = finish(
+  build({
+    layout: "standard",
+    cells: standardCells(),
+    harborPositions: HARBOR_POSITIONS,
+    seaRing: hexRing(3, 0),
+  }),
 );
 
+/** The 30-hex large island (5–6 players). */
+export const LARGE_TOPOLOGY: Topology = finish(
+  build({ layout: "large", cells: largeCells(), harborPositions: LARGE_HARBOR_POSITIONS }),
+);
+
+/** The topology of a layout (undefined = standard). */
+export function topologyFor(layout: BoardLayout | undefined): Topology {
+  return layout === "large" ? LARGE_TOPOLOGY : STANDARD_TOPOLOGY;
+}
+
+/** The topology of a board (a board without a layout is standard). */
+export function topologyOf(board: { readonly layout?: BoardLayout | undefined }): Topology {
+  return topologyFor(board.layout);
+}
+
+function geo(topo: Topology): Geo {
+  const g = GEO.get(topo) ?? GEO.get(topologyFor(topo.layout));
+  if (!g) throw new RangeError("unknown topology");
+  return g;
+}
+
 /** Hex id at axial (q, r), or undefined if (q, r) is not a land hex. */
-export function hexAt(q: number, r: number): HexId | undefined {
-  return HEX_ID_BY_AXIAL.get(`${q},${r}`);
+export function hexAt(q: number, r: number, topo: Topology = STANDARD_TOPOLOGY): HexId | undefined {
+  return geo(topo).hexIdByAxial.get(`${q},${r}`);
 }
 
 function checkId(kind: string, id: number, count: number): void {
@@ -270,43 +391,52 @@ function checkId(kind: string, id: number, count: number): void {
   }
 }
 
-/** Pointy-top axial (q, r) -> world XZ, 1 unit = circumradius. */
-export function hexToWorld(q: number, r: number): XZ {
-  return [Math.sqrt(3) * (q + r / 2), 1.5 * r];
+/** Pointy-top axial (q, r) -> world XZ, 1 unit = circumradius, centered for the topology. */
+export function hexToWorld(q: number, r: number, topo: Topology = STANDARD_TOPOLOGY): XZ {
+  const [ox, oz] = geo(topo).origin;
+  return [Math.sqrt(3) * (q + r / 2) - ox, 1.5 * r - oz];
 }
 
-export function hexCenter(id: HexId): XZ {
-  checkId("hex", id, HEX_LATTICE.length);
-  const p = HEX_LATTICE[id] as Lattice;
-  return [p.X * SQRT3_2, p.Z / 2];
+function latticeToWorld(p: Lattice, topo: Topology): XZ {
+  const [ox, oz] = geo(topo).origin;
+  return [p.X * SQRT3_2 - ox, p.Z / 2 - oz];
 }
 
-export function vertexPosition(id: VertexId): XZ {
-  checkId("vertex", id, VERTEX_LATTICE.length);
-  const p = VERTEX_LATTICE[id] as Lattice;
-  return [p.X * SQRT3_2, p.Z / 2];
+export function hexCenter(id: HexId, topo: Topology = STANDARD_TOPOLOGY): XZ {
+  const lattice = geo(topo).hexLattice;
+  checkId("hex", id, lattice.length);
+  return latticeToWorld(lattice[id] as Lattice, topo);
+}
+
+export function vertexPosition(id: VertexId, topo: Topology = STANDARD_TOPOLOGY): XZ {
+  const lattice = geo(topo).vertexLattice;
+  checkId("vertex", id, lattice.length);
+  return latticeToWorld(lattice[id] as Lattice, topo);
 }
 
 /** Midpoint of a path and its direction angle (radians, atan2 of dz over dx). */
-export function edgeMidpoint(id: EdgeId): {
+export function edgeMidpoint(
+  id: EdgeId,
+  topo: Topology = STANDARD_TOPOLOGY,
+): {
   readonly x: number;
   readonly z: number;
   readonly angle: number;
 } {
-  checkId("edge", id, TOPOLOGY.edges.length);
-  const [a, b] = (TOPOLOGY.edges[id] as EdgeInfo).vertices;
-  const [ax, az] = vertexPosition(a);
-  const [bx, bz] = vertexPosition(b);
+  checkId("edge", id, topo.edges.length);
+  const [a, b] = (topo.edges[id] as EdgeInfo).vertices;
+  const [ax, az] = vertexPosition(a, topo);
+  const [bx, bz] = vertexPosition(b, topo);
   return { x: (ax + bx) / 2, z: (az + bz) / 2, angle: Math.atan2(bz - az, bx - ax) };
 }
 
 /** Unit vector pointing away from a coastal path's only hex. */
-export function edgeOutward(id: EdgeId): XZ {
-  checkId("edge", id, TOPOLOGY.edges.length);
-  const edge = TOPOLOGY.edges[id] as EdgeInfo;
+export function edgeOutward(id: EdgeId, topo: Topology = STANDARD_TOPOLOGY): XZ {
+  checkId("edge", id, topo.edges.length);
+  const edge = topo.edges[id] as EdgeInfo;
   if (!edge.coastal) throw new RangeError(`edge ${id} is not coastal`);
-  const { x, z } = edgeMidpoint(id);
-  const [cx, cz] = hexCenter(edge.hexes[0] ?? 0);
+  const { x, z } = edgeMidpoint(id, topo);
+  const [cx, cz] = hexCenter(edge.hexes[0] ?? 0, topo);
   const dx = x - cx;
   const dz = z - cz;
   const len = Math.hypot(dx, dz);

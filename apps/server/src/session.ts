@@ -126,11 +126,12 @@ export function createSession(opts: SessionOptions): Session {
         result = await service.leaveRoom(req);
         break;
       case "startGame": {
-        const { mode, startingPlayer, turnTimer } = msg.payload;
+        const { mode, startingPlayer, turnTimer, victoryTarget } = msg.payload;
         result = await service.startGame(req, {
           mode,
           ...(startingPlayer !== undefined ? { startingPlayer } : {}),
           ...(turnTimer !== undefined ? { turnTimer } : {}),
+          ...(victoryTarget !== undefined ? { victoryTarget } : {}),
         });
         break;
       }

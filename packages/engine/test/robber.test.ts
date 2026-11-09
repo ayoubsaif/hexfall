@@ -6,10 +6,10 @@ import { RESOURCES, cardTotal } from "../src/rules/common.ts";
 import { discardOwed, robberOptions, startSeven } from "../src/rules/robber.ts";
 import type { GameState, ResourceBundle } from "../src/state.ts";
 import { failCode, give, makePlayState, putBuilding, step } from "../src/testing.ts";
-import { TOPOLOGY, type HexId } from "../src/topology.ts";
+import { STANDARD_TOPOLOGY, type HexId } from "../src/topology.ts";
 
 function corner(hex: HexId, i: number): number {
-  const v = TOPOLOGY.hexes[hex]?.vertices[i];
+  const v = STANDARD_TOPOLOGY.hexes[hex]?.vertices[i];
   if (v === undefined) throw new Error("bad corner");
   return v;
 }

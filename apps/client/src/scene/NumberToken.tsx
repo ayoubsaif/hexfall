@@ -12,8 +12,14 @@ const SERIF = "'Cormorant Garamond Variable', 'Cormorant Garamond', Georgia, ser
 
 /** One generous size for every roll; probability changes weight only. */
 export const NUMBER_SIZE = 0.64;
+const level = (pips: number) => Math.max(0, Math.min(4, pips - 1));
+/** Font weight per pip count. The serif tops out at 700, so heavier rolls add an outline. */
 export function numberWeight(pips: number): number {
-  return [300, 400, 500, 700, 900][Math.max(0, Math.min(4, pips - 1))]!;
+  return [600, 650, 700, 700, 700][level(pips)]!;
+}
+/** Extra ink outline per pip count, as a fraction of the label size: bolder than 700. */
+export function numberStroke(pips: number): number {
+  return [0.006, 0.01, 0.014, 0.02, 0.028][level(pips)]!;
 }
 
 // One texture per value (2–12 without 7), drawn on first use.
@@ -33,11 +39,10 @@ function tokenTexture(value: number): CanvasTexture | null {
         const width = ctx.measureText(text).width;
         if (width > s * 0.82)
           ctx.font = `${numberWeight(pips)} ${Math.round((s * NUMBER_SIZE * s * 0.82) / width)}px ${SERIF}`;
-        if (numberWeight(pips) > 700) {
-          ctx.strokeStyle = color;
-          ctx.lineWidth = s * 0.012;
-          ctx.strokeText(text, s / 2, s * 0.42);
-        }
+        ctx.strokeStyle = color;
+        ctx.lineJoin = "round";
+        ctx.lineWidth = s * numberStroke(pips);
+        ctx.strokeText(text, s / 2, s * 0.42);
         ctx.fillText(text, s / 2, s * 0.42);
         const r = s * 0.035;
         const gap = s * 0.1;

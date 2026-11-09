@@ -28,16 +28,17 @@ export const ClientActionSchema = z.discriminatedUnion("type", [
   a("playYearOfPlenty", { resources: z.array(ResourceSchema).max(2) }),
   a("playMonopoly", { resource: ResourceSchema }),
   a("revealVictoryPoints", {}),
-  a("proposeTrade", { give: BundleSchema, get: BundleSchema, to: z.array(id).max(3) }),
+  a("proposeTrade", { give: BundleSchema, get: BundleSchema, to: z.array(id).max(5) }),
   a("acceptTrade", { offerId: id }),
   a("rejectTrade", { offerId: id }),
   a("cancelTrade", { offerId: id }),
   a("maritimeTrade", {
     give: ResourceSchema,
     get: ResourceSchema,
-    count: z.number().int().positive().max(19),
+    count: z.number().int().positive().max(24),
   }),
   a("endTurn", {}),
+  a("passSpecialBuild", {}),
 ]);
 
 /** Engine action as sent by a client (no seat). */

@@ -7,7 +7,7 @@ describe("asset kinds", () => {
     for (const key of ASSET_KEYS) expect(["flat", "model"]).toContain(assetKind(key));
   });
 
-  it("has 14 flat keys and 7 model keys", () => {
+  it("has 14 flat keys and 18 model keys", () => {
     const flat = ASSET_KEYS.filter((k) => assetKind(k) === "flat");
     const model = ASSET_KEYS.filter((k) => assetKind(k) === "model");
     expect(flat).toHaveLength(14);
@@ -18,7 +18,17 @@ describe("asset kinds", () => {
       "piece.robber",
       "piece.settlement",
       "prop.boat",
+      "prop.boulder",
+      "prop.bush",
+      "prop.camp",
+      "prop.cliff",
+      "prop.gull",
       "prop.jetty",
+      "prop.peak",
+      "prop.sheep",
+      "prop.tree",
+      "prop.wall",
+      "prop.woods",
     ]);
   });
 });

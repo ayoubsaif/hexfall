@@ -30,12 +30,16 @@ const HARD: Rule = { side: 0, card: 0.01, margin: 0.05 };
 const NORMAL: Rule = { side: 0.25, card: 0.06, margin: 0.05 };
 /** Easy: any offer that leaves the hand no worse, spare cards counting clearly. */
 const EASY: Rule = { side: 0.25, card: 0.25, margin: 0 };
-/** Proposers at or above this public VP are never helped (Easy has no limit). */
-const LEADER_VP: Readonly<Record<BotLevel, number>> = {
+/**
+ * Proposers within this many VP of the victory target are never helped (Easy has no limit).
+ * With the default target of 10: Normal refuses at 9 VP, Hard at 8.
+ */
+const LEADER_GAP: Readonly<Record<BotLevel, number>> = {
   easy: Infinity,
-  normal: 9,
-  hard: 8,
+  normal: 1,
+  hard: 2,
 };
+const DEFAULT_TARGET = 10;
 /** Each level accepts what the stricter ones accept, plus its own rule. */
 const RULES: Readonly<Record<BotLevel, readonly Rule[]>> = {
   hard: [HARD],
@@ -98,7 +102,8 @@ export function judgeOffer(
 ): boolean {
   const hand = view.players[seat]?.resources;
   if (!hand) return false;
-  if ((view.players[offer.from]?.publicVp ?? 0) >= LEADER_VP[level]) return false;
+  const limit = (view.victoryTarget ?? DEFAULT_TARGET) - LEADER_GAP[level]; // -Infinity on Easy
+  if (Number.isFinite(limit) && (view.players[offer.from]?.publicVp ?? 0) >= limit) return false;
   const next = after(hand, offer);
   if (!next) return false;
   const ts = targets(view, seat);

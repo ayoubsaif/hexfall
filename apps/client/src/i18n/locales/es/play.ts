@@ -20,6 +20,8 @@ export const play: Catalog["play"] = {
     largestArmy: "Gran Ejército",
     hiddenTitle: "Solo tú puedes ver esto",
     hiddenVp: "{{vp}} PV con cartas ocultas",
+    goal: "Meta: {{count}} PV",
+    goalHint: "Gana el primer jugador que llegue a {{count}} puntos de victoria en su propio turno",
   },
   pill: {
     pickSpot: "Elige un lugar en el tablero.",
@@ -39,6 +41,7 @@ export const play: Catalog["play"] = {
     tradeBank: "Comerciar con la banca",
     tradePlayers: "Comerciar con jugadores",
     endTurn: "Terminar turno",
+    passSpecialBuild: "Terminar de construir",
     costs: "Cuesta {{cost}}",
     costItem: "{{count}} de {{resource}}",
     blocked: {

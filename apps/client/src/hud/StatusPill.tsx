@@ -11,6 +11,7 @@ import { chooseBuild, useUiStore } from "../store/ui.ts";
 import { CountdownText } from "./actions/CountdownText.tsx";
 import { WARNING_SECONDS, countdownText, useCountdown } from "./countdown.ts";
 import { useNames } from "./names.ts";
+import { HelpMark } from "./tutorial/TutorialHelp.tsx";
 import { useInFlight, useLegal, useView } from "./state.ts";
 
 /** Waits whose own countdown shows in the pill (roll: dice; turn: End turn; discard: dialog). */
@@ -18,6 +19,7 @@ const PILL_PHASES: ReadonlySet<PlayerView["phase"]["kind"]> = new Set([
   "setup",
   "moveRobber",
   "roadBuilding",
+  "specialBuild",
 ]);
 
 const waitedOn = (seats: readonly Seat[], viewer: Seat | null) =>
@@ -58,7 +60,17 @@ export function StatusPill() {
         >
           {status.text}
         </p>
+        {view.phase.kind === "moveRobber" && status.yourMove && (
+          <HelpMark topic="robber" className="pointer-events-auto ml-0" />
+        )}
         {own && <CountdownText countdown={own} />}
+        <span
+          data-testid="goal-chip"
+          title={t("play.panels.goalHint", { count: view.victoryTarget })}
+          className="pointer-events-auto ml-1 shrink-0 border-l border-[#c9a04e]/40 pl-2.5 text-xs font-semibold whitespace-nowrap text-[#f0c860]"
+        >
+          {t("play.panels.goal", { count: view.victoryTarget })}
+        </span>
       </div>
       {picking && (
         <p

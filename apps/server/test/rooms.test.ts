@@ -75,16 +75,18 @@ describe("lobby", () => {
     expect(ana.of("roomState")).toHaveLength(3);
   });
 
-  it("refuses a fifth player, duplicate names and unknown codes", async () => {
+  it("refuses a seventh player, duplicate names and unknown codes", async () => {
     fresh();
     const { code } = await makeLobby(svc, ["Ana", "Ben"]);
     expect(await svc.joinRoom(req(fakeConn()), code, "ana")).toEqual(err("bad_name"));
     expect(await svc.joinRoom(req(fakeConn()), code, "BEN ")).toEqual(err("bad_name"));
     expect(await svc.joinRoom(req(fakeConn()), code, "Cy")).toEqual({ ok: true });
     expect(await svc.joinRoom(req(fakeConn()), code, "Dee")).toEqual({ ok: true });
-    const fifth = fakeConn();
-    expect(await svc.joinRoom(req(fifth), code, "Eve")).toEqual(err("room_full"));
-    expect(fifth.sent).toEqual([]);
+    expect(await svc.joinRoom(req(fakeConn()), code, "Eve")).toEqual({ ok: true });
+    expect(await svc.joinRoom(req(fakeConn()), code, "Fay")).toEqual({ ok: true });
+    const seventh = fakeConn();
+    expect(await svc.joinRoom(req(seventh), code, "Gus")).toEqual(err("room_full"));
+    expect(seventh.sent).toEqual([]);
     expect(await svc.joinRoom(req(fakeConn()), "ZZZZZZ", "Eve")).toEqual(err("room_not_found"));
     expect(await svc.joinRoom(req(fakeConn()), "nope", "Eve")).toEqual(err("room_not_found"));
   });
@@ -213,7 +215,7 @@ describe("avatars", () => {
 });
 
 describe("start", () => {
-  it("is host-only, needs 3-4 players and a valid starting seat", async () => {
+  it("is host-only, needs 3-6 players and a valid starting seat", async () => {
     fresh();
     const { conns } = await makeLobby(svc, ["Ana", "Ben"]);
     const [ana, ben] = conns as [FakeConn, FakeConn];
@@ -230,6 +232,36 @@ describe("start", () => {
       ok: true,
     });
     expect(await svc.startGame(req(ana), { mode: "beginner" })).toEqual(err("game_started"));
+  });
+
+  it("starts six seats on the large board with the chosen victory target", async () => {
+    fresh();
+    const { conns, code } = await makeLobby(svc, ["Ana", "Ben", "Cy", "Dee", "Eve", "Fay"]);
+    const ana = conns[0] as FakeConn;
+    const avatars = lastRoomState(ana)?.seats.map((s) => s.avatar) ?? [];
+    expect(new Set(avatars).size).toBe(6);
+    expect(await svc.startGame(req(ana), { mode: "beginner", victoryTarget: 12 })).toEqual({
+      ok: true,
+    });
+    const view = ana.game()?.view;
+    expect(view?.players).toHaveLength(6);
+    expect(view?.board.layout).toBe("large");
+    expect(view?.victoryTarget).toBe(12);
+    const meta = (await store.loadRoom(code))?.meta;
+    expect(meta?.config).toMatchObject({ mode: "variable", playerCount: 6, victoryTarget: 12 });
+  });
+
+  it("refuses a victory target outside 8 to 15", async () => {
+    fresh();
+    const { conns } = await makeLobby(svc, ["Ana", "Ben", "Cy"]);
+    const ana = conns[0] as FakeConn;
+    for (const victoryTarget of [7, 16, 9.5]) {
+      expect(await svc.startGame(req(ana), { mode: "variable", victoryTarget })).toEqual(
+        err("bad_frame"),
+      );
+    }
+    expect(await svc.startGame(req(ana), { mode: "variable" })).toEqual({ ok: true });
+    expect(ana.game()?.view.victoryTarget).toBe(10);
   });
 
   it("sends every seat its own snapshot in the roll-for-order phase", async () => {

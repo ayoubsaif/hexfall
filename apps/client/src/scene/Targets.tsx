@@ -1,6 +1,7 @@
 // Legal-move highlights and hit areas for the current pick (specs/board-interaction,
 // "Legal target highlights", "Picking sends one action", "Robber move and victim choice").
 // Only legal targets get meshes, so illegal spots can never react to the pointer.
+import { topologyFor } from "@hexfall/engine/geometry";
 import type { ThreeEvent } from "@react-three/fiber";
 import { useEffect, useMemo, useState } from "react";
 import { currentPick } from "../game/pick.ts";
@@ -91,7 +92,11 @@ export function Targets() {
     () => currentPick({ view, legal, build, inFlight, victimHex }),
     [view, legal, build, inFlight, victimHex],
   );
-  const items = useMemo(() => targetLayout(pick, relief), [pick, relief]);
+  const layoutKind = view?.board.layout;
+  const items = useMemo(
+    () => targetLayout(pick, relief, topologyFor(layoutKind)),
+    [pick, relief, layoutKind],
+  );
   const [hovered, setHovered] = useState<number | null>(null);
 
   // Forget a hover whose target went away, and tell the canvas cursor owner (store/cursor.ts).

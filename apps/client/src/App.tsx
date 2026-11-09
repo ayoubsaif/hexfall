@@ -1,8 +1,9 @@
 import { lazy, Suspense, useEffect } from "react";
+import { useButtonLight } from "./hooks/use-button-light.ts";
 import { Hud } from "./hud/Hud.tsx";
 import { MapSketch } from "./hud/MapSketch.tsx";
 import { useConnection } from "./net/useConnection.ts";
-import { useRoomStore } from "./store/room.ts";
+import { boardVisible, useRoomStore } from "./store/room.ts";
 import { useSceneReady } from "./store/sceneReady.ts";
 import { bindUiToGame } from "./store/ui.ts";
 import { Splash } from "./hud/Splash.tsx";
@@ -24,19 +25,22 @@ function SplashGate() {
 // every phase or turn change.
 export function App() {
   useConnection();
+  useButtonLight();
   const inRoom = useRoomStore((s) => s.room !== null);
+  // The start screen and the lobby keep the light map sketch; the 3D board loads on Start.
+  const showBoard = useRoomStore(boardVisible);
   useEffect(() => bindUiToGame(), []);
   return (
     <ThemeProvider>
       <div className="app" data-entry={!inRoom || undefined}>
-        {!inRoom && <MapSketch />}
-        {inRoom && (
+        {!showBoard && <MapSketch />}
+        {showBoard && (
           <Suspense fallback={<Splash />}>
             <BoardCanvas />
           </Suspense>
         )}
         <Hud />
-        {inRoom && <SplashGate />}
+        {showBoard && <SplashGate />}
       </div>
     </ThemeProvider>
   );

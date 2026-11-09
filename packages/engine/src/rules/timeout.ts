@@ -10,7 +10,7 @@ import { check } from "./errors.ts";
 import * as production from "./production.ts";
 import * as robber from "./robber.ts";
 import * as setup from "./setup.ts";
-import { endTurn } from "./turn.ts";
+import { endTurn, passSpecialBuild } from "./turn.ts";
 
 /** Uniform pick from a non-empty list, advancing s.rng. */
 function pick<T>(s: GameState, xs: readonly T[]): T {
@@ -89,6 +89,11 @@ export function resolveTimeout(s: GameState): void {
         }
         dev.placeFreeRoad(s, { type: "buildRoad", seat: active, edge: pick(s, edges) });
       }
+      return;
+    }
+    case "specialBuild": {
+      emit(s, { type: "timedOut", phase: phase.kind, seats: [phase.current] });
+      passSpecialBuild(s, { seat: phase.current });
       return;
     }
     case "ended":

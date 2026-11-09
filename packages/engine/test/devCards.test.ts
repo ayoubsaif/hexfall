@@ -10,7 +10,7 @@ import { connectedRoadEdges } from "../src/rules/placement.ts";
 import { robberOptions } from "../src/rules/robber.ts";
 import type { DevCard, GameState, Seat } from "../src/state.ts";
 import { failCode, give, makePlayState, putBuilding, putRoadAt, step } from "../src/testing.ts";
-import { TOPOLOGY } from "../src/topology.ts";
+import { STANDARD_TOPOLOGY } from "../src/topology.ts";
 
 function withCards(s: GameState, seat: Seat, cards: DevCard[]): GameState {
   s.players[seat]!.devCards = [...cards];
@@ -28,7 +28,7 @@ function passTo(s: GameState, seat: Seat): GameState {
 }
 
 /** A vertex with three paths. */
-const INNER = TOPOLOGY.vertices.find((v) => v.edges.length === 3)!;
+const INNER = STANDARD_TOPOLOGY.vertices.find((v) => v.edges.length === 3)!;
 
 describe("buying development cards", () => {
   it("pays the cost to the bank and takes the top card", () => {
@@ -180,9 +180,9 @@ describe("Road Building", () => {
     expect(roadBuildingRoads(s, 0)).toEqual(connectedRoadEdges(s, 0));
     expect(roadBuildingRoads(s, 1)).toEqual([]);
     const first = INNER.edges[0]!;
-    const [a, b] = TOPOLOGY.edges[first]!.vertices;
+    const [a, b] = STANDARD_TOPOLOGY.edges[first]!.vertices;
     const far = a === INNER.id ? b : a;
-    const second = TOPOLOGY.vertices[far]!.edges.find((e) => e !== first)!;
+    const second = STANDARD_TOPOLOGY.vertices[far]!.edges.find((e) => e !== first)!;
     expect(failCode(s, { type: "buildRoad", seat: 0, edge: second })).toBe("illegal_placement");
     s = step(s, { type: "buildRoad", seat: 0, edge: first });
     expect(s.phase).toEqual({ kind: "roadBuilding", remaining: 1 });
@@ -237,7 +237,7 @@ describe("Road Building", () => {
     putBuilding(s, INNER.id, 0);
     const [open, ...blocked] = INNER.edges as [number, ...number[]];
     for (const e of blocked) putRoadAt(s, e, 1);
-    const [a, b] = TOPOLOGY.edges[open]!.vertices;
+    const [a, b] = STANDARD_TOPOLOGY.edges[open]!.vertices;
     putBuilding(s, a === INNER.id ? b : a, 1);
     expect(connectedRoadEdges(s, 0)).toEqual([open]);
     s = step(s, { type: "playRoadBuilding", seat: 0 });
@@ -317,7 +317,7 @@ describe("victory point cards", () => {
   /** Seat 0 with `vp` public VP from buildings (cities first). */
   function withPublicVp(vp: number, rolled = true): GameState {
     const s = makePlayState({ seat: 0, rolled });
-    const spots = TOPOLOGY.vertices.filter((_, i) => i % 3 === 0).map((v) => v.id);
+    const spots = STANDARD_TOPOLOGY.vertices.filter((_, i) => i % 3 === 0).map((v) => v.id);
     let left = vp;
     let i = 0;
     while (left >= 2 && s.players[0]!.pieces.cities > 0) {

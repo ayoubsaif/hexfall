@@ -1,6 +1,6 @@
 import { describe, expect, it } from "vite-plus/test";
 import {
-  TOPOLOGY,
+  STANDARD_TOPOLOGY,
   applyAction,
   createGame,
   legalActions,
@@ -77,8 +77,10 @@ describe("robber targeting by level", () => {
     const s = createGame({ seed: 9, playerCount: 3, mode: "variable", startingPlayer: 0 });
     s.phase = { kind: "moveRobber", source: "knight" };
     s.turn = { seat: 0, number: 5, rolled: true, devPlayed: true, dice: [3, 4] };
-    const hex = TOPOLOGY.hexes.findIndex((h, i) => i !== s.robber && h.vertices.length === 6)!;
-    const [a, , c] = TOPOLOGY.hexes[hex]!.vertices;
+    const hex = STANDARD_TOPOLOGY.hexes.findIndex(
+      (h, i) => i !== s.robber && h.vertices.length === 6,
+    )!;
+    const [a, , c] = STANDARD_TOPOLOGY.hexes[hex]!.vertices;
     s.vertices[a!] = { owner: 1, kind: "settlement" };
     s.vertices[c!] = { owner: 2, kind: "settlement" };
     // Extra VP for seat 2 far away, plus a card each so both can be robbed.

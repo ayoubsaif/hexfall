@@ -1,7 +1,7 @@
 // Longest Road (AGENTS.md §10a, §13.5, design.md decision 7). Owner: board agent.
 import type { GameState, Seat } from "../state.ts";
-import { TOPOLOGY, type EdgeId, type VertexId } from "../topology.ts";
-import { emit } from "./common.ts";
+import type { EdgeId, VertexId } from "../topology.ts";
+import { emit, topo } from "./common.ts";
 
 /** Minimum length for the card. */
 const MIN_LONGEST_ROAD = 5;
@@ -16,9 +16,9 @@ function passable(s: GameState, seat: Seat, v: VertexId): boolean {
 function extend(s: GameState, seat: Seat, v: VertexId, visited: Set<EdgeId>): number {
   if (!passable(s, seat, v)) return 0;
   let best = 0;
-  for (const e of TOPOLOGY.vertices[v]!.edges) {
+  for (const e of topo(s).vertices[v]!.edges) {
     if (s.edges[e] !== seat || visited.has(e)) continue;
-    const [a, b] = TOPOLOGY.edges[e]!.vertices;
+    const [a, b] = topo(s).edges[e]!.vertices;
     visited.add(e);
     best = Math.max(best, 1 + extend(s, seat, a === v ? b : a, visited));
     visited.delete(e);
@@ -31,7 +31,7 @@ export function longestRoadLength(s: GameState, seat: Seat): number {
   let best = 0;
   for (let e = 0; e < s.edges.length; e++) {
     if (s.edges[e] !== seat) continue;
-    const [a, b] = TOPOLOGY.edges[e]!.vertices;
+    const [a, b] = topo(s).edges[e]!.vertices;
     // Every trail has a first segment e; walking from e away from either end
     // covers all trails that start with e.
     const visited = new Set<EdgeId>([e]);

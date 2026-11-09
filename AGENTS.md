@@ -1,6 +1,6 @@
 # AGENTS.md — Catan Base Game App
 
-You are building a digital implementation of **Catan (base game, 5th English edition, 2020 rulebook)** for 3–4 players. This file is the single source of truth for the game rules. The rules engine must implement **every rule below exactly as written**. Do not invent house rules, do not simplify, and do not skip edge cases. When UI and rules conflict, the rules win.
+You are building a digital implementation of **Catan (base game, 5th English edition, 2020 rulebook)** for 3–4 players, plus the **5–6 player extension** (§15) and a **selectable victory target** (§12). This file is the single source of truth for the game rules. The rules engine must implement **every rule below exactly as written**. Do not invent house rules, do not simplify, and do not skip edge cases. When UI and rules conflict, the rules win.
 
 Treat the rules engine as a pure, deterministic state machine (seeded RNG for dice, deck shuffle and random steals) that is fully unit-testable without any UI. The UI is a thin client over that engine.
 
@@ -24,7 +24,7 @@ Treat the rules engine as a pure, deterministic state machine (seeded RNG for di
 | Dice | 2 six-sided | Sum 2–12 |
 | Robber | 1 | Starts on the desert |
 
-Players: 3 or 4. Each player has exactly 5 settlements, 4 cities, 15 roads — **no more, no less**. A player can never build a piece type whose personal supply is empty.
+Players: 3 or 4 with the components above; 5 or 6 with the extension components in §15. Each player has exactly 5 settlements, 4 cities, 15 roads — **no more, no less**. A player can never build a piece type whose personal supply is empty.
 
 ### Board topology
 - **Hex**: the 19 land tiles in the standard 3-4-5-4-3 hexagonal island layout.
@@ -189,7 +189,7 @@ While the robber sits on a hex, that hex produces nothing for anyone (§6). Play
 
 ### 9c. Victory Point cards (5 cards)
 - Each is worth 1 VP and is kept hidden.
-- They count toward the player's total **only when revealed**. A player may reveal any number of VP cards during their own turn **only** when doing so brings them to **10 or more VP** (i.e., to win). They may be revealed on the same turn they are bought.
+- They count toward the player's total **only when revealed**. A player may reveal any number of VP cards during their own turn **only** when doing so brings them to **the victory target or more** (i.e., to win; 10 VP by default, §12). They may be revealed on the same turn they are bought.
 - They are revealed to everyone when the game ends.
 - The engine must track **hidden VP** (for win detection) separately from **public VP** (shown to opponents).
 
@@ -245,8 +245,9 @@ While the robber sits on a hex, that hex produces nothing for anyone (§6). Play
 | Largest Army | 2 |
 | VP development card (revealed) | 1 |
 
-- Target: **10 VP**. The game ends **immediately** when the active player has **≥ 10 VP during their own turn** (including hidden VP cards they choose to reveal). That player wins.
-- A player who reaches 10 VP during **another** player's turn (e.g., by receiving Longest Road via an opponent's settlement breaking a road… or simply by holding it) does **not** win yet; they must wait for their own turn, and the game continues until **any** player has 10 on their own turn.
+- Target: **10 VP** by default. The host may choose a different **victory target** for any game (3–6 players) when starting it: an integer from **8 to 15**. Everything below that says "10 VP" means the game's victory target. The target is fixed for the whole game and visible to all players.
+- The game ends **immediately** when the active player has **≥ the target during their own turn** (including hidden VP cards they choose to reveal). That player wins.
+- A player who reaches the target during **another** player's turn (e.g., by receiving Longest Road via an opponent's settlement breaking a road… or simply by holding it), including during a Special Building Phase window (§15c), does **not** win yet; they must wait for their own turn, and the game continues until **any** player has the target on their own turn.
 - Check for victory after every state change during the active player's turn (build, card reveal, special-card transfer), not only at end of turn.
 
 ---
@@ -275,7 +276,41 @@ Write unit tests for each numbered item above before considering the engine done
 ---
 
 ## 14. Things that are NOT in the base rules (do not implement unless asked)
-- No 5–6 player extension, no Seafarers/Cities & Knights content.
+- No Seafarers/Cities & Knights content (the 5–6 player extension is in §15).
 - No trading on other players' turns, no bank trades off-turn.
 - No "friendly robber", no "no-7 on first two rounds", no card-stealing from the bank, no discard limit other than >7.
 - No VP for roads other than Longest Road, no VP for Knights other than Largest Army.
+
+---
+
+## 15. 5–6 player extension
+
+Games with **5 or 6 players** use the extension components and the Special Building Phase. Every other rule in §1–§12 applies unchanged. Games with 3 or 4 players never use anything in this section.
+
+### 15a. Components (totals with the extension added)
+
+| Component | Quantity | Details |
+|---|---|---|
+| Terrain hexes | 30 | 6 Forest, 6 Pasture, 6 Fields, 5 Hills, 5 Mountains, 2 Desert |
+| Harbors | 11 | 5 generic **3:1**; **2:1**: 2 wool, 1 each of brick, grain, lumber, ore |
+| Number tokens | 28 | Two each of 2 and 12; three each of 3, 4, 5, 6, 8, 9, 10, 11. No 7 |
+| Resource cards | 120 | 24 of each resource. The bank is finite |
+| Development cards | 34 | 20 Knight, 3 Road Building, 3 Year of Plenty, 3 Monopoly, 5 Victory Point |
+| Player pieces | 6 colors | Each player still has exactly 15 roads, 5 settlements, 4 cities |
+| Robber | 1 | Starts on a desert (the one with the lower hex id) |
+
+The bank shortage rule (§6), Year of Plenty and maritime limits (§9d, §11b) apply to the 24-per-resource bank. Largest Army and Longest Road are unchanged.
+
+### 15b. Large board and setup
+- **Layout**: 30 land hexes in seven rows of **3-4-5-6-5-4-3** (pointy-top), with 80 intersections, 109 paths, 38 coastal paths and 11 harbor slots spaced around the coast. Neither desert gets a number token.
+- **Variable setup only**: no verified beginner layout or pre-placed pieces exist for the large board, so 5–6 player games always use random setup. Shuffle the 30 terrains onto the hexes and the 11 harbors onto the slots.
+- **Number tokens**: placed **randomly** (the fully random option of §4b), reshuffling until **no 6 or 8 is adjacent to another 6 or 8**. All randomness comes from the game's seeded RNG.
+- Then run the normal setup phase (§4c) with all 5 or 6 players in snake order.
+
+### 15c. Special Building Phase
+- After the active player ends their turn, **each other player**, in clockwise order starting with the player to the left of the one who ended, gets one **building window** before the next turn starts. Then the player to the left of the one who ended takes their normal turn.
+- In their window a player may **build roads, settlements and cities and buy development cards**, as many as they can afford, following every normal building rule (§7), and then pass.
+- In a window a player may **not** trade with players, trade with the bank, play development cards or reveal VP cards.
+- A development card bought in a window may be played from the buyer's **next own turn**.
+- A player cannot win during a window (§12). If they still have the target when their own turn starts, they win then.
+- Each window is logged, and with a turn timer each window has its own countdown; a window that times out passes with nothing built.

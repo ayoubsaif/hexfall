@@ -1,7 +1,6 @@
 // Rolling a 7: discard, move robber, steal (AGENTS.md §8, §13.7). Owner: flow agent.
 import type { Resource } from "../board.ts";
 import type { ActionOf, GameState, RobberOption, Seat } from "../state.ts";
-import { TOPOLOGY } from "../topology.ts";
 import {
   RESOURCES,
   assertActive,
@@ -15,6 +14,7 @@ import {
   payToBank,
   playerOf,
   randInt,
+  topo,
 } from "./common.ts";
 import { check } from "./errors.ts";
 
@@ -38,7 +38,7 @@ export function discardOwed(s: GameState, seat: Seat): number {
 export function robberOptions(s: GameState, seat: Seat): RobberOption[] {
   if (s.phase.kind !== "moveRobber" || s.turn.seat !== seat) return [];
   const out: RobberOption[] = [];
-  for (const h of TOPOLOGY.hexes) {
+  for (const h of topo(s).hexes) {
     if (h.id === s.robber) continue;
     out.push({ hex: h.id, victims: opponentsOnHex(s, h.id, seat) });
   }
@@ -70,7 +70,7 @@ export function moveRobber(s: GameState, a: ActionOf<"moveRobber">): void {
   assertPhase(s, "moveRobber");
   assertActive(s, a.seat);
   check(
-    Number.isInteger(a.hex) && a.hex >= 0 && a.hex < TOPOLOGY.hexes.length,
+    Number.isInteger(a.hex) && a.hex >= 0 && a.hex < topo(s).hexes.length,
     "illegal_robber_hex",
     `no hex ${String(a.hex)}`,
   );

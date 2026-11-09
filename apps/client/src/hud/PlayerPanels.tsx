@@ -3,7 +3,9 @@
 import { Bot } from "lucide-react";
 import { useTranslation } from "react-i18next";
 import { Badge } from "@/components/ui/badge.tsx";
+import { cn } from "@/lib/utils.ts";
 import { seatColor, seatColorName } from "../game/colors.ts";
+import { LARGE_BOARD_SEATS } from "../game/extension.ts";
 import { SeatAvatar } from "./Avatar.tsx";
 import { CountdownText } from "./actions/CountdownText.tsx";
 import { useCountdown } from "./countdown.ts";
@@ -53,6 +55,12 @@ function Medal({ label, children }: { label: string; children: React.ReactNode }
   );
 }
 
+/**
+ * Five or six seats share the row: on phones each panel keeps only the avatar, name and VP,
+ * and on wider screens the chips use the 2×2 grid (specs/compact-player-panels).
+ */
+export const CROWDED_SEATS = LARGE_BOARD_SEATS;
+
 /** Mount while a game view is present. */
 export function PlayerPanels() {
   const view = useView();
@@ -63,11 +71,21 @@ export function PlayerPanels() {
   const countdown = useCountdown();
   const { t } = useTranslation();
   if (!view) return null;
-  const active = view.phase.kind === "ended" ? null : view.turn.seat;
+  const active =
+    view.phase.kind === "ended"
+      ? null
+      : view.phase.kind === "specialBuild"
+        ? view.phase.current
+        : view.turn.seat;
+  const crowded = view.players.length >= CROWDED_SEATS;
   return (
     <ol
       aria-label={t("play.panels.players")}
-      className="m-0 flex w-full list-none flex-nowrap gap-2 p-0 max-sm:gap-1 short:gap-1"
+      data-crowded={crowded || undefined}
+      className={cn(
+        "m-0 flex w-full list-none flex-nowrap gap-2 p-0 max-sm:gap-1 short:gap-1",
+        crowded && "gap-1.5",
+      )}
     >
       {view.players.map((p) => {
         const c = seatColor(p.seat);
@@ -93,7 +111,10 @@ export function PlayerPanels() {
             data-active={isActive || undefined}
             data-own={own || undefined}
             aria-current={isActive ? "true" : undefined}
-            className="pointer-events-auto relative flex max-sm:grid max-sm:grid-cols-[auto_minmax(0,1fr)] max-sm:items-center max-sm:gap-y-0.5 short:grid short:grid-cols-[auto_minmax(0,1fr)] short:items-center short:gap-y-0.5 min-w-0 max-w-[260px] flex-1 basis-0 items-center gap-2 overflow-hidden player-card rounded-none border-2 border-leather frame [--corner-size:12px] paper py-1.5 pr-2 pl-3.5 max-sm:gap-1.5 max-sm:py-1 max-sm:pr-1 max-sm:pl-2.5 short:gap-1.5 short:py-1 short:pr-1 short:pl-2.5"
+            className={cn(
+              "pointer-events-auto relative flex max-sm:grid max-sm:grid-cols-[auto_minmax(0,1fr)] max-sm:items-center max-sm:gap-y-0.5 short:grid short:grid-cols-[auto_minmax(0,1fr)] short:items-center short:gap-y-0.5 min-w-0 max-w-[260px] flex-1 basis-0 items-center gap-2 overflow-hidden player-card rounded-none border-2 border-leather frame [--corner-size:12px] paper py-1.5 pr-2 pl-3.5 max-sm:gap-1.5 max-sm:py-1 max-sm:pr-1 max-sm:pl-2.5 short:gap-1.5 short:py-1 short:pr-1 short:pl-2.5",
+              crowded && "max-w-[220px] gap-1.5 pr-1.5 pl-3 max-sm:pr-0.5 max-sm:pl-2",
+            )}
           >
             <span
               aria-hidden="true"
@@ -101,7 +122,11 @@ export function PlayerPanels() {
               style={{ background: c.hex }}
             />
             <div className="relative shrink-0">
-              <SeatAvatar seat={p.seat} size="xl" className="max-sm:size-7 short:size-7" />
+              <SeatAvatar
+                seat={p.seat}
+                size="xl"
+                className={cn("max-sm:size-7 short:size-7", crowded && "size-10 max-sm:size-6")}
+              />
               <span className="sr-only">{seatColorName(p.seat, t)}</span>
               {(view.longestRoad === p.seat || view.largestArmy === p.seat) && (
                 <span className="absolute -right-1.5 -bottom-1.5 flex gap-0.5">
@@ -161,12 +186,25 @@ export function PlayerPanels() {
                   </Badge>
                 )}
               </div>
-              <dl className="m-0 mt-0.5 grid grid-cols-4 gap-x-2 max-sm:col-span-2 max-sm:mt-0 max-sm:grid-cols-2 max-sm:gap-x-1 max-sm:gap-y-0.5 short:col-span-2 short:mt-0 short:grid-cols-2 short:gap-x-1 short:gap-y-0.5">
+              <dl
+                className={cn(
+                  "m-0 mt-0.5 grid grid-cols-4 gap-x-2 max-sm:col-span-2 max-sm:mt-0 max-sm:grid-cols-2 max-sm:gap-x-1 max-sm:gap-y-0.5 short:col-span-2 short:mt-0 short:grid-cols-2 short:gap-x-1 short:gap-y-0.5",
+                  crowded && "grid-cols-2 gap-x-1 gap-y-0.5 max-sm:grid-cols-1",
+                )}
+              >
                 {STATS.map(({ stat, icon }) => {
                   const Icon = ICONS[icon];
                   const label = t(`play.panels.stat.${stat}`);
                   return (
-                    <div key={stat} title={label} className="flex min-w-0 items-center gap-1">
+                    <div
+                      key={stat}
+                      title={label}
+                      data-chip={stat}
+                      className={cn(
+                        "flex min-w-0 items-center gap-1",
+                        crowded && stat !== "vp" && "max-sm:hidden",
+                      )}
+                    >
                       <dt className="flex shrink-0">
                         <Icon className="size-6 shrink-0 max-sm:size-[18px] short:size-[18px]" />
                         <span className="sr-only">{label}</span>

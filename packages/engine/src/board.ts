@@ -1,6 +1,18 @@
-// Board values and the beginner / variable setups (specs/board-topology, AGENTS.md §4).
+// Board values and the beginner / variable setups (specs/board-topology, AGENTS.md §4),
+// plus the large 5–6 player board (specs/large-board).
 import { nextInt, shuffle, type RngState } from "./rng.ts";
-import { TOPOLOGY, hexAt, hexRing, type HexId } from "./topology.ts";
+import {
+  AXIAL_DIRECTIONS,
+  LARGE_TOPOLOGY,
+  STANDARD_TOPOLOGY,
+  hexAt,
+  hexRing,
+  type BoardLayout,
+  type HexId,
+  type Topology,
+} from "./topology.ts";
+
+export type { BoardLayout } from "./topology.ts";
 
 export type Terrain = "forest" | "pasture" | "fields" | "hills" | "mountains" | "desert";
 export type Resource = "brick" | "grain" | "lumber" | "ore" | "wool";
@@ -12,11 +24,13 @@ export interface BoardHex {
   readonly token: number | null;
 }
 
-/** Plain JSON. Everything derivable lives in TOPOLOGY. */
+/** Plain JSON. Everything derivable lives in the layout's topology (topologyOf). */
 export interface Board {
-  /** Index = HexId, length 19. */
+  /** Missing means "standard" (boards stored before the large board existed). */
+  readonly layout?: BoardLayout;
+  /** Index = HexId, length 19 (standard) or 30 (large). */
   readonly hexes: readonly BoardHex[];
-  /** Index = harbor slot, length 9. */
+  /** Index = harbor slot, length 9 (standard) or 11 (large). */
   readonly harbors: readonly HarborType[];
   readonly robber: HexId;
 }
@@ -63,7 +77,7 @@ export const LETTER_VALUES: readonly number[] = Object.freeze([
 ]);
 
 /**
- * Token placement order for start corner k (index into TOPOLOGY.cornerHexes):
+ * Token placement order for start corner k (index into STANDARD_TOPOLOGY.cornerHexes):
  * the 12 outer hexes counter-clockwise from the corner, then the 6 middle-ring
  * hexes starting with the one inward of the corner, then the center.
  */
@@ -129,6 +143,7 @@ const BEGINNER_HARBORS: readonly HarborType[] = [
 /** The fixed beginner board (AGENTS.md §4a). Uses no randomness; fresh object each call. */
 export function beginnerBoard(): Board {
   return {
+    layout: "standard",
     hexes: BEGINNER_HEXES.map(([terrain, token]) => ({ terrain, token })),
     harbors: BEGINNER_HARBORS.slice(),
     robber: BEGINNER_HEXES.findIndex(([t]) => t === "desert"),
@@ -142,9 +157,133 @@ export function beginnerBoard(): Board {
 export function createVariableBoard(rng: RngState): [Board, RngState] {
   const [terrains, s1] = shuffle(rng, TERRAIN_BAG);
   const [harbors, s2] = shuffle(s1, HARBOR_BAG);
-  const [corner, s3] = nextInt(s2, TOPOLOGY.cornerHexes.length);
+  const [corner, s3] = nextInt(s2, STANDARD_TOPOLOGY.cornerHexes.length);
   const tokens = placeTokens(terrains, tokenSpiral(corner));
   const board: Board = {
+    layout: "standard",
+    hexes: terrains.map((terrain, h) => ({ terrain, token: tokens[h] ?? null })),
+    harbors,
+    robber: terrains.indexOf("desert"),
+  };
+  return [board, s3];
+}
+
+// ---- Large board (5–6 players, specs/large-board). REPLAY CONTRACT as above.
+
+/** 6 forest, 6 pasture, 6 fields, 5 hills, 5 mountains, 2 deserts. */
+export const LARGE_TERRAIN_BAG: readonly Terrain[] = Object.freeze([
+  ...Array<Terrain>(6).fill("forest"),
+  ...Array<Terrain>(6).fill("pasture"),
+  ...Array<Terrain>(6).fill("fields"),
+  ...Array<Terrain>(5).fill("hills"),
+  ...Array<Terrain>(5).fill("mountains"),
+  ...Array<Terrain>(2).fill("desert"),
+]);
+
+/** 5 generic, then brick, grain, lumber, ore, wool, wool. */
+export const LARGE_HARBOR_BAG: readonly HarborType[] = Object.freeze([
+  "generic",
+  "generic",
+  "generic",
+  "generic",
+  "generic",
+  "brick",
+  "grain",
+  "lumber",
+  "ore",
+  "wool",
+  "wool",
+] as const);
+
+/** Two each of 2 and 12, three each of 3, 4, 5, 6, 8, 9, 10, 11. */
+export const LARGE_TOKEN_BAG: readonly number[] = Object.freeze([
+  2, 2, 3, 3, 3, 4, 4, 4, 5, 5, 5, 6, 6, 6, 8, 8, 8, 9, 9, 9, 10, 10, 10, 11, 11, 11, 12, 12,
+]);
+
+/** Token shuffles tried before the deterministic fallback separates the red numbers. */
+export const MAX_TOKEN_SHUFFLES = 1000;
+
+const isRed = (t: number | null): boolean => t === 6 || t === 8;
+
+function neighborHexes(topo: Topology, h: HexId): HexId[] {
+  const info = topo.hexes[h];
+  if (!info) return [];
+  const out: HexId[] = [];
+  for (const [dq, dr] of AXIAL_DIRECTIONS) {
+    const n = hexAt(info.q + dq, info.r + dr, topo);
+    if (n !== undefined) out.push(n);
+  }
+  return out;
+}
+
+/** True if no two hexes with a 6 or 8 are adjacent. */
+export function redNumbersApart(tokens: readonly (number | null)[], topo: Topology): boolean {
+  for (let h = 0; h < tokens.length; h++) {
+    if (!isRed(tokens[h] ?? null)) continue;
+    if (neighborHexes(topo, h).some((n) => isRed(tokens[n] ?? null))) return false;
+  }
+  return true;
+}
+
+/**
+ * Deterministic fallback: moves red tokens that touch another red onto the first
+ * non-red token hex (by id) whose neighbors hold no red, swapping the tokens.
+ * Leaves the desert(s) alone. Returns a new array.
+ */
+export function separateRedNumbers(
+  tokens: readonly (number | null)[],
+  topo: Topology,
+): (number | null)[] {
+  const out = [...tokens];
+  const redNeighbor = (h: HexId, ignore: HexId): boolean =>
+    neighborHexes(topo, h).some((n) => n !== ignore && isRed(out[n] ?? null));
+  for (let guard = 0; guard < out.length * out.length; guard++) {
+    const bad = out.findIndex((t, h) => isRed(t) && redNeighbor(h, -1));
+    if (bad < 0) break;
+    const target = out.findIndex(
+      (t, h) => t !== null && !isRed(t) && h !== bad && !redNeighbor(h, bad),
+    );
+    if (target < 0) break;
+    const tmp = out[bad] ?? null;
+    out[bad] = out[target] ?? null;
+    out[target] = tmp;
+  }
+  return out;
+}
+
+/**
+ * Shuffles the 28 tokens onto the non-desert hexes, reshuffling until no 6/8 touch
+ * (at most MAX_TOKEN_SHUFFLES tries, then separateRedNumbers). Returns the tokens
+ * by hex id, the next RNG state and the number of shuffles used.
+ */
+export function placeLargeTokens(
+  rng: RngState,
+  terrains: readonly Terrain[],
+): [(number | null)[], RngState, number] {
+  const slots = terrains.flatMap((t, h) => (t === "desert" ? [] : [h]));
+  let state = rng;
+  let tokens: (number | null)[] = terrains.map(() => null);
+  for (let attempt = 1; attempt <= MAX_TOKEN_SHUFFLES; attempt++) {
+    const [bag, next] = shuffle(state, LARGE_TOKEN_BAG);
+    state = next;
+    tokens = terrains.map(() => null);
+    slots.forEach((h, i) => (tokens[h] = bag[i] ?? null));
+    if (redNumbersApart(tokens, LARGE_TOPOLOGY)) return [tokens, state, attempt];
+  }
+  return [separateRedNumbers(tokens, LARGE_TOPOLOGY), state, MAX_TOKEN_SHUFFLES];
+}
+
+/**
+ * A large board (specs/large-board). Draw order (replay contract): shuffle the
+ * terrain bag, then the harbor bag, then the token bag (repeated until no 6/8
+ * touch). The robber starts on the desert with the lower hex id.
+ */
+export function createLargeBoard(rng: RngState): [Board, RngState] {
+  const [terrains, s1] = shuffle(rng, LARGE_TERRAIN_BAG);
+  const [harbors, s2] = shuffle(s1, LARGE_HARBOR_BAG);
+  const [tokens, s3] = placeLargeTokens(s2, terrains);
+  const board: Board = {
+    layout: "large",
     hexes: terrains.map((terrain, h) => ({ terrain, token: tokens[h] ?? null })),
     harbors,
     robber: terrains.indexOf("desert"),

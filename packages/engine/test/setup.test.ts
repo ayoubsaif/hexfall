@@ -5,7 +5,7 @@ import { cardTotal, publicVp } from "../src/rules/common.ts";
 import { canRollForOrder, legalSetupRoads, legalSetupSettlements } from "../src/rules/setup.ts";
 import type { GameConfig, GameState, Seat } from "../src/state.ts";
 import { failCode, makeState, step } from "../src/testing.ts";
-import { TOPOLOGY } from "../src/topology.ts";
+import { STANDARD_TOPOLOGY } from "../src/topology.ts";
 
 function setupPhase(s: GameState) {
   if (s.phase.kind !== "setup") throw new Error(`not in setup: ${s.phase.kind}`);
@@ -94,7 +94,7 @@ describe("setup snake order", () => {
     for (let seat = 0; seat < 4; seat++) {
       const second = spots[order.lastIndexOf(seat)]!;
       const expected: Record<string, number> = {};
-      for (const h of TOPOLOGY.vertices[second]!.hexes) {
+      for (const h of STANDARD_TOPOLOGY.vertices[second]!.hexes) {
         const r = TERRAIN_RESOURCE[s.board.hexes[h]!.terrain];
         if (r) expected[r] = (expected[r] ?? 0) + 1;
       }
@@ -123,19 +123,21 @@ describe("setup snake order", () => {
     // Round 2, seat 2 places on a free desert corner.
     const seat = s.turn.seat;
     expect(seat).toBe(2);
-    const v = TOPOLOGY.hexes[desert]!.vertices.find((c) =>
+    const v = STANDARD_TOPOLOGY.hexes[desert]!.vertices.find((c) =>
       legalSetupSettlements(s, seat).includes(c),
     );
     expect(v).toBeDefined();
     s = step(s, { type: "placeSettlement", seat, vertex: v! });
     const ev = s.log.at(-1);
     const expected: Record<string, number> = {};
-    for (const h of TOPOLOGY.vertices[v!]!.hexes) {
+    for (const h of STANDARD_TOPOLOGY.vertices[v!]!.hexes) {
       const r = TERRAIN_RESOURCE[s.board.hexes[h]!.terrain];
       if (r) expected[r] = (expected[r] ?? 0) + 1;
     }
     expect(ev).toEqual({ type: "startingResources", seat, resources: expected });
-    expect(cardTotal(s.players[seat]!.resources)).toBe(TOPOLOGY.vertices[v!]!.hexes.length - 1);
+    expect(cardTotal(s.players[seat]!.resources)).toBe(
+      STANDARD_TOPOLOGY.vertices[v!]!.hexes.length - 1,
+    );
   });
 });
 
@@ -144,9 +146,9 @@ describe("setup placement rules", () => {
     let s = createGame({ seed: 1, playerCount: 4, mode: "beginner", startingPlayer: 0 });
     const v = legalSetupSettlements(s, 0)[0]!;
     s = step(s, { type: "placeSettlement", seat: 0, vertex: v });
-    const touching = TOPOLOGY.vertices[v]!.edges;
+    const touching = STANDARD_TOPOLOGY.vertices[v]!.edges;
     expect(legalSetupRoads(s, 0)).toEqual([...touching].sort((a, b) => a - b));
-    const far = TOPOLOGY.edges.find((e) => !e.vertices.includes(v))!.id;
+    const far = STANDARD_TOPOLOGY.edges.find((e) => !e.vertices.includes(v))!.id;
     expect(failCode(s, { type: "placeRoad", seat: 0, edge: far })).toBe("illegal_placement");
     expect(failCode(s, { type: "placeRoad", seat: 0, edge: 999 })).toBe("illegal_placement");
     // Settlement step is over until the road is placed.
@@ -166,13 +168,15 @@ describe("setup placement rules", () => {
     expect(s.turn.seat).toBe(2);
     const second = legalSetupSettlements(s, 2).at(-1)!;
     s = step(s, { type: "placeSettlement", seat: 2, vertex: second });
-    const freeNearFirst = TOPOLOGY.vertices[first]!.edges.find((e) => s.edges[e] === null)!;
+    const freeNearFirst = STANDARD_TOPOLOGY.vertices[first]!.edges.find(
+      (e) => s.edges[e] === null,
+    )!;
     expect(failCode(s, { type: "placeRoad", seat: 2, edge: freeNearFirst })).toBe(
       "illegal_placement",
     );
-    expect(legalSetupRoads(s, 2).every((e) => TOPOLOGY.edges[e]!.vertices.includes(second))).toBe(
-      true,
-    );
+    expect(
+      legalSetupRoads(s, 2).every((e) => STANDARD_TOPOLOGY.edges[e]!.vertices.includes(second)),
+    ).toBe(true);
   });
 
   it("enforces the Distance Rule in setup, against own and others' settlements", () => {
@@ -180,7 +184,7 @@ describe("setup placement rules", () => {
     const v = 20;
     s = step(s, { type: "placeSettlement", seat: 0, vertex: v });
     s = step(s, { type: "placeRoad", seat: 0, edge: legalSetupRoads(s, 0)[0]! });
-    const neighbor = TOPOLOGY.vertices[v]!.neighbors[0]!;
+    const neighbor = STANDARD_TOPOLOGY.vertices[v]!.neighbors[0]!;
     expect(legalSetupSettlements(s, 1)).not.toContain(neighbor);
     expect(legalSetupSettlements(s, 1)).not.toContain(v);
     expect(failCode(s, { type: "placeSettlement", seat: 1, vertex: neighbor })).toBe(

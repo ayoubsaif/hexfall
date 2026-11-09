@@ -1,6 +1,6 @@
 // Durable room storage contract (design.md decisions 3-4). Redis in production,
 // an in-memory fake in tests. Every write refreshes the room's TTL.
-import type { Action, BoardMode, GameState, Seat } from "@hexfall/engine";
+import type { Action, BoardMode, GameState, PlayerCount, Seat } from "@hexfall/engine";
 import type { BotLevel, EarlyResult, RoomStatus, TurnTimerPreset } from "@hexfall/protocol";
 
 const DAY_MS = 24 * 60 * 60 * 1000;
@@ -35,8 +35,10 @@ export interface StoredSeat {
 export interface GameConfigRecord {
   seed: string;
   mode: BoardMode;
-  playerCount: 3 | 4;
+  playerCount: PlayerCount;
   startingPlayer?: Seat;
+  /** Points needed to win. Absent (games stored before the option) = 10. */
+  victoryTarget?: number;
 }
 
 export interface RoomMeta {
