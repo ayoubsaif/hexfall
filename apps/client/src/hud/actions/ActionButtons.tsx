@@ -3,7 +3,7 @@
 // Build road / settlement / city, Buy development card, Trade with bank, Trade with players
 // (specs/player-trade "Trade with players button") and End turn, as round
 // icon buttons with no panel. Shown only to the active player after setup.
-import type { Resource, ResourceBundle, ResourceCounts } from "@hexfall/engine";
+import type { Resource, ResourceBundle } from "@hexfall/engine";
 import { COSTS, RESOURCES } from "@hexfall/engine/geometry";
 import type { LucideIcon } from "lucide-react";
 import { useEffect } from "react";
@@ -26,6 +26,8 @@ import { countdownText, useCountdown } from "../countdown.ts";
 import { useInFlight, useLegal, useOwn, useView } from "../state.ts";
 import type { HotkeyId } from "../../hotkeys/registry.ts";
 import { gameIcon } from "../GameIcon.tsx";
+import { blockedReason, blockerFor } from "../../tutorial/blockers.ts";
+import { TopicCard } from "../tutorial/TutorialHelp.tsx";
 import { Fab, type FabRing } from "./Fab.tsx";
 
 /** "1 Brick, 1 Lumber". */
@@ -51,17 +53,8 @@ export function CostCards({ cost }: { cost: ResourceBundle }) {
   );
 }
 
-/** Why a paid build is unavailable, as a key under play.actions.blocked (null: it is available). */
-export function blockedReason(
-  kind: BuildChoice,
-  opts: { rolled: boolean; left: number | undefined; hand: ResourceCounts | undefined },
-  cost: ResourceBundle,
-): "rollFirst" | "pieces" | "cards" | BuildChoice | null {
-  if (!opts.rolled) return "rollFirst";
-  if (opts.left !== undefined && opts.left <= 0) return "pieces";
-  if (opts.hand && RESOURCES.some((r) => (opts.hand?.[r] ?? 0) < (cost[r] ?? 0))) return "cards";
-  return kind; // cards and pieces are fine, so no legal spot is left
-}
+// Why a paid build is unavailable: shared with the tutorial helpers (tutorial/blockers.ts).
+export { blockedReason };
 
 /** Tooltip body for a build or buy button: the action, its cost as cards and, when it is off, why. */
 function CostTip({
@@ -145,13 +138,14 @@ export function ActionButtons() {
   if (!view || !showBuildControls(view, view.viewer)) return null;
   const c = controlsOf(view, legal, inFlight);
   const viewer = view.viewer!;
+  // The viewer's Special Building Phase window: builds and buying only, then "Done building".
+  const window = view.phase.kind === "specialBuild";
 
   // The End turn ring: the viewer's own main turn after the roll.
   const ring: FabRing | null =
     countdown &&
     countdown.kind === "action" &&
-    view.phase.kind === "turn" &&
-    view.turn.rolled &&
+    (window || (view.phase.kind === "turn" && view.turn.rolled)) &&
     countdown.seats.includes(viewer)
       ? {
           fraction: countdown.fraction,
@@ -175,10 +169,10 @@ export function ActionButtons() {
           const label = t(`play.actions.${b.label}`);
           const off = !c[b.legal] && !active;
           const why =
-            off && view.phase.kind === "turn"
+            off && (view.phase.kind === "turn" || window)
               ? blockedReason(
                   b.kind,
-                  { rolled: view.turn.rolled, left, hand: own?.resources },
+                  { rolled: window || view.turn.rolled, left, hand: own?.resources },
                   b.cost,
                 )
               : null;
@@ -189,6 +183,9 @@ export function ActionButtons() {
               icon={b.icon}
               label={label}
               tooltip={<CostTip label={label} cost={b.cost} reason={reason} />}
+              help={
+                <TopicCard topic={b.kind} blocker={off ? blockerFor(b.kind, view, legal) : null} />
+              }
               hotkey={b.hotkey}
               badge={left}
               description={[
@@ -211,39 +208,60 @@ export function ActionButtons() {
           label={t("play.actions.buyDevCard")}
           hotkey="buyDevCard"
           tooltip={<CostTip label={t("play.actions.buyDevCard")} cost={COSTS.devCard} />}
+          help={<TopicCard topic="devBuy" blocker={blockerFor("devBuy", view, legal)} />}
           description={t("play.actions.costs", { cost: costText(COSTS.devCard, t) })}
           disabled={!c.buyDevCard}
           onClick={() => act({ type: "buyDevCard" })}
         />
-        <Fab
-          icon={gameIcon("bank")}
-          label={t("play.actions.tradeBank")}
-          hotkey="tradeBank"
-          disabled={!c.maritime}
-          onClick={() => openDialog("maritime")}
-        />
-        <Fab
-          icon={gameIcon("trade")}
-          label={t("play.actions.tradePlayers")}
-          hotkey="tradePlayers"
-          disabled={!c.proposeTrade}
-          onClick={() =>
-            openTrade({
-              give: {},
-              get: {},
-              to: view.players.map((_, i) => i).filter((s) => s !== viewer),
-            })
-          }
-        />
-        <Fab
-          icon={gameIcon("endturn")}
-          label={t("play.actions.endTurn")}
-          hotkey="endTurn"
-          primary
-          ring={ring}
-          disabled={!c.endTurn}
-          onClick={() => act({ type: "endTurn" })}
-        />
+        {!window && (
+          <>
+            <Fab
+              icon={gameIcon("bank")}
+              label={t("play.actions.tradeBank")}
+              hotkey="tradeBank"
+              help={<TopicCard topic="maritime" blocker={blockerFor("maritime", view, legal)} />}
+              disabled={!c.maritime}
+              onClick={() => openDialog("maritime")}
+            />
+            <Fab
+              icon={gameIcon("trade")}
+              label={t("play.actions.tradePlayers")}
+              hotkey="tradePlayers"
+              help={<TopicCard topic="trade" blocker={blockerFor("trade", view, legal)} />}
+              disabled={!c.proposeTrade}
+              onClick={() =>
+                openTrade({
+                  give: {},
+                  get: {},
+                  to: view.players.map((_, i) => i).filter((s) => s !== viewer),
+                })
+              }
+            />
+          </>
+        )}
+        {window ? (
+          <Fab
+            icon={gameIcon("endturn")}
+            label={t("play.actions.passSpecialBuild")}
+            hotkey="endTurn"
+            primary
+            ring={ring}
+            data-testid="pass-special-build"
+            disabled={!c.passSpecialBuild}
+            onClick={() => act({ type: "passSpecialBuild" })}
+          />
+        ) : (
+          <Fab
+            icon={gameIcon("endturn")}
+            label={t("play.actions.endTurn")}
+            hotkey="endTurn"
+            help={<TopicCard topic="endTurn" blocker={blockerFor("endTurn", view, legal)} />}
+            primary
+            ring={ring}
+            disabled={!c.endTurn}
+            onClick={() => act({ type: "endTurn" })}
+          />
+        )}
       </div>
     </TooltipProvider>
   );

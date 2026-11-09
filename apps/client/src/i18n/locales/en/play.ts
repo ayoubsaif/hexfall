@@ -19,6 +19,8 @@ export const play = {
     largestArmy: "Largest Army",
     hiddenTitle: "Only you can see this",
     hiddenVp: "{{vp}} VP with hidden cards",
+    goal: "Goal: {{count}} VP",
+    goalHint: "The first player to reach {{count}} victory points on their own turn wins",
   },
   pill: {
     pickSpot: "Pick a spot on the board.",
@@ -38,6 +40,7 @@ export const play = {
     tradeBank: "Trade with bank",
     tradePlayers: "Trade with players",
     endTurn: "End turn",
+    passSpecialBuild: "Done building",
     costs: "Costs {{cost}}",
     costItem: "{{count}} {{resource}}",
     blocked: {

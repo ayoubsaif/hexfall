@@ -4,10 +4,12 @@
 // stroke-dashoffset is set per tick and it never has a CSS transition or animation.
 import type { LucideIcon } from "lucide-react";
 import { type ComponentProps, type ReactNode, useId } from "react";
+import { HoverCard } from "@/components/ui/hover-card.tsx";
 import { Tooltip, TooltipContent, TooltipTrigger } from "@/components/ui/tooltip.tsx";
 import { Kbd } from "@/components/ui/kbd.tsx";
 import { cn } from "@/lib/utils.ts";
 import { type HotkeyId, hotkeyFor, hotkeyLabel } from "../../hotkeys/registry.ts";
+import { useTutorial } from "../../store/tutorial.ts";
 
 export interface FabRing {
   /** Time left as a share of the wait, 0–1. */
@@ -42,6 +44,11 @@ export type FabProps = Omit<ComponentProps<"button">, "children" | "aria-label">
   primary?: boolean;
   /** Keyboard shortcut of this action: shown in the tooltip and exposed as aria-keyshortcuts. */
   hotkey?: HotkeyId;
+  /**
+   * Tutorial rule helper (openspec tutorial-mode-and-rules-guide, design decision 3): while
+   * tutorial mode is on it shows in a hover card instead of the plain tooltip.
+   */
+  help?: ReactNode;
 };
 
 export function Fab({
@@ -53,91 +60,96 @@ export function Fab({
   ring = null,
   primary = false,
   hotkey,
+  help,
   className,
   ...props
 }: FabProps) {
   const id = useId();
+  const tutorial = useTutorial((s) => s.enabled);
   const desc = [description, ring?.text].filter(Boolean).join(". ");
+  // The wrapper is the trigger so a disabled button still shows its tooltip on hover.
+  const trigger = (
+    <span className="pointer-events-auto relative inline-flex shrink-0" data-fab>
+      <button
+        type="button"
+        aria-label={label}
+        aria-describedby={desc ? id : undefined}
+        aria-keyshortcuts={
+          hotkey
+            ? hotkeyFor(hotkey)
+                .keys.map((k) => (k === " " ? "Space" : k))
+                .join(" ")
+            : undefined
+        }
+        data-primary={primary || undefined}
+        className={cn(
+          "btn-light relative inline-flex cursor-pointer items-center justify-center shadow-lg shadow-black/30 outline-none",
+          "transition-[translate,background-color,opacity] duration-150 focus-visible:ring-2 focus-visible:ring-ring",
+          "hover:-translate-y-0.5 disabled:pointer-events-none disabled:cursor-default disabled:opacity-50",
+          primary
+            ? "size-14 hud-leather-round max-sm:size-12 short:size-12"
+            : "size-12 hud-leather-round max-sm:size-11 short:size-11",
+          "aria-pressed:bg-primary aria-pressed:text-primary-foreground",
+          className,
+        )}
+        {...props}
+      >
+        <Icon aria-hidden="true" strokeWidth={2} className={primary ? "size-9" : "size-8"} />
+        {ring && (
+          <svg
+            aria-hidden="true"
+            viewBox="0 0 100 100"
+            className={cn(
+              "pointer-events-none absolute -inset-1 size-[calc(100%+0.5rem)] -rotate-90",
+              ring.warning ? "text-bad" : "text-hud-fg",
+            )}
+            data-warning={ring.warning || undefined}
+          >
+            <circle
+              cx="50"
+              cy="50"
+              r={R}
+              fill="none"
+              stroke="currentColor"
+              strokeOpacity={0.2}
+              strokeWidth={5}
+            />
+            <circle
+              data-fab-ring
+              cx="50"
+              cy="50"
+              r={R}
+              fill="none"
+              stroke="currentColor"
+              strokeWidth={5}
+              strokeLinecap="round"
+              strokeDasharray={RING_CIRCUMFERENCE}
+              strokeDashoffset={ringOffset(ring.fraction)}
+            />
+          </svg>
+        )}
+      </button>
+      {badge !== undefined && badge !== null && (
+        <span
+          aria-hidden="true"
+          data-fab-badge
+          className="pointer-events-none absolute -top-1 -right-1 min-w-[18px] rounded-full bg-hud-solid px-1 text-center text-[11px] leading-[18px] font-semibold text-hud-fg tabular-nums shadow shadow-black/40"
+        >
+          {badge}
+        </span>
+      )}
+      {desc && (
+        <span id={id} className="sr-only">
+          {desc}
+        </span>
+      )}
+    </span>
+  );
+  // One popup at a time: the rule helper replaces the tooltip while tutorial mode is on.
+  if (help && tutorial) return <HoverCard content={help}>{trigger}</HoverCard>;
   return (
     <Tooltip>
-      {/* The wrapper is the trigger so a disabled button still shows its tooltip on hover. */}
-      <TooltipTrigger asChild>
-        <span className="pointer-events-auto relative inline-flex shrink-0" data-fab>
-          <button
-            type="button"
-            aria-label={label}
-            aria-describedby={desc ? id : undefined}
-            aria-keyshortcuts={
-              hotkey
-                ? hotkeyFor(hotkey)
-                    .keys.map((k) => (k === " " ? "Space" : k))
-                    .join(" ")
-                : undefined
-            }
-            data-primary={primary || undefined}
-            className={cn(
-              "relative inline-flex cursor-pointer items-center justify-center shadow-lg shadow-black/30 outline-none",
-              "transition-[translate,background-color,opacity] duration-150 focus-visible:ring-2 focus-visible:ring-ring",
-              "hover:-translate-y-0.5 disabled:pointer-events-none disabled:cursor-default disabled:opacity-50",
-              primary
-                ? "size-14 hud-leather-round max-sm:size-12 short:size-12"
-                : "size-12 hud-leather-round max-sm:size-11 short:size-11",
-              "aria-pressed:bg-primary aria-pressed:text-primary-foreground",
-              className,
-            )}
-            {...props}
-          >
-            <Icon aria-hidden="true" strokeWidth={2} className={primary ? "size-9" : "size-8"} />
-            {ring && (
-              <svg
-                aria-hidden="true"
-                viewBox="0 0 100 100"
-                className={cn(
-                  "pointer-events-none absolute -inset-1 size-[calc(100%+0.5rem)] -rotate-90",
-                  ring.warning ? "text-bad" : "text-hud-fg",
-                )}
-                data-warning={ring.warning || undefined}
-              >
-                <circle
-                  cx="50"
-                  cy="50"
-                  r={R}
-                  fill="none"
-                  stroke="currentColor"
-                  strokeOpacity={0.2}
-                  strokeWidth={5}
-                />
-                <circle
-                  data-fab-ring
-                  cx="50"
-                  cy="50"
-                  r={R}
-                  fill="none"
-                  stroke="currentColor"
-                  strokeWidth={5}
-                  strokeLinecap="round"
-                  strokeDasharray={RING_CIRCUMFERENCE}
-                  strokeDashoffset={ringOffset(ring.fraction)}
-                />
-              </svg>
-            )}
-          </button>
-          {badge !== undefined && badge !== null && (
-            <span
-              aria-hidden="true"
-              data-fab-badge
-              className="pointer-events-none absolute -top-1 -right-1 min-w-[18px] rounded-full bg-hud-solid px-1 text-center text-[11px] leading-[18px] font-semibold text-hud-fg tabular-nums shadow shadow-black/40"
-            >
-              {badge}
-            </span>
-          )}
-          {desc && (
-            <span id={id} className="sr-only">
-              {desc}
-            </span>
-          )}
-        </span>
-      </TooltipTrigger>
+      <TooltipTrigger asChild>{trigger}</TooltipTrigger>
       <TooltipContent>
         {hotkey ? (
           <span className="flex items-center gap-2">

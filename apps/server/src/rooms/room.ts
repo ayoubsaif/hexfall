@@ -5,10 +5,14 @@ import {
   applyAction,
   createGame,
   legalActions,
+  MAX_VICTORY_TARGET,
+  MIN_VICTORY_TARGET,
   playerView,
+  rulesProfile,
   type Action,
   type GameConfig,
   type GameState,
+  type PlayerCount,
 } from "@hexfall/engine";
 import { BotRng, chooseAction, toBotLevel } from "@hexfall/bots";
 import { chooseAvatar, resolveAvatars } from "./avatars.ts";
@@ -51,7 +55,7 @@ import type { Conn, Outgoing, Request, ServiceResult, StartOptions } from "./ser
 import { earlyResult } from "./result.ts";
 import { deadlineOf, nextAnchor, timerInfo, waitingSeats } from "./timer.ts";
 
-export const MAX_SEATS = 4;
+export const MAX_SEATS = 6;
 export const MIN_PLAYERS = 3;
 /** Delay before retrying a timeout whose store write failed. */
 export const TIMEOUT_RETRY_MS = 5_000;
@@ -115,6 +119,7 @@ export function gameConfig(rec: GameConfigRecord): GameConfig {
     mode: rec.mode,
     playerCount: rec.playerCount,
     ...(rec.startingPlayer !== undefined ? { startingPlayer: rec.startingPlayer } : {}),
+    ...(rec.victoryTarget !== undefined ? { victoryTarget: rec.victoryTarget } : {}),
   };
 }
 
@@ -676,11 +681,24 @@ export class Room {
       if (sp !== undefined && (!Number.isInteger(sp) || sp < 0 || sp >= count)) {
         return fail("bad_frame", `startingPlayer must be a seat below ${count}`);
       }
+      const vt = opts.victoryTarget;
+      if (
+        vt !== undefined &&
+        (!Number.isInteger(vt) || vt < MIN_VICTORY_TARGET || vt > MAX_VICTORY_TARGET)
+      ) {
+        return fail(
+          "bad_frame",
+          `victoryTarget must be ${MIN_VICTORY_TARGET} to ${MAX_VICTORY_TARGET}`,
+        );
+      }
+      const playerCount = count as PlayerCount;
       const config: GameConfigRecord = {
         seed: generateSeed(),
-        mode: opts.mode,
-        playerCount: count as 3 | 4,
+        // The large board (5–6 players) has no beginner layout: play it as variable.
+        mode: rulesProfile(playerCount).layout === "large" ? "variable" : opts.mode,
+        playerCount,
         ...(sp !== undefined ? { startingPlayer: sp } : {}),
+        ...(vt !== undefined ? { victoryTarget: vt } : {}),
       };
       const state = createGame(gameConfig(config));
       const startedAt = this.deps.now();

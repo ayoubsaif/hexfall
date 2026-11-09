@@ -6,6 +6,8 @@ export type ViewPreset = "free" | "top" | "diagonal";
 
 /** Zoom is shown in percent of the fitted view: 100 % = the whole island fits the screen. */
 export const ZOOM_MIN = 85;
+/** Zoom the board starts at and the view presets return to (a bit closer than the full fit). */
+export const DEFAULT_ZOOM = 115;
 export const ZOOM_MAX = 222; // camera at 0.45 x the fit distance (Scene minDistance)
 
 export function clampZoom(percent: number): number {
@@ -38,8 +40,8 @@ export const useViewStore = create<ViewState>()(() => ({
   softTiles: readSoft(),
   preset: "free",
   nonce: 0,
-  zoom: 100,
-  zoomRequest: 100,
+  zoom: DEFAULT_ZOOM,
+  zoomRequest: DEFAULT_ZOOM,
   zoomNonce: 0,
 }));
 

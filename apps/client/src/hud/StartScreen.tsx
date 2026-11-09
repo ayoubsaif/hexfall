@@ -5,7 +5,13 @@ import { useTranslation } from "react-i18next";
 import { Button } from "@/components/ui/button.tsx";
 import type { BotLevel } from "@hexfall/protocol";
 import { ChoiceGroup } from "@/components/ui/choice-group.tsx";
-import { createRoom, joinRoom, playSolo } from "../net/actions.ts";
+import {
+  createRoom,
+  joinRoom,
+  playSolo,
+  SOLO_OPPONENTS,
+  type SoloOpponents,
+} from "../net/actions.ts";
 import { LEVEL_OPTIONS } from "./botLevels.ts";
 import { SEAT_LOST_NOTICE } from "../net/session.ts";
 import { useConnectionStore } from "../store/connection.ts";
@@ -23,8 +29,7 @@ export const panelClass =
   "pointer-events-auto absolute top-1/2 left-1/2 flex max-h-[calc(100%-112px)] w-[min(440px,calc(100%-32px))] -translate-x-1/2 -translate-y-1/2 flex-col overflow-hidden frame frame-brass frame-corners paper rounded-none text-sm";
 /** The scrolling body inside the fixed panel box (keeps the corner plates on the border). */
 export const panelBodyClass = "flex min-h-0 flex-1 flex-col gap-1.5 overflow-auto p-7";
-export const inputClass =
-  "hud-field min-h-9 w-full min-w-0 px-2 py-1.5 max-sm:min-h-10";
+export const inputClass = "hud-field min-h-9 w-full min-w-0 px-2 py-1.5 max-sm:min-h-10";
 export const fieldClass = "my-1.5 flex flex-col gap-1";
 export const hintClass = "my-1 text-muted-foreground data-[bad]:text-bad";
 export const errorClass = "my-1.5 text-bad";
@@ -49,7 +54,7 @@ export function StartScreen({
   const [name, setName] = useState("");
   const [code, setCode] = useState(prefill ?? "");
   const avatar = usePrefsStore((s) => s.avatar) ?? AVATAR_IDS[0];
-  const [opponents, setOpponents] = useState<2 | 3>(2);
+  const [opponents, setOpponents] = useState<SoloOpponents>(2);
   const [level, setLevel] = useState<BotLevel>("normal");
   // An invite code can arrive after mount (read from the address by the session).
   useEffect(() => {
@@ -124,7 +129,7 @@ export function StartScreen({
               <ChoiceGroup
                 data-testid="solo-opponents"
                 label={t("session.start.soloOpponents")}
-                options={([2, 3] as const).map((n) => ({
+                options={SOLO_OPPONENTS.map((n) => ({
                   value: n,
                   label: t("session.start.soloOpponentsOption", { count: n }),
                 }))}
@@ -132,6 +137,11 @@ export function StartScreen({
                 onChange={setOpponents}
               />
             </div>
+            {opponents >= 4 && (
+              <p className={hintClass} data-testid="solo-large-board">
+                {t("session.start.soloLargeBoard")}
+              </p>
+            )}
             <div className={fieldClass}>
               <span>{t("session.start.soloLevel")}</span>
               <ChoiceGroup

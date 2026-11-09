@@ -18,10 +18,16 @@ export type PlayableDevCard = Exclude<DevCard, "victoryPoint">;
 
 export type BoardMode = "beginner" | "variable";
 
+export type PlayerCount = 3 | 4 | 5 | 6;
+
 export interface GameConfig {
   readonly seed: RngSeed;
-  readonly playerCount: 3 | 4;
+  /** 3–4 play the standard board; 5–6 the large board with the Special Building Phase. */
+  readonly playerCount: PlayerCount;
+  /** 5–6 players only support "variable". */
   readonly mode: BoardMode;
+  /** VP needed to win, 8–15. Default 10. */
+  readonly victoryTarget?: number | undefined;
   /** If given, setup starts with this seat; otherwise players roll for it. */
   readonly startingPlayer?: Seat;
 }
@@ -74,6 +80,12 @@ export type Phase =
   | { kind: "moveRobber"; source: "seven" | "knight" }
   /** Road Building: `remaining` free roads still to place. */
   | { kind: "roadBuilding"; remaining: number }
+  /**
+   * Special Building Phase (5–6 players): after `afterTurnOf` ended their turn,
+   * `current` may build and buy, then pass; `queue` holds the seats still to come
+   * (clockwise). turn.seat stays `afterTurnOf` until the next turn starts.
+   */
+  | { kind: "specialBuild"; current: Seat; queue: Seat[]; afterTurnOf: Seat }
   | { kind: "ended" };
 
 export type PhaseKind = Phase["kind"];
@@ -104,11 +116,15 @@ export interface GameState {
   rng: RngState;
   playerCount: number;
   mode: BoardMode;
+  /** VP needed to win (8–15). Read through victoryTargetOf (states stored before it existed lack it). */
+  victoryTarget: number;
+  /** Cards of each resource the game started with in the bank (19, or 24 with 5–6 players). */
+  bankPerResource: number;
   board: Board;
   robber: HexId;
-  /** Index = VertexId (54). */
+  /** Index = VertexId of the board's topology (54 standard, 80 large). */
   vertices: (Building | null)[];
-  /** Index = EdgeId (72): road owner. */
+  /** Index = EdgeId of the board's topology (72 standard, 109 large): road owner. */
   edges: (Seat | null)[];
   bank: ResourceCounts;
   /** Face-down deck; the top card is the last element. */
@@ -154,6 +170,8 @@ export type Action =
   /** Gives `count × rate` of `give` for `count` of `get`. */
   | { type: "maritimeTrade"; seat: Seat; give: Resource; get: Resource; count: number }
   | { type: "endTurn"; seat: Seat }
+  /** Closes the seat's Special Building Phase window. */
+  | { type: "passSpecialBuild"; seat: Seat }
   /**
    * System-only (turn timer): resolves whatever the game is waiting for, with the state RNG.
    * Never sent by clients and never listed in legal moves.
@@ -166,7 +184,7 @@ export type ActionOf<T extends ActionType> = Extract<Action, { type: T }>;
 // ---- Events (the log)
 
 export type GameEvent =
-  | { type: "gameCreated"; playerCount: number; mode: BoardMode }
+  | { type: "gameCreated"; playerCount: number; mode: BoardMode; victoryTarget?: number }
   | { type: "orderRolled"; seat: Seat; dice: [number, number] }
   | { type: "orderTied"; seats: Seat[] }
   /** The turn timer ran out; the events that follow are the moves made for `seats`. */
@@ -219,6 +237,10 @@ export type GameEvent =
   | { type: "largestArmy"; from: Seat | null; to: Seat; knights: number }
   | { type: "vpRevealed"; seat: Seat; count: number }
   | { type: "turnEnded"; seat: Seat }
+  /** A Special Building Phase window opened for `seat`. */
+  | { type: "specialBuildOpened"; seat: Seat }
+  /** `seat` closed their window (by passing, or by the turn timer). */
+  | { type: "specialBuildPassed"; seat: Seat }
   | { type: "turnStarted"; seat: Seat; number: number }
   | { type: "gameWon"; seat: Seat; vp: number };
 
@@ -258,6 +280,8 @@ export interface LegalActions {
   /** Bank rate per resource when maritime trade is allowed now, else null. */
   maritime: ResourceCounts | null;
   endTurn: boolean;
+  /** True when it is this seat's Special Building Phase window. */
+  passSpecialBuild: boolean;
 }
 
 // ---- Redacted view (decision 8)
@@ -282,6 +306,7 @@ export interface PlayerView {
   viewer: Seat | null;
   playerCount: number;
   mode: BoardMode;
+  victoryTarget: number;
   board: Board;
   robber: HexId;
   vertices: (Building | null)[];

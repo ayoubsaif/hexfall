@@ -334,6 +334,15 @@ describe("lobby", () => {
     expect(sent().at(-1)).toMatchObject({ payload: { mode: "variable", startingPlayer: 2 } });
   });
 
+  it("clears the start request once the room is playing, so Pause and Leave work", () => {
+    inLobby();
+    expect(session.startGame("variable")).toBe(true);
+    expect(useRoomStore.getState().pending).toBe("start");
+    roomState("playing", 3);
+    expect(useRoomStore.getState().pending).toBeNull();
+    expect(session.pauseGame()).toBe(true);
+  });
+
   it("follows host changes from roomState (spec: Host changes)", () => {
     inLobby();
     roomState("lobby", 2, 1);

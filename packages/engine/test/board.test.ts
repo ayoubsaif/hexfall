@@ -4,7 +4,7 @@ import {
   LETTER_VALUES,
   TERRAIN_BAG,
   TERRAIN_RESOURCE,
-  TOPOLOGY,
+  STANDARD_TOPOLOGY,
   beginnerBoard,
   createRng,
   createVariableBoard,
@@ -178,9 +178,9 @@ describe("variable board", () => {
       const spiral = tokenSpiral(k);
       expect(spiral).toHaveLength(19);
       expect(new Set(spiral).size).toBe(19);
-      expect(spiral[0]).toBe(TOPOLOGY.cornerHexes[k]);
+      expect(spiral[0]).toBe(STANDARD_TOPOLOGY.cornerHexes[k]);
       expect(spiral[18]).toBe(9);
-      const hex = (i: number) => TOPOLOGY.hexes[spiral[i] ?? -1]!;
+      const hex = (i: number) => STANDARD_TOPOLOGY.hexes[spiral[i] ?? -1]!;
       const dist = (i: number, j: number) => {
         const a = hex(i);
         const b = hex(j);

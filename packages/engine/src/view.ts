@@ -1,5 +1,5 @@
 // Redacted per-seat view (AGENTS.md §13.15, design.md decision 8). Owner: cards agent.
-import { cardTotal, hiddenVp, publicVp } from "./rules/common.ts";
+import { cardTotal, hiddenVp, publicVp, victoryTargetOf } from "./rules/common.ts";
 import type { GameEvent, GameState, PlayerSummary, PlayerView, Seat } from "./state.ts";
 
 function copy<T>(x: T): T {
@@ -43,6 +43,7 @@ export function playerView(s: GameState, seat: Seat | null): PlayerView {
     viewer,
     playerCount: s.playerCount,
     mode: s.mode,
+    victoryTarget: victoryTargetOf(s),
     board: copy(s.board),
     robber: s.robber,
     vertices: copy(s.vertices),

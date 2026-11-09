@@ -3,6 +3,7 @@
 import type { Resource, ResourceBundle, ResourceCounts } from "@hexfall/engine";
 import { RESOURCES } from "@hexfall/engine/geometry";
 import type { T } from "../i18n/index.ts";
+import { bankPerResource } from "./extension.ts";
 
 export function emptyCounts(): ResourceCounts {
   return { brick: 0, grain: 0, lumber: 0, ore: 0, wool: 0 };
@@ -104,6 +105,11 @@ export function isValidMaritime(
 
 /** Highest count the composer lets a player ask for of one resource (the bank's full stack). */
 export const MAX_ASK = 19;
+
+/** The bank's full stack for a game with `playerCount` players: 19, or 24 with 5–6 players. */
+export function maxAsk(playerCount: number): number {
+  return bankPerResource(playerCount);
+}
 
 /** The two sides of a player-to-player trade, from one party's point of view. */
 export interface TradeSides {

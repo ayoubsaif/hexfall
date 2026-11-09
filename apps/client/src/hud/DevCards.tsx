@@ -1,6 +1,7 @@
 // The viewer's development cards and plays (specs/game-hud, "Own hand", "Development card plays";
 // specs/hud-presentation "Development cards as cards"). Rendered inside the edge hand (Hand.tsx).
 import type { DevCard, PlayableDevCard } from "@hexfall/engine";
+import type { ReactElement, ReactNode } from "react";
 import { useTranslation } from "react-i18next";
 import { Button } from "@/components/ui/button.tsx";
 import {
@@ -16,7 +17,10 @@ import type { T } from "../i18n/index.ts";
 import { devCardLabel } from "../i18n/labels.ts";
 import { act } from "../net/actions.ts";
 import { openDialog, useUiStore } from "../store/ui.ts";
+import { useTutorial } from "../store/tutorial.ts";
+import { type Blocker, blockerFor } from "../tutorial/blockers.ts";
 import { useInFlight, useLegal, useOwn, useView } from "./state.ts";
+import { TutorialHelp } from "./tutorial/TutorialHelp.tsx";
 
 const ORDER: DevCard[] = ["knight", "roadBuilding", "yearOfPlenty", "monopoly", "victoryPoint"];
 
@@ -64,6 +68,41 @@ export function blockedReason(group: CardGroup, playable: boolean, t: T): string
 /** Tooltip gap above a slot so it clears the fanned-out stack (10 % of a ~100 px card per extra card). */
 export const fanOffset = (count: number): number => 4 + Math.min(Math.max(count - 1, 0), 8) * 10;
 
+/**
+ * A slot's popup: the plain tooltip, or the tutorial rule helper instead while tutorial mode is
+ * on (one popup at a time; openspec tutorial-mode-and-rules-guide design decision 3).
+ */
+function SlotTip({
+  card,
+  count,
+  tip,
+  blocker,
+  children,
+}: {
+  card: DevCard;
+  count: number;
+  tip: ReactNode;
+  blocker: Blocker | null;
+  children: ReactElement;
+}) {
+  const tutorial = useTutorial((s) => s.enabled);
+  if (tutorial) {
+    return (
+      <TutorialHelp topic={card} blocker={blocker}>
+        {children}
+      </TutorialHelp>
+    );
+  }
+  return (
+    <Tooltip>
+      <TooltipTrigger asChild>{children}</TooltipTrigger>
+      <TooltipContent side="top" sideOffset={fanOffset(count)} className="pointer-events-none">
+        {tip}
+      </TooltipContent>
+    </Tooltip>
+  );
+}
+
 /** Hand slot: 80 % visible above the screen edge, rising fully on hover or keyboard focus. */
 export const HAND_SLOT =
   "group/slot pointer-events-auto relative translate-y-[20%] transition-[translate] duration-200 hover:z-10 hover:translate-y-0 focus-within:z-10 focus-within:translate-y-0 motion-reduce:transition-none";
@@ -95,71 +134,53 @@ export function DevCards() {
         const first = i === 0 || undefined;
         if (g.card === "victoryPoint") {
           return (
-            <Tooltip key={g.card}>
-              <TooltipTrigger asChild>
-                <li data-card={g.card} data-dev-start={first} className={HAND_SLOT}>
-                  <GameCard
-                    hideName
-                    dev="victoryPoint"
-                    count={g.count}
-                    layout="peek"
-                    tabIndex={0}
-                  />
-                  {c.revealVictoryPoints && (
-                    <Button
-                      size="sm"
-                      className="absolute bottom-full left-1/2 mb-1 -translate-x-1/2"
-                      onClick={() => act({ type: "revealVictoryPoints" })}
-                    >
-                      {t("play.dev.revealToWin")}
-                    </Button>
-                  )}
-                </li>
-              </TooltipTrigger>
-              <TooltipContent
-                side="top"
-                sideOffset={fanOffset(g.count)}
-                className="pointer-events-none"
-              >
-                {card}
-              </TooltipContent>
-            </Tooltip>
+            <SlotTip key={g.card} card={g.card} count={g.count} tip={card} blocker={null}>
+              <li data-card={g.card} data-dev-start={first} className={HAND_SLOT}>
+                <GameCard hideName dev="victoryPoint" count={g.count} layout="peek" tabIndex={0} />
+                {c.revealVictoryPoints && (
+                  <Button
+                    size="sm"
+                    className="absolute bottom-full left-1/2 mb-1 -translate-x-1/2"
+                    onClick={() => act({ type: "revealVictoryPoints" })}
+                  >
+                    {t("play.dev.revealToWin")}
+                  </Button>
+                )}
+              </li>
+            </SlotTip>
           );
         }
         const playable = c.devCards.includes(g.card as PlayableDevCard);
         const reason = blockedReason(g, playable, t);
         return (
-          <Tooltip key={g.card}>
-            <TooltipTrigger asChild>
-              <li
-                data-card={g.card}
-                data-fresh={g.fresh > 0 || undefined}
-                data-dev-start={first}
-                className={cn(
-                  HAND_SLOT,
-                  playable && focusOpen && "z-40 hover:z-40 focus-within:z-40",
-                )}
-              >
-                <GameCard
-                  hideName
-                  dev={g.card}
-                  count={g.count}
-                  layout="peek"
-                  label={label}
-                  disabled={!playable}
-                  {...(reason === undefined ? {} : { description: reason })}
-                  onClick={() => play(g.card as PlayableDevCard)}
-                />
-              </li>
-            </TooltipTrigger>
-            <TooltipContent
-              side="top"
-              sideOffset={fanOffset(g.count)}
-              className="pointer-events-none"
+          <SlotTip
+            key={g.card}
+            card={g.card}
+            count={g.count}
+            tip={reason === undefined ? card : `${card} · ${reason}`}
+            blocker={playable ? null : blockerFor(g.card as PlayableDevCard, view, legal)}
+          >
+            <li
+              data-card={g.card}
+              data-fresh={g.fresh > 0 || undefined}
+              data-dev-start={first}
+              className={cn(
+                HAND_SLOT,
+                playable && focusOpen && "z-40 hover:z-40 focus-within:z-40",
+              )}
             >
-              {reason === undefined ? card : `${card} · ${reason}`}
-            </TooltipContent>
-          </Tooltip>
+              <GameCard
+                hideName
+                dev={g.card}
+                count={g.count}
+                layout="peek"
+                label={label}
+                disabled={!playable}
+                {...(reason === undefined ? {} : { description: reason })}
+                onClick={() => play(g.card as PlayableDevCard)}
+              />
+            </li>
+          </SlotTip>
         );
       })}
     </TooltipProvider>

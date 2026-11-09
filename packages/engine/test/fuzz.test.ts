@@ -101,6 +101,7 @@ function candidates(s: GameState, p: Picker): Weighted[] {
       }
     }
     if (L.endTurn) add({ type: "endTurn", seat }, 3);
+    if (L.passSpecialBuild) add({ type: "passSpecialBuild", seat }, 3);
   }
   return out;
 }
@@ -118,14 +119,14 @@ function choose(ws: Weighted[], p: Picker): Action {
 function checkInvariants(s: GameState): void {
   for (const r of RESOURCES) {
     const held = s.players.reduce((n, pl) => n + pl.resources[r], 0);
-    expect(s.bank[r] + held, `resource ${r}`).toBe(19);
+    expect(s.bank[r] + held, `resource ${r}`).toBe(s.bankPerResource);
     expect(s.bank[r]).toBeGreaterThanOrEqual(0);
   }
   const devTotal =
     s.devDeck.length +
     s.removedCards.length +
     s.players.reduce((n, pl) => n + pl.devCards.length + pl.knights + pl.revealedVp, 0);
-  expect(devTotal).toBe(25);
+  expect(devTotal).toBe(s.playerCount >= 5 ? 34 : 25);
   s.players.forEach((pl, seat) => {
     const roads = s.edges.filter((o) => o === seat).length;
     const settlements = s.vertices.filter((b) => b?.owner === seat && b.kind === "settlement");
@@ -150,7 +151,7 @@ interface PlayResult {
  */
 function play(
   seed: number,
-  playerCount: 3 | 4,
+  playerCount: 3 | 4 | 5 | 6,
   mode: "beginner" | "variable",
   steps: number,
   timeoutPct = 0,
@@ -185,7 +186,7 @@ function play(
 /** Re-applies a recorded action list from the seed. */
 function replay(
   seed: number,
-  playerCount: 3 | 4,
+  playerCount: 3 | 4 | 5 | 6,
   mode: "beginner" | "variable",
   actions: Action[],
 ): GameState {
@@ -218,6 +219,31 @@ describe("fuzz: random legal play", () => {
     const a = play(11, 4, "variable", 400).state;
     const b = play(11, 4, "variable", 400).state;
     expect(a).toEqual(b);
+  });
+});
+
+describe("fuzz: 5–6 player games (Special Building Phase)", () => {
+  const cases: [number, 5 | 6][] = [
+    [41, 5],
+    [42, 6],
+    [43, 5],
+    [44, 6],
+  ];
+  for (const [seed, n] of cases) {
+    it(`seed ${seed}, ${n} players, played to the end`, () => {
+      const { state, actions } = play(seed, n, "variable", 20000);
+      expect(state.phase.kind).toBe("ended");
+      expect(state.winner).not.toBeNull();
+      expect(actions.some((a) => a.type === "passSpecialBuild")).toBe(true);
+      expect(state.log.some((e) => e.type === "specialBuildOpened")).toBe(true);
+    });
+  }
+
+  it("times out in Special Building Phase windows and replays identically", () => {
+    const run = play(45, 6, "variable", 20000, 15);
+    expect(run.timedOut).toContain("specialBuild");
+    expect(run.state.phase.kind).toBe("ended");
+    expect(replay(45, 6, "variable", run.actions)).toEqual(run.state);
   });
 });
 

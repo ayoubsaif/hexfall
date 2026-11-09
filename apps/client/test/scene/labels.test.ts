@@ -37,11 +37,13 @@ describe("fitDistance", () => {
   });
 });
 
-import { NUMBER_SIZE, numberWeight } from "../../src/scene/NumberToken.tsx";
+import { NUMBER_SIZE, numberStroke, numberWeight } from "../../src/scene/NumberToken.tsx";
 
 describe("number token typography", () => {
-  it("uses one size and five weights from light to extra bold", () => {
+  it("uses one size, bold weights and an outline that grows with the pips", () => {
     expect(NUMBER_SIZE).toBe(0.64);
-    expect([1, 2, 3, 4, 5].map(numberWeight)).toEqual([300, 400, 500, 700, 900]);
+    expect([1, 2, 3, 4, 5].map(numberWeight)).toEqual([600, 650, 700, 700, 700]);
+    const strokes = [1, 2, 3, 4, 5].map(numberStroke);
+    for (let i = 1; i < 5; i++) expect(strokes[i]!).toBeGreaterThan(strokes[i - 1]!);
   });
 });

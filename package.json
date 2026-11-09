@@ -12,6 +12,7 @@
     "models:pieces": "node tools/stl-to-glb.mjs",
     "models:dice": "node tools/obj-to-glb.mjs",
     "cards:build": "node tools/cards-from-tiles.mjs",
+    "rules:art": "node tools/rules-art-gen.mjs",
     "icons:build": "node tools/icons.mjs"
   },
   "devDependencies": {

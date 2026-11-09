@@ -53,7 +53,7 @@ function judgeAll(s: GameState, seat: Seat): boolean[] {
 
 /** Gives seat 0 `vp` public VP from cities and settlements on spread-out vertices. */
 function setVp(s: GameState, vp: number): void {
-  const spots = [0, 8, 30, 40, 50];
+  const spots = [0, 8, 30, 40, 50, 3, 45];
   for (let i = 0; i < Math.floor(vp / 2); i++) s.vertices[spots[i]!] = { owner: 0, kind: "city" };
   if (vp % 2) s.vertices[spots[Math.floor(vp / 2)]!] = { owner: 0, kind: "settlement" };
 }
@@ -106,6 +106,22 @@ describe("judgeOffer", () => {
     expect(at(7)).toEqual([true, true, true]);
     expect(at(8)).toEqual([true, true, false]);
     expect(at(9)).toEqual([true, false, false]);
+  });
+
+  it("scales the leader limit to the victory target (target 14: Hard at 12, Normal at 13)", () => {
+    const at = (vp: number) => {
+      const s = base();
+      s.victoryTarget = 14;
+      setVp(s, vp);
+      expect(playerView(s, 1).players[0]!.publicVp).toBe(vp);
+      hand(s, 0, { grain: 1 });
+      hand(s, 1, { ore: 4, grain: 1 });
+      return judgeAll(offer(s, 0, [1], { grain: 1 }, { ore: 1 }), 1);
+    };
+    expect(at(9)).toEqual([true, true, true]);
+    expect(at(11)).toEqual([true, true, true]);
+    expect(at(12)).toEqual([true, true, false]);
+    expect(at(13)).toEqual([true, false, false]);
   });
 
   it("accepts two cards for one when no build is hurt", () => {

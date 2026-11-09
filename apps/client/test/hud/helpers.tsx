@@ -10,6 +10,7 @@ import { initialConnectionState, useConnectionStore } from "../../src/store/conn
 import { resetGame, useGameStore } from "../../src/store/game.ts";
 import { resetRoom, useRoomStore } from "../../src/store/room.ts";
 import { resetUi } from "../../src/store/ui.ts";
+import { useTutorial } from "../../src/store/tutorial.ts";
 import { seen } from "../game/fixtures.ts";
 
 (globalThis as { IS_REACT_ACT_ENVIRONMENT?: boolean }).IS_REACT_ACT_ENVIRONMENT = true;
@@ -75,7 +76,7 @@ export function recordSession(): Call[] {
 export const actions = (calls: Call[]) =>
   calls.filter((c) => c.fn === "act").map((c) => c.args[0] as ClientAction);
 
-export const NAMES = ["Ana", "Ben", "Cy", "Dee"];
+export const NAMES = ["Ana", "Ben", "Cy", "Dee", "Eve", "Fin"];
 
 /** Seats the viewer in a playing room with names for every seat. */
 export function seatRoom(seat: Seat, players = 4, connected: boolean[] = []): void {
@@ -121,6 +122,8 @@ export function resetAll(): void {
     resetUi();
     resetDice();
     resetChat();
+    // Existing HUD tests check the plain tooltips: tutorial helpers are opt-in per test.
+    useTutorial.setState({ enabled: false });
     useConnectionStore.setState({ ...initialConnectionState, status: "open" });
   });
   setSessionApi();

@@ -3,7 +3,7 @@ import { cardTotal } from "../src/rules/common.ts";
 import { canRollDice, produce } from "../src/rules/production.ts";
 import type { GameState } from "../src/state.ts";
 import { failCode, makePlayState, makeState, putBuilding, step } from "../src/testing.ts";
-import { TOPOLOGY, type HexId } from "../src/topology.ts";
+import { STANDARD_TOPOLOGY, type HexId } from "../src/topology.ts";
 
 /** Hex ids carrying `token` on the board, ascending. */
 function hexesWith(s: GameState, token: number): HexId[] {
@@ -17,7 +17,7 @@ function hexWith(s: GameState, token: number): HexId {
 }
 
 function corner(hex: HexId, i: number): number {
-  const v = TOPOLOGY.hexes[hex]?.vertices[i];
+  const v = STANDARD_TOPOLOGY.hexes[hex]?.vertices[i];
   if (v === undefined) throw new Error("bad corner");
   return v;
 }
@@ -71,7 +71,7 @@ describe("rollDice", () => {
 
   it("a rolled 7 produces nothing and starts the robber", () => {
     const s = makePlayState({ seed: seedRolling(7), rolled: false });
-    for (const hex of TOPOLOGY.hexes) putBuilding(s, corner(hex.id, 0), 1);
+    for (const hex of STANDARD_TOPOLOGY.hexes) putBuilding(s, corner(hex.id, 0), 1);
     const bank = { ...s.bank };
     const next = step(s, { type: "rollDice", seat: 0 });
     expect(next.bank).toEqual(bank);
@@ -82,7 +82,7 @@ describe("rollDice", () => {
   it("a non-7 roll pays production", () => {
     const seed = seedRolling("not7");
     const arrange = (g: GameState) => {
-      for (const hex of TOPOLOGY.hexes) putBuilding(g, corner(hex.id, 0), 1);
+      for (const hex of STANDARD_TOPOLOGY.hexes) putBuilding(g, corner(hex.id, 0), 1);
     };
     const s = makePlayState({ seed, rolled: false });
     arrange(s);
@@ -130,7 +130,7 @@ describe("produce", () => {
     for (const h of hs) putBuilding(s, corner(h, 0), 0);
     // Number 2's only hex is untouched by these corners.
     const two = hexWith(s, 2);
-    const touched = hs.flatMap((h) => TOPOLOGY.vertices[corner(h, 0)]?.hexes ?? []);
+    const touched = hs.flatMap((h) => STANDARD_TOPOLOGY.vertices[corner(h, 0)]?.hexes ?? []);
     expect(touched).not.toContain(two);
     produce(s, 2);
     expect(cardTotal(s.players[0]!.resources)).toBe(0);
@@ -220,7 +220,7 @@ describe("produce", () => {
 
   it("a total of 7 produces nothing", () => {
     const s = makePlayState();
-    for (const hex of TOPOLOGY.hexes) putBuilding(s, corner(hex.id, 0), 0, "city");
+    for (const hex of STANDARD_TOPOLOGY.hexes) putBuilding(s, corner(hex.id, 0), 0, "city");
     produce(s, 7);
     expect(cardTotal(s.players[0]!.resources)).toBe(0);
     expect(s.log).toEqual([]);

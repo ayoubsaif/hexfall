@@ -2,7 +2,7 @@
 import {
   RESOURCES,
   TERRAIN_RESOURCE,
-  TOPOLOGY,
+  topologyOf,
   type EdgeId,
   type PlayerView,
   type Resource,
@@ -22,7 +22,7 @@ export function producedBy(view: PlayerView, seat: Seat): Set<Resource> {
   const out = new Set<Resource>();
   view.vertices.forEach((b, v) => {
     if (b?.owner !== seat) return;
-    for (const h of TOPOLOGY.vertices[v]!.hexes) {
+    for (const h of topologyOf(view.board).vertices[v]!.hexes) {
       const hex = view.board.hexes[h]!;
       const r = TERRAIN_RESOURCE[hex.terrain];
       if (r && hex.token !== null) out.add(r);
@@ -34,7 +34,7 @@ export function producedBy(view: PlayerView, seat: Seat): Set<Resource> {
 /** Total pips a building on this vertex would collect (robber hex discounted). */
 export function vertexPips(view: PlayerView, v: VertexId): number {
   let total = 0;
-  for (const h of TOPOLOGY.vertices[v]!.hexes) {
+  for (const h of topologyOf(view.board).vertices[v]!.hexes) {
     const p = pips(view.board.hexes[h]!.token);
     total += h === view.robber ? p * 0.3 : p;
   }
@@ -43,7 +43,7 @@ export function vertexPips(view: PlayerView, v: VertexId): number {
 
 /** Value of settling on `v` given what the seat already produces. */
 export function vertexValue(view: PlayerView, v: VertexId, owned: ReadonlySet<Resource>): number {
-  const info = TOPOLOGY.vertices[v]!;
+  const info = topologyOf(view.board).vertices[v]!;
   const here = new Set<Resource>();
   for (const h of info.hexes) {
     const hex = view.board.hexes[h]!;
@@ -63,17 +63,17 @@ export function vertexValue(view: PlayerView, v: VertexId, owned: ReadonlySet<Re
 /** No building here or next to it (Distance Rule on an empty vertex). */
 export function siteFree(view: PlayerView, v: VertexId): boolean {
   if (view.vertices[v]) return false;
-  return TOPOLOGY.vertices[v]!.neighbors.every((n) => !view.vertices[n]);
+  return topologyOf(view.board).vertices[v]!.neighbors.every((n) => !view.vertices[n]);
 }
 
 /** How much a new road on `edge` helps reach a good settlement site. */
 export function roadValue(view: PlayerView, edge: EdgeId, owned: ReadonlySet<Resource>): number {
   let best = 0;
-  for (const x of TOPOLOGY.edges[edge]!.vertices) {
+  for (const x of topologyOf(view.board).edges[edge]!.vertices) {
     const b = view.vertices[x];
     if (b) continue; // an occupied end leads nowhere new
     if (siteFree(view, x)) best = Math.max(best, vertexValue(view, x, owned));
-    for (const y of TOPOLOGY.vertices[x]!.neighbors) {
+    for (const y of topologyOf(view.board).vertices[x]!.neighbors) {
       if (siteFree(view, y)) best = Math.max(best, 0.6 * vertexValue(view, y, owned));
     }
   }

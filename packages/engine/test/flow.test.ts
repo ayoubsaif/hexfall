@@ -3,7 +3,7 @@ import { applyAction, legalActions } from "../src/game.ts";
 import { cardTotal } from "../src/rules/common.ts";
 import type { GameState } from "../src/state.ts";
 import { give, makePlayState, putBuilding, step } from "../src/testing.ts";
-import { TOPOLOGY } from "../src/topology.ts";
+import { STANDARD_TOPOLOGY } from "../src/topology.ts";
 
 /** First seed whose opening roll is a 7, with the board arranged for the flow. */
 function sevenGame(): GameState {
@@ -25,9 +25,9 @@ describe("7 → discard → robber → steal → build (AGENTS.md §8)", () => {
   it("runs the whole sequence in order", () => {
     let s = sevenGame();
     const victimHex = 4;
-    const victimVertex = TOPOLOGY.hexes[victimHex]!.vertices[0]!;
+    const victimVertex = STANDARD_TOPOLOGY.hexes[victimHex]!.vertices[0]!;
     putBuilding(s, victimVertex, 1);
-    const ownVertex = TOPOLOGY.hexes[16]!.vertices[3]!;
+    const ownVertex = STANDARD_TOPOLOGY.hexes[16]!.vertices[3]!;
     putBuilding(s, ownVertex, 0);
     give(s, 0, { brick: 4, lumber: 4 }); // 8 → discards 4
     give(s, 1, { wool: 9 }); // 9 → discards 4
@@ -53,7 +53,7 @@ describe("7 → discard → robber → steal → build (AGENTS.md §8)", () => {
     expect(cardTotal(s.players[1]!.resources)).toBe(4);
     expect(s.phase.kind).toBe("turn");
 
-    const edge = TOPOLOGY.vertices[ownVertex]!.edges[0]!;
+    const edge = STANDARD_TOPOLOGY.vertices[ownVertex]!.edges[0]!;
     expect(legalActions(s, 0).buildRoad).toContain(edge);
     s = step(s, { type: "buildRoad", seat: 0, edge });
     expect(s.edges[edge]).toBe(0);

@@ -7,7 +7,7 @@ import { useReducedMotion } from "../store/motion.ts";
 
 export const TIP_COUNT = 5;
 export const TIP_INTERVAL_MS = 6000;
-export const GAME_NAME = import.meta.env.VITE_GAME_NAME || "Hexfall"
+export const GAME_NAME = import.meta.env.VITE_GAME_NAME || "Hexfall";
 /** The favicon as the logotype, gently pulsing unless motion is reduced. */
 function Logo() {
   return (

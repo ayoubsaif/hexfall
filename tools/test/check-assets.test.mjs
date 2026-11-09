@@ -93,6 +93,22 @@ describe("check-assets licensing", () => {
     expect(r.out).toMatch(/theme "t".*piece\.city.*CC-BY-NC-4\.0/);
   });
 
+  it("accepts a BlendKit Royalty Free credit", () => {
+    const r = check({
+      license: "CC0-1.0",
+      source: "x",
+      assets,
+      credits: [{ ...credit, license: "LicenseRef-BlendKit-RF" }],
+    });
+    expect(r.status).toBe(0);
+  });
+
+  it("requires a credit for a BlendKit-licensed theme's mapped keys", () => {
+    const r = check({ license: "LicenseRef-BlendKit-RF", source: "x", assets });
+    expect(r.status).toBe(1);
+    expect(r.out).toMatch(/theme "t".*piece\.city.*requires attribution/);
+  });
+
   it("rejects a manifest license outside the allowlist", () => {
     const r = check({ license: "Proprietary", source: "x", assets: {} });
     expect(r.status).toBe(1);

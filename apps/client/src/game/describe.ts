@@ -190,6 +190,14 @@ const DESCRIBE: Describers = {
     text: t("game.log.turnEnded", { name: n(e.seat) }),
     seats: [e.seat],
   }),
+  specialBuildOpened: (e, n, t) => ({
+    text: t("game.log.specialBuildOpened", { name: n(e.seat) }),
+    seats: [e.seat],
+  }),
+  specialBuildPassed: (e, n, t) => ({
+    text: t("game.log.specialBuildPassed", { name: n(e.seat) }),
+    seats: [e.seat],
+  }),
   turnStarted: (e, n, t) => ({
     text: t("game.log.turnStarted", { number: e.number, name: n(e.seat) }),
     seats: [e.seat],

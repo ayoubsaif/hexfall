@@ -1,6 +1,12 @@
 // Draws a board value: a thin map over the pure layout model (specs/board-view).
 // A live game passes the robber hex and the hexes that just produced (board-interaction).
 import { IslandGround, useIslandTextureUrls } from "./IslandGround.tsx";
+import { CoastProps } from "./CoastProps.tsx";
+import type { PropInstance } from "./coastScatter.ts";
+import { forestTrees } from "./forestTrees.ts";
+import { hexCamp, pastureSheep } from "./pastureSheep.ts";
+import { mountainPeaks } from "./mountainPeaks.ts";
+import { QUALITY, QUALITY_RICH, useGraphicsQuality } from "./graphicsQuality.ts";
 import type { Board, HexId } from "@hexfall/engine";
 import { useFrame } from "@react-three/fiber";
 import { useCallback, useMemo, useRef, useState } from "react";
@@ -161,12 +167,28 @@ export function BoardView({
   const islandUrls = useIslandTextureUrls();
   const islandKey = layout.tiles.map((t) => `${t.assetKey}@${t.position.join(",")}`).join("|");
   const islandTiles = useMemo(
-    () => layout.tiles.map((t) => ({ position: t.position, assetKey: t.assetKey })),
+    () =>
+      layout.tiles.map((t) => ({
+        position: t.position,
+        assetKey: t.assetKey,
+        camp: t.assetKey === "tile.pasture" ? hexCamp(t.hex, layout.topology).ground : null,
+      })),
     // eslint-disable-next-line react-hooks/exhaustive-deps
     [islandKey],
   );
   const islandLand = useMemo(() => islandTiles.map((t) => t.position), [islandTiles]);
   const island = relief.raised && islandUrls !== null;
+  // Medium/High: 3D evergreens stand on the forest hexes and sheep graze the pastures, whose
+  // art turns to grass in IslandGround (specs/forest-trees, specs/pasture-meadow). Keyed on the
+  // terrains, not the robber.
+  const tier = useGraphicsQuality();
+  const terrainKey = board.hexes.map((h) => h.terrain).join(",");
+  const forest = useMemo(
+    () => [...forestTrees(board), ...pastureSheep(board), ...mountainPeaks(board)],
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+    [terrainKey],
+  );
+  const forestY = useCallback((p: PropInstance) => p.ground, []);
   const robber = layout.robber;
   const robberCenter = layout.tiles.find((t) => t.hex === robber.hex)?.position ?? robber.position;
   const robberLift = relief.raised
@@ -192,6 +214,9 @@ export function BoardView({
           </group>
         ))
       )}
+      {island && QUALITY_RICH[tier] && (
+        <CoastProps props={forest} baseY={forestY} shadows={QUALITY[tier].shadows} />
+      )}
       {layout.tokens.map((t) => (
         <group key={t.key} position={[t.position[0], lift(t.hex), t.position[1]]}>
           <group ref={chipRef} name="chip">
@@ -201,7 +226,7 @@ export function BoardView({
         </group>
       ))}
       {layout.harbors.map((h) => (
-        <HarborMarker key={h.key} item={h} boatRef={boatRef} />
+        <HarborMarker key={h.key} item={h} boatRef={boatRef} land={layout.land} />
       ))}
       <Robber
         hex={layout.robber.hex}

@@ -1,3 +1,4 @@
+import { MAX_VICTORY_TARGET, MIN_VICTORY_TARGET } from "@hexfall/engine";
 import type { GameEvent, RuleErrorCode } from "@hexfall/engine";
 import { z } from "zod";
 import { envelopeShape } from "./envelope.ts";
@@ -8,7 +9,7 @@ const msg = <T extends string, P extends z.ZodType>(type: T, payload: P) =>
 
 /** Room code as typed by a user; the server upper-cases and validates it. */
 const RoomCode = z.string().min(1).max(16);
-const Seat = z.number().int().min(0).max(3);
+const Seat = z.number().int().min(0).max(5);
 const Name = z.string().max(64);
 
 /**
@@ -85,6 +86,8 @@ export const StartGameMessage = msg(
     startingPlayer: Seat.optional(),
     /** Defaults to "off". */
     turnTimer: TurnTimerPreset.optional(),
+    /** Points needed to win, 8–15; 10 when absent. */
+    victoryTarget: z.number().int().min(MIN_VICTORY_TARGET).max(MAX_VICTORY_TARGET).optional(),
   }),
 );
 /** Bot difficulty (specs/bots "Bot difficulty levels"); same strings as @hexfall/bots. */

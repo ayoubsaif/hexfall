@@ -12,7 +12,7 @@ import { latestRoll } from "../../game/status.ts";
 import { setDiceSettled } from "../../store/dice.ts";
 import { useGameStore } from "../../store/game.ts";
 import { useRoomStore } from "../../store/room.ts";
-import { Asset } from "../../theme/index.ts";
+import { Asset, useLandRelief } from "../../theme/index.ts";
 import { DICE_LIFT, DICE_SCALE, DIE_MODEL_SCALE } from "./area.ts";
 import { DiceController, type Planner } from "./controller.ts";
 import { diceObstacles } from "./obstacles.ts";
@@ -68,6 +68,7 @@ export function BoardDice({ floorY }: { floorY: number }) {
   const view = useGameStore((s) => s.view);
   const room = useRoomStore((s) => s.room) ?? "";
   const invalidate = useThree((s) => s.invalidate);
+  const raised = useLandRelief().raised;
   const roll = latestRoll(log);
   const thrown = useDiceThrow(roll);
   const planner = usePlanner();
@@ -90,7 +91,7 @@ export function BoardDice({ floorY }: { floorY: number }) {
       roll,
       room,
       planner,
-      obstacles: view && thrown.mode === "animate" ? diceObstacles(view) : [],
+      obstacles: view && thrown.mode === "animate" ? diceObstacles(view, raised) : [],
     });
     if (outcome.settled !== null) setDiceSettled(outcome.settled);
     apply(c, ...refs());

@@ -11,7 +11,7 @@ export interface SeatColor {
   /** English name (tests, debugging). Show `seatColorName()` to players. */
   readonly name: string;
   /** Catalog key under `game.color`. */
-  readonly key: "orange" | "blue" | "white" | "violet";
+  readonly key: "orange" | "blue" | "white" | "violet" | "green" | "brown";
 }
 
 export const SEAT_COLORS: readonly SeatColor[] = Object.freeze([
@@ -19,6 +19,10 @@ export const SEAT_COLORS: readonly SeatColor[] = Object.freeze([
   { hex: "#2f6bd8", ink: "#ffffff", name: "Blue", key: "blue" },
   { hex: "#f1ead9", ink: "#1d1a14", name: "White", key: "white" },
   { hex: "#4b2f7f", ink: "#ffffff", name: "Violet", key: "violet" },
+  // Seats 4 and 5 only appear in 5–6 player games. Teal-green sits apart from the forest and
+  // pasture greens; dark brown sits apart from the hills and from orange by lightness.
+  { hex: "#12a37f", ink: "#04140f", name: "Green", key: "green" },
+  { hex: "#5a3a1e", ink: "#ffffff", name: "Brown", key: "brown" },
 ]);
 
 export function seatColor(seat: number): SeatColor {

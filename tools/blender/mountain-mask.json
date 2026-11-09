@@ -1,0 +1,20 @@
+{
+  "_comment": "Shared by tools/blender/mountain-kit.py and apps/client/test/scene/mountainPeaks.test.ts (openspec change owner-mountain-centre-peak). Game units: hex circumradius 1, +z towards the default camera. Heights are above the land (y = 0).",
+  "fit": 1.0,
+  "offsetBack": 0.12,
+  "summitAngleDeg": -100,
+  "peakHeight": 0.55,
+  "rimFade": [0.6, 0.85],
+  "frontSlope": [-0.15, 0.55, 0.3],
+  "hexCrop": 0.97,
+  "dome": { "amplitude": 0.24, "radius": 0.9 },
+  "clearBlend": 0.12,
+  "chip": { "x": 0, "z": 0, "radius": 0.22, "gap": 0.06, "top": 0.05 },
+  "robber": { "x": -0.45, "z": 0.3, "radius": 0.13, "gap": 0.06, "top": 0.48 },
+  "cityTop": 0.37,
+  "cameraDeg": 55,
+  "capMargin": 0.02,
+  "capBand": 0.12,
+  "lowScree": 0.04,
+  "targetTris": 2000
+}

@@ -62,3 +62,10 @@ export function resetRoom(keep: Partial<RoomStoreState> = {}): void {
 /** No game actions possible: paused, or ended early by the host. */
 export const isFrozen = (s: Pick<RoomStoreState, "status" | "result">): boolean =>
   s.status === "paused" || s.result !== null;
+
+/**
+ * Whether the 3D board should be mounted: only once a game runs, or as soon as the host
+ * clicks Start. The start screen and the lobby never load the scene.
+ */
+export const boardVisible = (s: Pick<RoomStoreState, "room" | "status" | "pending">): boolean =>
+  s.room !== null && ((s.status !== null && s.status !== "lobby") || s.pending === "start");

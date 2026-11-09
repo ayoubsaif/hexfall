@@ -10,13 +10,20 @@ import type { EdgeId, VertexId } from "./topology.ts";
 export function makeState({
   seed,
   playerCount = 4,
-  mode = "beginner",
+  mode,
+  victoryTarget,
 }: {
   seed: RngSeed;
-  playerCount?: 3 | 4;
+  playerCount?: GameConfig["playerCount"];
+  /** Defaults to "beginner" for 3–4 players and "variable" for 5–6. */
   mode?: GameConfig["mode"];
+  victoryTarget?: number;
 }): GameState {
-  return createGame({ seed, playerCount, mode });
+  return createGame({ seed, playerCount, mode: mode ?? defaultMode(playerCount), victoryTarget });
+}
+
+function defaultMode(playerCount: number): GameConfig["mode"] {
+  return playerCount >= 5 ? "variable" : "beginner";
 }
 
 /**
@@ -27,17 +34,24 @@ export function makeState({
 export function makePlayState({
   seed = 1,
   playerCount = 4,
-  mode = "beginner",
+  mode,
   seat = 0,
   rolled = true,
+  victoryTarget,
 }: {
   seed?: RngSeed;
-  playerCount?: 3 | 4;
+  playerCount?: GameConfig["playerCount"];
   mode?: GameConfig["mode"];
   seat?: Seat;
   rolled?: boolean;
+  victoryTarget?: number;
 } = {}): GameState {
-  const s = createGame({ seed, playerCount, mode });
+  const s = createGame({
+    seed,
+    playerCount,
+    mode: mode ?? defaultMode(playerCount),
+    victoryTarget,
+  });
   s.phase = { kind: "turn" };
   s.turn = { seat, number: 1, rolled, devPlayed: false, dice: rolled ? [3, 4] : null };
   s.log = [];

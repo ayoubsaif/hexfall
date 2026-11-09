@@ -1,5 +1,7 @@
 // Public surface of the theme layer. Scene code imports only from here.
 export { Asset, type AssetProps, useAsset } from "./Asset.tsx";
+export { AnimatedAsset, type AnimatedAssetProps } from "./AnimatedAsset.tsx";
+export { GULL_WING, GullWing } from "./fallbacks/gull.tsx";
 export { useTheme } from "./context.ts";
 export {
   CHIP,
@@ -27,4 +29,11 @@ export {
 export { type WaterUrls, resolveWaterUrls } from "./resolve.ts";
 export { ThemeProvider } from "./ThemeProvider.tsx";
 export { useLandRelief } from "./useLandRelief.ts";
-export { JETTY_LENGTH } from "./fallbacks/index.ts";
+export {
+  JETTY_LENGTH,
+  COAST_KEYS,
+  type CoastKey,
+  type PropPart,
+  type PropVariant,
+  coastFallbackVariants,
+} from "./fallbacks/index.ts";

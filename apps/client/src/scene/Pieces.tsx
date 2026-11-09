@@ -1,6 +1,7 @@
 // Every player's roads, settlements and cities from the view (specs/board-interaction,
 // "Live board from the game view"). New pieces from an update drop into place.
 import type { PlayerView } from "@hexfall/engine";
+import { topologyOf } from "@hexfall/engine/geometry";
 import { useFrame } from "@react-three/fiber";
 import { type ReactNode, useMemo, useRef, useState } from "react";
 import type { Group } from "three";
@@ -48,8 +49,8 @@ export function Pieces({ view }: { view: PlayerView }) {
   const source = useGameStore((s) => s.source);
   const reduced = useReducedMotion();
   const items = useMemo(
-    () => pieceLayout(view.vertices, view.edges, relief),
-    [view.vertices, view.edges, relief],
+    () => pieceLayout(view.vertices, view.edges, relief, topologyOf(view.board)),
+    [view.vertices, view.edges, relief, view.board],
   );
 
   // Which keys are new in this render (decided once per item list, not per frame).

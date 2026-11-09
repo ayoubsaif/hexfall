@@ -1,6 +1,6 @@
 // Dice collide with board pieces (spec board-dice "Physics throw").
 import type { PlayerView } from "@hexfall/engine";
-import { beginnerBoard, TOPOLOGY, vertexPosition } from "@hexfall/engine/geometry";
+import { beginnerBoard, STANDARD_TOPOLOGY, vertexPosition } from "@hexfall/engine/geometry";
 import { describe, expect, it } from "vite-plus/test";
 import { poseAt } from "../../../src/scene/dice/controller.ts";
 import { valueUp } from "../../../src/scene/dice/faces.ts";
@@ -17,9 +17,9 @@ import { DIE_VALUES } from "../../../src/theme/die.ts";
 /** A beginner board (desert and robber at the center) with pieces around the middle. */
 function crowdedView(): PlayerView {
   const board = beginnerBoard();
-  const vertices = TOPOLOGY.vertices.map(() => null) as PlayerView["vertices"][number][];
-  const edges = TOPOLOGY.edges.map(() => null) as PlayerView["edges"][number][];
-  TOPOLOGY.vertices.forEach((_, v) => {
+  const vertices = STANDARD_TOPOLOGY.vertices.map(() => null) as PlayerView["vertices"][number][];
+  const edges = STANDARD_TOPOLOGY.edges.map(() => null) as PlayerView["edges"][number][];
+  STANDARD_TOPOLOGY.vertices.forEach((_, v) => {
     const [x, z] = vertexPosition(v);
     const r = Math.hypot(x, z);
     // The center hex's corners get alternating settlements and cities, plus a far one.
@@ -27,7 +27,7 @@ function crowdedView(): PlayerView {
       vertices[v] = { kind: v % 4 === 0 ? "city" : "settlement", owner: 0 };
     if (r > 4) vertices[v] ??= null;
   });
-  TOPOLOGY.edges.forEach((e, i) => {
+  STANDARD_TOPOLOGY.edges.forEach((e, i) => {
     const [a, b] = e.vertices.map((v) => Math.hypot(...vertexPosition(v)));
     if (a! < 1.1 && b! < 1.1) edges[i] = 1;
   });

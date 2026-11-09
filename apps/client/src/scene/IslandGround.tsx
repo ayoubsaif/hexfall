@@ -7,24 +7,24 @@ import { useTexture } from "@react-three/drei";
 import { useEffect, useMemo } from "react";
 import {
   BufferGeometry,
+  Color,
   Float32BufferAttribute,
   MirroredRepeatWrapping,
   SRGBColorSpace,
   type Texture,
   Vector2,
+  Vector4,
 } from "three";
-import {
-  HEX_RADIUS,
-  domeHeight,
-  resolveWaterUrls,
-  useTheme,
-} from "../theme/index.ts";
+import { HEX_RADIUS, domeHeight, resolveWaterUrls, useTheme } from "../theme/index.ts";
 import { resolveAsset } from "../theme/resolve.ts";
 import type { AssetKey } from "../theme/keys.ts";
 import { useViewStore } from "../store/view.ts";
 import { sampleCoast } from "./coastField.ts";
 import { beachHeight } from "./coastTerrain.ts";
 import type { XZ } from "./layout.ts";
+import type { CampGround } from "./pastureSheep.ts";
+import { GRASS_COLOR, TEXTURE_MEAN, useCoastTextures } from "./coastMaterials.ts";
+import { QUALITY_RICH, useGraphicsQuality } from "./graphicsQuality.ts";
 
 /** The terrain keys, in the order of the shader's texture slots. */
 export const ISLAND_TERRAINS = [
@@ -43,14 +43,41 @@ export const SAND_FADE = 0.12;
 /** Shore distance band over which the land slopes down and turns into beach sand. */
 const COAST_START = -0.32;
 const COAST_END = -0.1;
+/** Island-shore band of the grass rim outside the coastal hexes (specs/coast-dressing): seams
+ * between land tiles sit at about -0.43, so the band starts above that and keeps them sand. */
+export const RIM_GRASS_START = -0.36;
+export const RIM_GRASS_END = -0.07;
+/** Ground colour of forest hexes when they carry 3D trees (specs/forest-trees). */
+export const FOREST_GRASS = "#557a2f";
+/** Ground colour of pasture hexes when sheep graze them (specs/pasture-meadow): brighter and
+ * yellower than the forest floor so the two never read alike. */
+export const PASTURE_GRASS = "#8fb84a";
+/** Grass map strength on the island (stronger than the beach: blades read at board scale). */
+const GRASS_DETAIL = 0.9;
+
 /** The mesh stops a little past the land outline; the beach mesh carries on from there. */
 const MESH_LIMIT = 0.1;
 const STEP = 0.035;
 
+/** sRGB hex -> GLSL linear vec3. */
+function glslColor(hex: string): string {
+  const c = new Color(hex);
+  return `vec3(${c.r.toFixed(4)}, ${c.g.toFixed(4)}, ${c.b.toFixed(4)})`;
+}
+
 export interface IslandTile {
   position: XZ;
   assetKey: string;
+  /** Sandy path of a pasture's sheep camp (Medium/High only). */
+  camp?: CampGround | null;
 }
+
+/** Mountain floor colours (specs/mountain-peaks): tan scree, grey rock and dry grass. */
+export const MOUNTAIN_SCREE = "#a3a29c";
+const MOUNTAIN_ROCK = "#83868a";
+const MOUNTAIN_GRASS = "#7f9a52";
+/** Half-width of the sheep camp path (specs/pasture-meadow). */
+export const CAMP_PATH_WIDTH = 0.032;
 
 const smooth = (a: number, b: number, x: number) => {
   const t = Math.min(1, Math.max(0, (x - a) / (b - a)));
@@ -89,12 +116,7 @@ export function seaRing(land: readonly XZ[]): XZ[] {
  * by the true distance to the nearest sea hex; at the real coast the warped field wins, which
  * keeps the shoreline wavy and matching the beach.
  */
-export function islandShore(
-  land: readonly XZ[],
-  sea: readonly XZ[],
-  x: number,
-  z: number,
-): number {
+export function islandShore(land: readonly XZ[], sea: readonly XZ[], x: number, z: number): number {
   const coast = sampleCoast(land, x, z).shore;
   let inLand = Infinity;
   for (const c of land) inLand = Math.min(inLand, hexSdf(x, z, c));
@@ -213,10 +235,12 @@ export function IslandGround({
 }) {
   const { theme } = useTheme();
   const softTiles = useViewStore((s) => s.softTiles);
+  // Medium/High: forest hexes become grass under 3D trees (specs/forest-trees) and pastures
+  // become meadows with sheep (specs/pasture-meadow).
+  const richForest = QUALITY_RICH[useGraphicsQuality()];
+  const grassMap = useCoastTextures().grass ?? null;
   const sandUrl = theme ? resolveWaterUrls(theme).sand : undefined;
-  const art = useTexture(urls, (t) =>
-    (Array.isArray(t) ? t : [t]).forEach(prepare),
-  ) as Texture[];
+  const art = useTexture(urls, (t) => (Array.isArray(t) ? t : [t]).forEach(prepare)) as Texture[];
   // useTexture needs a URL; a tile image stands in when the theme has no sand (then unused).
   const sand = useTexture(sandUrl ?? urls[0]!, (t) => {
     const x = t as Texture;
@@ -224,17 +248,11 @@ export function IslandGround({
     x.colorSpace = SRGBColorSpace;
     x.anisotropy = 4;
   }) as Texture;
-  const geometry = useMemo(
-    () => islandGeometry(tiles, land, seaLevel),
-    [tiles, land, seaLevel],
-  );
+  const geometry = useMemo(() => islandGeometry(tiles, land, seaLevel), [tiles, land, seaLevel]);
   useEffect(() => () => geometry.dispose(), [geometry]);
 
   const terrainIndex = (key: string) =>
-    Math.max(
-      0,
-      ISLAND_TERRAINS.indexOf(key as (typeof ISLAND_TERRAINS)[number]),
-    );
+    Math.max(0, ISLAND_TERRAINS.indexOf(key as (typeof ISLAND_TERRAINS)[number]));
   const n = tiles.length;
   const material = useMemo(
     () => ({
@@ -249,8 +267,20 @@ export function IslandGround({
         shader.uniforms.uTerrain = {
           value: tiles.map((t) => terrainIndex(t.assetKey)),
         };
+        // The camp path's five points (four straight legs), two per vec4 plus the end point;
+        // zeros = no path.
+        const pathPart = (t: IslandTile, k: number) => {
+          const p = t.camp?.path;
+          return p && p.length >= 10
+            ? new Vector4(p[k]!, p[k + 1]!, p[k + 2] ?? 0, p[k + 3] ?? 0)
+            : new Vector4();
+        };
+        shader.uniforms.uPathA = { value: tiles.map((t) => pathPart(t, 0)) };
+        shader.uniforms.uPathB = { value: tiles.map((t) => pathPart(t, 4)) };
+        shader.uniforms.uPathC = { value: tiles.map((t) => pathPart(t, 8)) };
         art.forEach((tex, i) => (shader.uniforms[`uTex${i}`] = { value: tex }));
         shader.uniforms.uSand = { value: sand };
+        shader.uniforms.uGrass = { value: grassMap };
         shader.vertexShader = shader.vertexShader
           .replace(
             "#include <common>",
@@ -269,11 +299,106 @@ export function IslandGround({
             varying float vShore;
             uniform vec2 uCenters[ISLAND_N];
             uniform int uTerrain[ISLAND_N];
+            uniform vec4 uPathA[ISLAND_N];
+            uniform vec4 uPathB[ISLAND_N];
+            uniform vec4 uPathC[ISLAND_N];
             ${ISLAND_TERRAINS.map((_, i) => `uniform sampler2D uTex${i};`).join("\n")}
             uniform sampler2D uSand;
+            uniform sampler2D uGrass;
+            float gHash(vec2 p) {
+              return fract(sin(dot(p, vec2(127.1, 311.7))) * 43758.5453);
+            }
+            float gNoise(vec2 p) {
+              vec2 i = floor(p);
+              vec2 f = fract(p);
+              vec2 u = f * f * (3.0 - 2.0 * f);
+              return mix(mix(gHash(i), gHash(i + vec2(1.0, 0.0)), u.x),
+                         mix(gHash(i + vec2(0.0, 1.0)), gHash(i + vec2(1.0, 1.0)), u.x), u.y);
+            }
+            // Grass: light and shade patches, sun-dried spots and lusher clumps, and the grass
+            // map at two scales so its tiling never lines up.
+            vec3 grassAt(vec3 tint) {
+              float n1 = gNoise(vP * 1.4);
+              float n2 = gNoise(vP * 4.3 + 7.31);
+              vec3 c = tint * mix(0.8, 1.16, n1 * 0.65 + n2 * 0.35);
+              c = mix(c, c * vec3(1.22, 1.1, 0.62), smoothstep(0.6, 0.85, n1) * 0.5);
+              c = mix(c, c * vec3(0.78, 0.92, 0.8), smoothstep(0.42, 0.15, n2) * 0.45);
+              // Fine blade grain, faded out as it gets smaller than a pixel (no shimmer).
+              float px = length(fwidth(vP));
+              float b1 = gNoise(vP * 38.0), b2 = gNoise(vP * 97.0 + 1.7);
+              c *= 1.0 + (b1 - 0.5) * 0.3 * (1.0 - smoothstep(0.25, 0.7, px * 38.0))
+                       + (b2 - 0.5) * 0.24 * (1.0 - smoothstep(0.25, 0.7, px * 97.0));
+              ${
+                grassMap
+                  ? `vec3 g = mix(texture2D(uGrass, vP * 1.7).rgb,
+                             texture2D(uGrass, vP * 0.53 + vec2(0.37, 0.71)).rgb, 0.4);
+              c *= mix(vec3(1.0), g / vec3(${TEXTURE_MEAN.grass.map((v) => v.toFixed(3)).join(", ")}), ${GRASS_DETAIL.toFixed(2)});`
+                  : ""
+              }
+              return c;
+            }
+            // Forest floor (Medium/High): darker, mossier grass with patches of brown needles.
+            vec3 forestFloor() {
+              vec3 c = grassAt(${glslColor(FOREST_GRASS)});
+              float litter = smoothstep(0.55, 0.8, gNoise(vP * 2.6 + 3.7));
+              return mix(c, c * vec3(1.05, 0.82, 0.55), litter * 0.6);
+            }
+            // Meadow (Medium/High): bright grass with lusher clover patches and tiny white and
+            // yellow flowers that fade out before they can shimmer when zoomed out.
+            vec3 meadowFloor() {
+              vec3 c = grassAt(${glslColor(PASTURE_GRASS)});
+              float clover = smoothstep(0.58, 0.82, gNoise(vP * 3.1 + 11.3));
+              c = mix(c, c * vec3(0.86, 1.08, 0.82), clover * 0.5);
+              float px = length(fwidth(vP));
+              float fade = 1.0 - smoothstep(0.3, 0.8, px * 60.0);
+              vec2 cell = floor(vP * 60.0);
+              vec2 f = fract(vP * 60.0) - 0.5;
+              float h = gHash(cell);
+              float dotMask = (1.0 - smoothstep(0.12, 0.22, length(f - (vec2(gHash(cell + 3.1), gHash(cell + 7.7)) - 0.5) * 0.5)))
+                * step(0.93, h) * smoothstep(0.35, 0.6, gNoise(vP * 1.9 + 5.0)) * fade;
+              vec3 petal = h > 0.965 ? vec3(0.95, 0.83, 0.32) : vec3(0.93, 0.92, 0.86);
+              return mix(c, petal, dotMask * 0.85);
+            }
+            // Sheep camp (Medium/High): a sandy path of four short straight legs (points a.xy,
+            // a.zw, b.xy, b.zw, c.xy), the same sand as the strips between tiles, a little trodden and darker,
+            // with a ragged edge and slightly flattened grass along it.
+            float segDist(vec2 p, vec2 a, vec2 b) {
+              vec2 ab = b - a;
+              float t = clamp(dot(p - a, ab) / max(dot(ab, ab), 1e-6), 0.0, 1.0);
+              return length(p - a - ab * t);
+            }
+            vec3 campGround(vec3 col, vec3 sandC, vec4 a, vec4 b, vec4 c) {
+              if (dot(a.zw - a.xy, a.zw - a.xy) < 1e-6) return col;
+              float d = min(min(segDist(vP, a.xy, a.zw), segDist(vP, a.zw, b.xy)),
+                            min(segDist(vP, b.xy, b.zw), segDist(vP, b.zw, c.xy)));
+              float dist = d - ${CAMP_PATH_WIDTH.toFixed(3)} + (gNoise(vP * 30.0) - 0.5) * 0.016;
+              float mask = 1.0 - smoothstep(-0.006, 0.008, dist);
+              vec3 pathC = sandC * (0.9 + 0.1 * gNoise(vP * 45.0 + 4.2));
+              col *= 1.0 - 0.12 * (1.0 - smoothstep(0.0, 0.03, dist)) * (1.0 - mask);
+              return mix(col, pathC, mask);
+            }
+            // Mountain floor (Medium/High): warm tan scree with grey rock slabs, darker gravel
+            // streaks and a few patches of dry grass, under the 3D peaks.
+            vec3 mountainFloor() {
+              float n1 = gNoise(vP * 2.2 + 9.1);
+              float n2 = gNoise(vP * 7.5 + 1.3);
+              vec3 c = mix(${glslColor(MOUNTAIN_SCREE)}, ${glslColor(MOUNTAIN_ROCK)}, smoothstep(0.45, 0.75, n1));
+              c *= 0.86 + 0.24 * n2;
+              float streak = smoothstep(0.62, 0.85, gNoise(vec2(vP.x * 3.0 + vP.y * 1.2, vP.y * 9.0)));
+              c = mix(c, c * 0.72, streak * 0.6);
+              float grass = smoothstep(0.62, 0.8, gNoise(vP * 3.4 + 21.7));
+              c = mix(c, grassAt(${glslColor(MOUNTAIN_GRASS)}), grass * 0.75);
+              float px = length(fwidth(vP));
+              c *= 1.0 + (gNoise(vP * 80.0) - 0.5) * 0.22 * (1.0 - smoothstep(0.25, 0.7, px * 80.0));
+              return c;
+            }
             vec4 terrainArt(int t, vec2 uv) {
-              ${ISLAND_TERRAINS.map((_, i) => `if (t == ${i}) return texture2D(uTex${i}, uv);`).join("\n")}
-              return vec4(0.5, 0.5, 0.5, 1.0);
+              vec4 art = vec4(0.5, 0.5, 0.5, 1.0);
+              ${ISLAND_TERRAINS.map((_, i) => `if (t == ${i}) art = texture2D(uTex${i}, uv);`).join("\n")}
+              ${richForest ? `if (t == ${ISLAND_TERRAINS.indexOf("tile.forest")}) art = vec4(forestFloor(), art.a);` : ""}
+              ${richForest ? `if (t == ${ISLAND_TERRAINS.indexOf("tile.pasture")}) art = vec4(meadowFloor(), art.a);` : ""}
+              ${richForest ? `if (t == ${ISLAND_TERRAINS.indexOf("tile.mountains")}) art = vec4(mountainFloor(), art.a);` : ""}
+              return art;
             }
             // How much of a tile's art counts here: inside its own hexagon (fading out just past
             // the edge) and only where the image is opaque. The square image's corners outside
@@ -320,24 +445,30 @@ export function IslandGround({
                   ? "texture2D(uSand, vP * 0.7).rgb * vec3(0.937, 0.886, 0.741)"
                   : "vec3(0.84, 0.74, 0.52)"
               };
-              // Where no tile has art (outside every hexagon), the ground is sand.
-              col = mix(sandC, col, cover);
+              ${richForest ? `if (uTerrain[i1] == ${ISLAND_TERRAINS.indexOf("tile.pasture")}) col = campGround(col, sandC, uPathA[i1], uPathB[i1], uPathC[i1]);` : ""}
+              // Outside the coastal hexes a grass rim runs down toward the beach; the seams
+              // between tiles (further inland on the shore scale) stay sand.
+              float rim = smoothstep(${RIM_GRASS_START.toFixed(3)}, ${(RIM_GRASS_START + 0.06).toFixed(3)}, vShore)
+                * (1.0 - smoothstep(${(RIM_GRASS_END - 0.08).toFixed(3)}, ${RIM_GRASS_END.toFixed(3)}, vShore));
+              vec3 ground = mix(sandC, grassAt(${glslColor(GRASS_COLOR)}), rim);
+              // Where no tile has art (outside every hexagon), the ground is sand (or rim grass).
+              col = mix(ground, col, cover);
               col = mix(col, sandC, smoothstep(${COAST_START}, ${COAST_END}, vShore));
               diffuseColor.rgb *= col;
             }`,
           );
       },
       customProgramCacheKey: () =>
-        `island-ground-${n}-${softTiles ? "soft" : "plain"}-${sandUrl ? "sand" : "nosand"}`,
+        `island-ground-${n}-${softTiles ? "soft" : "plain"}-${sandUrl ? "sand" : "nosand"}-${grassMap ? "g" : "-"}-${richForest ? "rf" : "-"}`,
     }),
     // Tiles and textures are fixed for a board and theme; remount on change via the key below.
     // eslint-disable-next-line react-hooks/exhaustive-deps
-    [tiles, art, sand, softTiles, sandUrl, n],
+    [tiles, art, sand, softTiles, sandUrl, n, grassMap, richForest],
   );
   return (
     <mesh geometry={geometry} receiveShadow raycast={() => {}}>
       <meshStandardMaterial
-        key={`${softTiles}-${sandUrl}-${urls.join()}`}
+        key={`${softTiles}-${sandUrl}-${urls.join()}-${grassMap ? "g" : "-"}-${richForest}`}
         roughness={1}
         metalness={0}
         {...material}

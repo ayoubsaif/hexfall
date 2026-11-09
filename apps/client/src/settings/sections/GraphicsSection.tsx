@@ -1,13 +1,17 @@
+import { useId } from "react";
 import { useTranslation } from "react-i18next";
+import { Switch } from "@/components/ui/switch.tsx";
 import { GRAPHICS_MODES, GRAPHICS_QUALITIES, setPref, usePrefsStore } from "../../store/prefs.ts";
 import { useGraphicsQuality } from "../../scene/graphicsQuality.ts";
-import { ChoiceGroup } from "../parts.tsx";
+import { ChoiceGroup, SettingRow } from "../parts.tsx";
 
 export function GraphicsSection() {
   const { t } = useTranslation();
   const mode = usePrefsStore((s) => s.graphicsMode);
   const quality = usePrefsStore((s) => s.graphicsQuality);
   const active = useGraphicsQuality();
+  const filters = usePrefsStore((s) => s.screenFilters);
+  const id = useId();
   return (
     <div className="flex flex-col gap-4">
       <ChoiceGroup
@@ -32,6 +36,19 @@ export function GraphicsSection() {
       <p role="status" className="text-xs text-muted-foreground">
         {t("settings.graphics.active", { quality: t(`settings.graphics.${active}`) })}
       </p>
+      <SettingRow
+        label={t("settings.graphics.filters")}
+        hint={t("settings.graphics.filtersHint")}
+        htmlFor={`${id}-filters`}
+        control={
+          <Switch
+            id={`${id}-filters`}
+            data-testid="settings-screen-filters"
+            checked={filters}
+            onCheckedChange={(on) => setPref("screenFilters", on)}
+          />
+        }
+      />
     </div>
   );
 }

@@ -4,21 +4,21 @@ import type { ActionOf, DevCard, GameState, PlayableDevCard, Seat } from "../sta
 import type { EdgeId } from "../topology.ts";
 import {
   COSTS,
-  WIN_VP,
   assertActive,
+  assertMayBuild,
   assertPhase,
-  assertRolled,
   cardTotal,
   emit,
   emptyCounts,
   hasCards,
   hiddenVp,
-  inBuildWindow,
+  mayBuildNow,
   isResource,
   payToBank,
   playerOf,
   publicVp,
   takeFromBank,
+  victoryTargetOf,
 } from "./common.ts";
 import { check } from "./errors.ts";
 import { updateLargestArmy } from "./largestArmy.ts";
@@ -47,7 +47,7 @@ function removeOne(cards: DevCard[], card: DevCard): boolean {
 
 export function canBuyDevCard(s: GameState, seat: Seat): boolean {
   return (
-    inBuildWindow(s, seat) &&
+    mayBuildNow(s, seat) &&
     s.devDeck.length > 0 &&
     hasCards(playerOf(s, seat).resources, COSTS.devCard)
   );
@@ -75,11 +75,11 @@ export function playableDevCards(s: GameState, seat: Seat): PlayableDevCard[] {
   return PLAY_ORDER.filter((c) => canPlay(s, seat, c));
 }
 
-/** True on the seat's own turn when public + hidden VP >= 10 and they hold a VP card. */
+/** True on the seat's own turn when public + hidden VP reach the victory target and they hold a VP card. */
 export function canRevealVictoryPoints(s: GameState, seat: Seat): boolean {
   if (s.phase.kind !== "turn" || s.turn.seat !== seat || !s.players[seat]) return false;
   const hidden = hiddenVp(s, seat);
-  return hidden > 0 && publicVp(s, seat) + hidden >= WIN_VP;
+  return hidden > 0 && publicVp(s, seat) + hidden >= victoryTargetOf(s);
 }
 
 /** Free road paths during the Road Building phase (empty otherwise). */
@@ -89,9 +89,7 @@ export function roadBuildingRoads(s: GameState, seat: Seat): EdgeId[] {
 }
 
 export function buyDevCard(s: GameState, a: ActionOf<"buyDevCard">): void {
-  assertPhase(s, "turn");
-  assertActive(s, a.seat);
-  assertRolled(s);
+  assertMayBuild(s, a.seat);
   check(s.devDeck.length > 0, "deck_empty", "the development deck is empty");
   payToBank(s, a.seat, COSTS.devCard);
   const card = s.devDeck.pop();
@@ -205,7 +203,11 @@ export function playMonopoly(s: GameState, a: ActionOf<"playMonopoly">): void {
 export function revealVictoryPoints(s: GameState, a: ActionOf<"revealVictoryPoints">): void {
   assertPhase(s, "turn");
   assertActive(s, a.seat);
-  check(canRevealVictoryPoints(s, a.seat), "cannot_reveal", "revealing would not reach 10 VP");
+  check(
+    canRevealVictoryPoints(s, a.seat),
+    "cannot_reveal",
+    `revealing would not reach ${victoryTargetOf(s)} VP`,
+  );
   const p = playerOf(s, a.seat);
   const n = count(p.devCards, "victoryPoint");
   p.devCards = p.devCards.filter((c) => c !== "victoryPoint");

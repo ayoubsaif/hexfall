@@ -82,9 +82,11 @@ describe("currentPick", () => {
 });
 
 describe("seat colors", () => {
-  it("are four distinct colors with names", () => {
-    expect(new Set(SEAT_COLORS.map((c) => c.hex)).size).toBe(4);
+  it("are six distinct colors with names", () => {
+    expect(new Set(SEAT_COLORS.map((c) => c.hex)).size).toBe(6);
     expect(seatColor(1).name).toBe("Blue");
-    expect(() => seatColor(4)).toThrow();
+    expect(seatColor(4).name).toBe("Green");
+    expect(seatColor(5).name).toBe("Brown");
+    expect(() => seatColor(6)).toThrow();
   });
 });

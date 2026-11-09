@@ -18,7 +18,7 @@ import { resetGame, useGameStore } from "../store/game.ts";
 import { isFrozen, resetRoom, useRoomStore, type RoomRequest } from "../store/room.ts";
 import { sortSaved, useSavedGamesStore, type SavedGame } from "../store/savedGames.ts";
 import { resetUi } from "../store/ui.ts";
-import type { BoardModeChoice, SessionApi } from "./actions.ts";
+import type { BoardModeChoice, SessionApi, SoloOpponents } from "./actions.ts";
 import { createAddress, type Address } from "./address.ts";
 import type { Connection, ConnectionStatus, Timers } from "./connection.ts";
 import { createSeatStorage, normalizeRoom, type SeatStorage } from "./seatStorage.ts";
@@ -55,6 +55,7 @@ type TimerId = ReturnType<Timers["setTimeout"]>;
 
 /** The room status that completes each host request. */
 const REQUEST_DONE: Partial<Record<RoomRequest, RoomStatus>> = {
+  start: "playing",
   pause: "paused",
   resume: "playing",
   end: "ended",
@@ -74,7 +75,7 @@ export class SessionController implements SessionApi {
   /** Host request (pause, resume, end) waiting for the room state it leads to. */
   private roomRequest: RoomRequest | null = null;
   /** Bots to seat (then start) as soon as the room created for "Play solo" is joined. */
-  private soloOpponents: 2 | 3 | null = null;
+  private soloOpponents: SoloOpponents | null = null;
   private soloLevel: BotLevel | undefined = undefined;
   /** A `lookupSeats` was sent and not answered. */
   private lookingUp = false;
@@ -379,7 +380,7 @@ export class SessionController implements SessionApi {
     );
   }
 
-  playSolo(name: string, opponents: 2 | 3, avatar?: AvatarId, level?: BotLevel): boolean {
+  playSolo(name: string, opponents: SoloOpponents, avatar?: AvatarId, level?: BotLevel): boolean {
     const n = cleanName(name);
     if (!n) return false;
     const sent = this.request("create", () =>
@@ -434,14 +435,23 @@ export class SessionController implements SessionApi {
     return this.request("leave", () => this.conn.send("leaveRoom", {}));
   }
 
-  startGame(mode: BoardModeChoice, startingPlayer?: number, turnTimer?: TurnTimerPreset): boolean {
-    return this.request("start", () =>
+  startGame(
+    mode: BoardModeChoice,
+    startingPlayer?: number,
+    turnTimer?: TurnTimerPreset,
+    victoryTarget?: number,
+  ): boolean {
+    const sent = this.request("start", () =>
       this.conn.send("startGame", {
         mode,
         ...(startingPlayer === undefined ? {} : { startingPlayer }),
         ...(turnTimer === undefined ? {} : { turnTimer }),
+        ...(victoryTarget === undefined ? {} : { victoryTarget }),
       }),
     );
+    // Cleared by the playing room state (REQUEST_DONE), so Pause and Leave work at once.
+    if (sent) this.roomRequest = "start";
+    return sent;
   }
 
   pauseGame(): boolean {

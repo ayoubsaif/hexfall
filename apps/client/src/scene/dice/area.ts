@@ -12,11 +12,11 @@ export const DICE_AREA = { halfX: 1.1, halfZ: 0.8 } as const;
 export const DICE_SCALE = 1.5;
 
 /**
- * Edge of a die in the simulation, local units: small table dice, a world edge of
- * 0.18 × 1.5 = 0.27 (about a settlement's width). The `dice.die` model is drawn at its
+ * Edge of a die in the simulation, local units: a world edge of 0.24 × 1.5 = 0.36, so the
+ * dice stand out clearly next to the number chips (0.44 across, 0.035 thick). The `dice.die` model is drawn at its
  * contract edge DIE_EDGE and scaled by DIE_MODEL_SCALE to match.
  */
-export const DIE_SIZE = 0.18;
+export const DIE_SIZE = 0.24;
 export const DIE_MODEL_SCALE = DIE_SIZE / DIE_EDGE;
 
 /** Lift above the land surface so die shadows do not fight with tile tops. */

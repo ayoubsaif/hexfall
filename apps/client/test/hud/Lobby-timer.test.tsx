@@ -60,7 +60,7 @@ describe("Lobby turn timer", () => {
     m = mount(<Lobby inviteLink="l" />);
     click(radio("relaxed"));
     click(byText(m.container, "button", "Start game"));
-    expect(calls).toEqual([{ fn: "startGame", args: ["variable", undefined, "relaxed"] }]);
+    expect(calls).toEqual([{ fn: "startGame", args: ["variable", undefined, "relaxed", 10] }]);
     expect(localStorage.getItem(TURN_TIMER_KEY)).toBe("relaxed");
   });
 

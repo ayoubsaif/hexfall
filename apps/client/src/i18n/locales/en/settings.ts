@@ -30,6 +30,9 @@ export const settings = {
     medium: "Medium",
     high: "High",
     active: "Current quality: {{quality}}",
+    filters: "Screen filters",
+    filtersHint:
+      "A warm colour grade and a soft vignette. On Medium and High they also add soft contact shadows.",
   },
   keyboard: {
     hint: "Shortcuts work on your turn when the button is enabled. They are off while typing or while a dialog is open.",

@@ -1,12 +1,23 @@
 // Turn timer helpers (task 3.2): wait kinds, waited-on seats, restart rule, deadlines and
 // the anchor replay used when a room is rebuilt.
-import { applyAction, createGame, type Action, type GameState, type Phase } from "@hexfall/engine";
+import {
+  applyAction,
+  createGame,
+  playerView,
+  topologyOf,
+  victoryTargetOf,
+  type Action,
+  type GameState,
+  type Phase,
+} from "@hexfall/engine";
 import { describe, expect, it } from "vite-plus/test";
-import { rebuildState } from "../src/rooms/room.ts";
+import { gameConfig, rebuildState } from "../src/rooms/room.ts";
 import {
   deadlineOf,
   nextAnchor,
   restartsTimer,
+  SPECIAL_BUILD_MIN_MS,
+  specialBuildMs,
   timerInfo,
   waitKind,
   waitingSeats,
@@ -209,5 +220,72 @@ describe("rebuildState replays the anchor", () => {
     expect(rebuildState(old, 9_999).anchor).toBe(9_999);
     const noStart: LoadedRoom = { ...old, snapshot: null, version: 0 };
     expect(rebuildState(noStart, 7_777).anchor).toBe(7_777);
+  });
+});
+
+describe("Special Building Phase windows", () => {
+  const five = { seed: "timer5", mode: "variable" as const, playerCount: 5 as const };
+  const win = (current: number, queue: number[]): GameState => {
+    const s = createGame(five);
+    s.phase = { kind: "specialBuild", current, queue, afterTurnOf: 2 };
+    s.turn = { ...s.turn, seat: 2, number: 7, rolled: true };
+    return s;
+  };
+
+  it("waits for the window's seat with a third of the action wait, at least 15 s", () => {
+    const s = win(3, [4, 0, 1]);
+    expect(waitingSeats(s)).toEqual([3]);
+    expect(waitKind(s)).toBe("action");
+    expect(timerInfo(s, 0, "standard", 0)).toMatchObject({ durationMs: 30_000, seats: [3] });
+    expect(timerInfo(s, 0, "relaxed", 0)?.durationMs).toBe(40_000);
+    expect(specialBuildMs(30_000)).toBe(SPECIAL_BUILD_MIN_MS);
+    expect(deadlineOf(s, 1_000, "off")).toBeNull();
+  });
+
+  it("restarts when the window passes or its owner builds, not for others", () => {
+    const before = win(3, [4, 0, 1]);
+    const passed = win(4, [0, 1]);
+    expect(restartsTimer(before, { type: "passSpecialBuild", seat: 3 }, passed)).toBe(true);
+    expect(restartsTimer(before, { type: "buyDevCard", seat: 3 }, before)).toBe(true);
+    expect(restartsTimer(before, { type: "buyDevCard", seat: 0 }, before)).toBe(false);
+  });
+
+  it("a timed-out window passes to the next seat", () => {
+    const s = win(3, [4, 0, 1]);
+    const r = applyAction(s, { type: "timeout" });
+    if (!r.ok) throw new Error(r.message);
+    expect(waitingSeats(r.state)).toEqual([4]);
+  });
+});
+
+describe("games stored before the 5-6 player change", () => {
+  it("load with a target of 10 and the standard board", () => {
+    const state = createGame(config) as Partial<GameState> & GameState;
+    // Strip the fields this change added, as an old snapshot would lack them.
+    delete (state as { victoryTarget?: number }).victoryTarget;
+    delete (state as { bankPerResource?: number }).bankPerResource;
+    delete (state.board as { layout?: string }).layout;
+    const loaded: LoadedRoom = {
+      meta: {
+        code: "OLD",
+        rev: 1,
+        status: "playing",
+        createdAt: 0,
+        host: 0,
+        seats: ["A", "B", "C"].map((name) => ({ name, tokenHash: "x" })),
+        config: { seed: "old", mode: "variable", playerCount: 3 },
+        turnTimer: "standard",
+      },
+      snapshot: { version: 3, state, anchor: 0 },
+      actions: [],
+      version: 3,
+    };
+    const rebuilt = rebuildState(loaded, 0).state;
+    expect(victoryTargetOf(rebuilt)).toBe(10);
+    expect(topologyOf(rebuilt.board).hexes).toHaveLength(19);
+    expect(playerView(rebuilt, 0).victoryTarget).toBe(10);
+    expect(gameConfig({ seed: "old", mode: "variable", playerCount: 3 })).not.toHaveProperty(
+      "victoryTarget",
+    );
   });
 });

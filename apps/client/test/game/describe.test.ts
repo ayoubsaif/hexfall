@@ -14,6 +14,8 @@ const SAMPLES: { [K in GameEvent["type"]]: Extract<GameEvent, { type: K }> } = {
   orderTied: { type: "orderTied", seats: [0, 2] },
   timedOut: { type: "timedOut", phase: "discard", seats: [1, 3] },
   startingPlayer: { type: "startingPlayer", seat: 2 },
+  specialBuildOpened: { type: "specialBuildOpened", seat: 3 },
+  specialBuildPassed: { type: "specialBuildPassed", seat: 3 },
   built: { type: "built", seat: 0, piece: "settlement", at: 12, free: true },
   startingResources: { type: "startingResources", seat: 3, resources: { ore: 1, wool: 2 } },
   diceRolled: { type: "diceRolled", seat: 0, dice: [3, 4], total: 7 },

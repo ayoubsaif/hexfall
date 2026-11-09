@@ -7,6 +7,12 @@ import type { ActionRecord } from "../store/types.ts";
 
 export type WaitKind = "roll" | "action";
 
+/** A Special Building Phase window lasts a third of the action wait, but at least 15 s. */
+export const SPECIAL_BUILD_MIN_MS = 15_000;
+export function specialBuildMs(actionMs: number): number {
+  return Math.max(SPECIAL_BUILD_MIN_MS, Math.round(actionMs / 3));
+}
+
 /** What the game waits for: a dice roll (or roll for order), any other move, or nothing. */
 export function waitKind(s: GameState): WaitKind | null {
   switch (s.phase.kind) {
@@ -34,6 +40,8 @@ export function waitingSeats(s: GameState): Seat[] {
       });
       return out;
     }
+    case "specialBuild":
+      return [phase.current];
     case "ended":
       return [];
     default:
@@ -49,6 +57,14 @@ export function waitingSeats(s: GameState): Seat[] {
 export function restartsTimer(before: GameState, action: Action, after: GameState): boolean {
   if (action.type === "timeout") return true;
   if (before.phase.kind !== after.phase.kind || before.turn.seat !== after.turn.seat) return true;
+  if (before.phase.kind === "specialBuild") {
+    // Each building window is its own wait: it restarts when the window changes hands
+    // or its owner acts, like the active player's actions on a normal turn.
+    if (after.phase.kind !== "specialBuild" || after.phase.current !== before.phase.current) {
+      return true;
+    }
+    return action.seat === before.phase.current;
+  }
   if (action.seat === before.turn.seat) return true;
   return before.phase.kind === "discard" && (before.phase.owed[action.seat] ?? 0) > 0;
 }
@@ -68,7 +84,9 @@ export function nextAnchor(
 export function durationOf(s: GameState, preset: TurnTimerPreset): number | null {
   if (preset === "off") return null;
   const kind = waitKind(s);
-  return kind === null ? null : TURN_TIMER_PRESETS[preset][kind];
+  if (kind === null) return null;
+  const ms = TURN_TIMER_PRESETS[preset][kind];
+  return s.phase.kind === "specialBuild" ? specialBuildMs(ms) : ms;
 }
 
 /** Server-clock deadline for the current wait, or null when there is none. */

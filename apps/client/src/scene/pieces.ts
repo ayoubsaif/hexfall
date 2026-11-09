@@ -1,7 +1,13 @@
 // Pure layout of the live game's pieces and pick targets (specs/board-interaction).
 // Positions come from the engine geometry; heights from the land relief.
 import type { Building, Seat } from "@hexfall/engine";
-import { edgeMidpoint, hexCenter, vertexPosition } from "@hexfall/engine/geometry";
+import {
+  STANDARD_TOPOLOGY,
+  edgeMidpoint,
+  hexCenter,
+  vertexPosition,
+  type Topology,
+} from "@hexfall/engine/geometry";
 import { seatColor } from "../game/colors.ts";
 import type { Pick, TargetKind } from "../game/pick.ts";
 import type { AssetKey, LandRelief } from "../theme/index.ts";
@@ -37,12 +43,13 @@ export function pieceLayout(
   vertices: readonly (Building | null)[],
   edges: readonly (Seat | null)[],
   relief: LandRelief,
+  topo: Topology = STANDARD_TOPOLOGY,
 ): PieceItem[] {
   const y = landTop(relief);
   const items: PieceItem[] = [];
   edges.forEach((owner, e) => {
     if (owner === null || owner === undefined) return;
-    const m = edgeMidpoint(e);
+    const m = edgeMidpoint(e, topo);
     items.push({
       key: `e${e}`,
       kind: "road",
@@ -65,7 +72,7 @@ export function pieceLayout(
       at: v,
       owner: b.owner,
       color: seatColor(b.owner).hex,
-      position: vertexPosition(v),
+      position: vertexPosition(v, topo),
       yaw: 0,
       y,
     });
@@ -91,20 +98,31 @@ export interface TargetItem {
   readonly y: number;
 }
 
-export function targetLayout(pick: Pick | null, relief: LandRelief): TargetItem[] {
+export function targetLayout(
+  pick: Pick | null,
+  relief: LandRelief,
+  topo: Topology = STANDARD_TOPOLOGY,
+): TargetItem[] {
   if (!pick) return [];
   const y = landTop(relief) + TARGET_LIFT;
   const ids = [...pick.targets].sort((a, b) => a - b);
   return ids.map((id) => {
     switch (pick.target) {
       case "vertex":
-        return { key: `t-v${id}`, target: "vertex", id, position: vertexPosition(id), yaw: 0, y };
+        return {
+          key: `t-v${id}`,
+          target: "vertex",
+          id,
+          position: vertexPosition(id, topo),
+          yaw: 0,
+          y,
+        };
       case "edge": {
-        const m = edgeMidpoint(id);
+        const m = edgeMidpoint(id, topo);
         return { key: `t-e${id}`, target: "edge", id, position: [m.x, m.z], yaw: -m.angle, y };
       }
       case "hex":
-        return { key: `t-h${id}`, target: "hex", id, position: hexCenter(id), yaw: 0, y };
+        return { key: `t-h${id}`, target: "hex", id, position: hexCenter(id, topo), yaw: 0, y };
     }
   });
 }

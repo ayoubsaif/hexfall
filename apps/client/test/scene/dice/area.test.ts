@@ -35,8 +35,8 @@ function camera(aspect: number, elevationDeg: number, zoom: number, azimuth: num
 }
 
 describe("dice area", () => {
-  it("draws small table dice, a world edge of 0.27, with the model scaled to the body", () => {
-    expect(DIE_SIZE * DICE_SCALE).toBeCloseTo(0.27, 9);
+  it("draws table dice with a world edge of 0.36, with the model scaled to the body", () => {
+    expect(DIE_SIZE * DICE_SCALE).toBeCloseTo(0.36, 9);
     expect(DIE_EDGE * DIE_MODEL_SCALE).toBeCloseTo(DIE_SIZE, 9);
   });
 

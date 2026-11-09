@@ -18,8 +18,8 @@ const frame = (obj: unknown) => JSON.stringify(obj);
 type Assignable<A, B> = [A] extends [B] ? true : false;
 
 describe("protocol v3", () => {
-  it("is version 8 and has the Replaced close code", () => {
-    expect(PROTOCOL_VERSION).toBe(8);
+  it("is version 9 and has the Replaced close code", () => {
+    expect(PROTOCOL_VERSION).toBe(9);
     expect(CloseCode.Replaced).toBe(4001);
   });
 
@@ -45,6 +45,7 @@ describe("protocol v3", () => {
       encodeClient("startGame", { mode: "variable" }, 5),
       encodeClient("startGame", { mode: "beginner", startingPlayer: 2 }, 6),
       encodeClient("startGame", { mode: "variable", turnTimer: "relaxed" }, 7),
+      encodeClient("startGame", { mode: "variable", victoryTarget: 12, startingPlayer: 5 }, 8),
       encodeClient("gameAction", { action: { type: "rollDice" } }, 7),
       encodeClient(
         "gameAction",
@@ -119,7 +120,9 @@ describe("protocol v3", () => {
     const bad = [
       { v, type: "createRoom", seq: 0, payload: {} },
       { v, type: "startGame", seq: 0, payload: { mode: "chaos" } },
-      { v, type: "startGame", seq: 0, payload: { mode: "variable", startingPlayer: 4 } },
+      { v, type: "startGame", seq: 0, payload: { mode: "variable", startingPlayer: 6 } },
+      { v, type: "startGame", seq: 0, payload: { mode: "variable", victoryTarget: 20 } },
+      { v, type: "startGame", seq: 0, payload: { mode: "variable", victoryTarget: 7 } },
       { v, type: "startGame", seq: 0, payload: { mode: "variable", turnTimer: "blitz" } },
       { v, type: "gameAction", seq: 0, payload: { action: { type: "timeout" } } },
       { v, type: "gameAction", seq: 0, payload: { action: { type: "nope" } } },
@@ -182,13 +185,14 @@ describe("protocol v3", () => {
       { type: "cancelTrade", offerId: 1 },
       { type: "maritimeTrade", give: "ore", get: "wool", count: 1 },
       { type: "endTurn" },
+      { type: "passSpecialBuild" },
     ];
     const types = new Set<Action["type"]>();
     for (const s of samples) {
       expect(ClientActionSchema.safeParse(s).success, s.type).toBe(true);
       types.add(s.type);
     }
-    expect(types.size).toBe(21);
+    expect(types.size).toBe(22);
   });
 });
 

@@ -12,7 +12,7 @@ import {
   type ResourceBundle,
   type Seat,
 } from "@hexfall/engine";
-import { RESOURCES, TOPOLOGY } from "@hexfall/engine/geometry";
+import { RESOURCES, STANDARD_TOPOLOGY } from "@hexfall/engine/geometry";
 
 /** Setup phase, seat 0 places first (no roll for order). */
 export function setupState(playerCount: 3 | 4 = 4, seed = 1): GameState {
@@ -71,5 +71,5 @@ export function seen(s: GameState, seat: Seat): { view: PlayerView; legal: Legal
 
 /** First edge touching vertex `v`. */
 export function edgeAt(v: number): number {
-  return TOPOLOGY.vertices[v]!.edges[0]!;
+  return STANDARD_TOPOLOGY.vertices[v]!.edges[0]!;
 }

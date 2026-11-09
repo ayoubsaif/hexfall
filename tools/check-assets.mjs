@@ -32,6 +32,7 @@ const THEMES_DIR =
     ? resolve(process.argv[themesArg + 1])
     : join(ROOT, "apps", "client", "public", "themes");
 // Allowed asset licenses (SPDX). Everything but CC0 requires attribution via a credit.
+// LicenseRef-BlendKit-RF: BlendKit's Royalty Free license, for models embedded in the game only.
 const ALLOWED_LICENSES = new Set([
   "CC0-1.0",
   "CC-BY-3.0",
@@ -39,6 +40,7 @@ const ALLOWED_LICENSES = new Set([
   "CC-BY-SA-3.0",
   "CC-BY-SA-4.0",
   "MIT",
+  "LicenseRef-BlendKit-RF",
 ]);
 const NO_ATTRIBUTION = new Set(["CC0-1.0"]);
 const SCAN_DIRS = ["apps", "packages"].map((d) => join(ROOT, d));
@@ -554,6 +556,47 @@ if (themesArg === -1) {
       failures.push(
         `favicon.ico must hold ${ICO_SIZES.join("/")} px images (has ${sizes.join("/") || "none"}).`,
       );
+    }
+  }
+  // Rules guide illustrations (openspec tutorial-mode-and-rules-guide, specs/rules-guide
+  // "Illustrations are pre-generated assets"): one 960x540 WebP per section, named after
+  // RULES_SECTIONS in apps/client/src/store/rulesGuide.ts, and nothing else in the folder.
+  const RULES_DIR = join(PUBLIC_DIR, "rules");
+  const RULES_IMAGES = [
+    "goal",
+    "setup",
+    "turn",
+    "production",
+    "building",
+    "robber",
+    "devCards",
+    "trading",
+    "special",
+    "winning",
+  ].map((s) => `${s}.webp`);
+  for (const file of RULES_IMAGES) {
+    const path = join(RULES_DIR, file);
+    if (!existsSync(path)) {
+      failures.push(`rules image rules/${file} is missing (run pnpm run rules:art).`);
+      continue;
+    }
+    imageCount++;
+    const buf = readFileSync(path);
+    const dim = imageSize(buf);
+    if (buf.toString("ascii", 8, 12) !== "WEBP" || !dim) {
+      failures.push(`rules image rules/${file} is not a readable WebP file.`);
+    } else if (dim.width !== 960 || dim.height !== 540) {
+      failures.push(`rules image rules/${file} is ${dim.width}x${dim.height}; it must be 960x540.`);
+    }
+    if (buf.length > IMAGE_BUDGET_BYTES) {
+      warnings.push(
+        `rules image rules/${file} is ${kb(buf.length)} (budget ~${kb(IMAGE_BUDGET_BYTES)}).`,
+      );
+    }
+  }
+  for (const file of existsSync(RULES_DIR) ? readdirSync(RULES_DIR) : []) {
+    if (IMAGE_EXT.has(extname(file).toLowerCase()) && !RULES_IMAGES.includes(file)) {
+      failures.push(`rules image rules/${file} is not one of the rules guide sections.`);
     }
   }
   for (const file of readdirSync(PUBLIC_DIR)) {

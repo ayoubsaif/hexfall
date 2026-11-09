@@ -65,6 +65,8 @@ export interface StartOptions {
   startingPlayer?: number;
   /** Default "off". */
   turnTimer?: TurnTimerPreset;
+  /** Points needed to win, 8–15; default 10. */
+  victoryTarget?: number;
 }
 
 /** Timer functions (injected by tests; default setTimeout/clearTimeout, unref'd). */

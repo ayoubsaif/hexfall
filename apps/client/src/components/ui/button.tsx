@@ -10,14 +10,14 @@ export const buttonVariants = cva(
   {
     variants: {
       variant: {
-        menu: "game-mode-button",
+        menu: "game-mode-button btn-light",
         default:
-          "border border-gold bg-linear-to-b from-[#6b4228] to-leather font-serif text-[1.05em] tracking-wide text-cream shadow-[inset_0_1px_0_rgb(255_235_200/25%),0_2px_0_rgb(0_0_0/30%)] hover:brightness-125",
+          "btn-light wood-button rounded-lg font-serif text-[1.05em] tracking-wide text-cream",
         secondary:
-          "frame [--corner-size:12px] border border-gold/60 bg-cream/60 text-foreground hover:bg-cream/90 aria-pressed:border-gold aria-pressed:bg-linear-to-b aria-pressed:from-[#6b4228] aria-pressed:to-leather aria-pressed:text-cream aria-pressed:shadow-[inset_0_1px_0_rgb(255_235_200/25%)] data-[selected]:border-gold data-[selected]:bg-linear-to-b data-[selected]:from-[#6b4228] data-[selected]:to-leather data-[selected]:text-cream data-[selected]:shadow-[inset_0_1px_0_rgb(255_235_200/25%)]",
+          "frame btn-light [--corner-size:12px] border border-gold/60 bg-cream/60 text-foreground hover:bg-cream/90 aria-pressed:border-gold aria-pressed:bg-linear-to-b aria-pressed:from-[#6b4228] aria-pressed:to-leather aria-pressed:text-cream aria-pressed:shadow-[inset_0_1px_0_rgb(255_235_200/25%)] data-[selected]:border-gold data-[selected]:bg-linear-to-b data-[selected]:from-[#6b4228] data-[selected]:to-leather data-[selected]:text-cream data-[selected]:shadow-[inset_0_1px_0_rgb(255_235_200/25%)]",
         ghost: "bg-transparent text-muted-foreground hover:bg-ink/10 hover:text-foreground",
         link: "bg-transparent p-0 text-forest underline underline-offset-2",
-        destructive: "bg-bad text-cream hover:brightness-110",
+        destructive: "btn-light bg-bad text-cream",
       },
       size: {
         default: "min-h-9 px-3.5 py-1.5 text-sm max-sm:min-h-10 short:min-h-10",
