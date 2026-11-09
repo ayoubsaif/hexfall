@@ -49,7 +49,7 @@ describe("game menu", () => {
     seatRoom(1);
     m = mount(<GameMenu />);
     expect(menuButton()).not.toBeNull();
-    expect(menuButton()?.querySelector("img")?.getAttribute("data-icon")).toBe("leave");
+    expect(menuButton()?.querySelector("[data-icon]")?.getAttribute("data-icon")).toBe("leave");
     act(() => useRoomStore.setState({ status: "paused" }));
     expect(menuButton()).toBeNull();
     act(() => useRoomStore.setState({ status: "playing", seat: null }));
@@ -73,13 +73,13 @@ describe("game menu", () => {
     click(menuButton());
     expect(
       button(/Close game for now/)
-        ?.querySelector("img")
+        ?.querySelector("[data-icon]")
         ?.getAttribute("data-icon"),
     ).toBe("pause");
     expect(button(/End game now/)).toBeDefined();
     expect(
       button(/Leave game/)
-        ?.querySelector("img")
+        ?.querySelector("[data-icon]")
         ?.getAttribute("data-icon"),
     ).toBe("leave");
   });
@@ -158,7 +158,7 @@ describe("paused notice", () => {
     expect(notice?.getAttribute("role")).toBe("alertdialog");
     expect(button(/Resume game/)).toBeUndefined();
     const rows = [...(dialog("paused-actions")?.querySelectorAll("button") ?? [])];
-    expect(rows.map((b) => b.querySelector("img")?.getAttribute("data-icon"))).toEqual([
+    expect(rows.map((b) => b.querySelector("[data-icon]")?.getAttribute("data-icon"))).toEqual([
       "home",
       "leave",
     ]);
@@ -171,7 +171,7 @@ describe("paused notice", () => {
     const actions = dialog("paused-actions");
     expect(actions?.className).toContain("flex-col");
     const rows = [...(actions?.querySelectorAll("button") ?? [])];
-    expect(rows.map((b) => b.querySelector("img")?.getAttribute("data-icon"))).toEqual([
+    expect(rows.map((b) => b.querySelector("[data-icon]")?.getAttribute("data-icon"))).toEqual([
       "resume",
       "end-game",
       "home",

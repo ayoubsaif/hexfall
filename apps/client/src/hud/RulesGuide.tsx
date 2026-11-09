@@ -1,7 +1,8 @@
 // Rules guide dialog (openspec tutorial-mode-and-rules-guide, specs/rules-guide; design
 // decision 6): the base game rules in 10 illustrated sections, a section list (sidebar on
 // wider screens, a picker on phones) and previous/next. Opening it never touches game state.
-import { BookOpen, ChevronLeft, ChevronRight } from "lucide-react";
+import { ChevronLeft, ChevronRight } from "lucide-react";
+import { gameIcon } from "./GameIcon.tsx";
 import { useState } from "react";
 import { useTranslation } from "react-i18next";
 import { Button } from "@/components/ui/button.tsx";
@@ -56,7 +57,7 @@ export function RulesGuide() {
             className="hidden w-52 shrink-0 flex-col overflow-y-auto border-r border-border bg-ink/10 py-5 sm:flex"
           >
             <p className="mb-2 flex items-center gap-2 px-4 font-serif text-lg font-semibold text-forest">
-              <BookOpen aria-hidden className="size-5 shrink-0" />
+              <RulesIcon aria-hidden className="size-6 shrink-0" />
               {t("rules.title")}
             </p>
             <ol className="flex flex-col">
@@ -172,6 +173,8 @@ export function RulesGuide() {
 }
 
 /** Round HUD button that opens the guide ("How to play"); sits next to the Settings button. */
+const RulesIcon = gameIcon("rules");
+
 export function RulesButton() {
   const { t } = useTranslation();
   const open = useRulesGuideStore((s) => s.open);
@@ -188,11 +191,7 @@ export function RulesButton() {
       className="pointer-events-auto grid size-10 cursor-pointer place-items-center hud-leather-round transition-colors duration-150 outline-none focus-visible:ring-2 focus-visible:ring-ring max-sm:size-11 short:size-11 pointer-coarse:size-11 motion-reduce:transition-none"
       onClick={() => openRulesGuide()}
     >
-      <BookOpen
-        aria-hidden
-        className="size-5 drop-shadow-[0_1px_1px_rgb(0_0_0/60%)]"
-        strokeWidth={2.25}
-      />
+      <RulesIcon aria-hidden className="size-6 shrink-0" />
     </button>
   );
 }

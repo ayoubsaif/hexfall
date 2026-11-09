@@ -1,4 +1,5 @@
-// HUD button icons (public/ui/icons/<name>.webp, transparent 128 px) with the Gemini image API.
+// HUD button icons (apps/client/brand/hud-icons/<name>.webp, transparent 128 px) with the Gemini
+// image API. After adding one, rebuild the sprite: node tools/hud-icon-sprite.mjs
 // Existing HUD icons are sent as style references so a new one matches the set, and the subject
 // is drawn on flat chroma green and keyed out (see resource-icons-gen.mjs).
 // Needs GEMINI_API_KEY in .env. Write candidates elsewhere first to review them:
@@ -9,7 +10,8 @@ import { fileURLToPath } from "node:url";
 import { env, generate, keyOutGreen } from "./resource-icons-gen.mjs";
 
 const ROOT = resolve(dirname(fileURLToPath(import.meta.url)), "..");
-const ICON_DIR = join(ROOT, "apps", "client", "public", "ui", "icons");
+// Sources: the sprite (public/ui/icons.webp) is built from them by tools/hud-icon-sprite.mjs.
+const ICON_DIR = join(ROOT, "apps", "client", "brand", "hud-icons");
 
 const STYLE =
   "Match the painted HUD icon style of the attached reference icons exactly: flat cel-shaded " +
@@ -32,6 +34,11 @@ export const ICONS = {
     subject:
       "A small cozy cottage with a peaked brown roof, a wooden door and one round window, seen " +
       "straight on, a simple home.",
+  },
+  rules: {
+    subject:
+      "An open leather-bound rule book with warm brown covers and cream parchment pages, a " +
+      "brass corner on each cover and a red ribbon bookmark, seen from slightly above.",
   },
   "end-game": {
     subject:
