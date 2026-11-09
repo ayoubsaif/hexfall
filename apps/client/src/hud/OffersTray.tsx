@@ -1,7 +1,7 @@
 // Open player-trade offers that involve the viewer (specs/player-trade "Open offers tray",
 // "Incoming offer notification"). Reads `view.offers`; buttons enable from the legal offer ids.
 import type { ResourceBundle, Seat, TradeOffer } from "@hexfall/engine";
-import { RESOURCES } from "@hexfall/engine/geometry";
+import { CARD_ORDER } from "../game/cardOrder.ts";
 import { ArrowLeftRight } from "lucide-react";
 import { useEffect, useRef, useState } from "react";
 import { useTranslation } from "react-i18next";
@@ -61,7 +61,7 @@ function Side({ label, bundle }: { label: string; bundle: ResourceBundle }) {
     <div className="flex items-center gap-2" aria-hidden="true">
       <span className="w-[7ch] shrink-0 text-xs text-muted-foreground">{label}</span>
       <span className="flex flex-wrap gap-1">
-        {RESOURCES.filter((r) => (bundle[r] ?? 0) > 0).map((r) => (
+        {CARD_ORDER.filter((r) => (bundle[r] ?? 0) > 0).map((r) => (
           <span key={r} className="flex items-center gap-0.5" data-side-resource={r}>
             <GameCard resource={r} size="sm" />
             <span className="text-xs font-semibold tabular-nums">×{bundle[r]}</span>

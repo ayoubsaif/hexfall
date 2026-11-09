@@ -152,7 +152,7 @@ describe("Turn status and controls (full HUD)", () => {
       [...(tip?.querySelectorAll<HTMLElement>("[data-cost] [data-card]") ?? [])].map(
         (c) => c.dataset.card,
       ),
-    ).toEqual(["brick", "lumber"]);
+    ).toEqual(["lumber", "brick"]);
   });
 
   it("No turn bar or build panel in any phase, and the dice tray is the only roll control", () => {

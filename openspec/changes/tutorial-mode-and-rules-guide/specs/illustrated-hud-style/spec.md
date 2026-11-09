@@ -19,13 +19,9 @@ Main buttons (default, secondary, destructive and menu styles) and HUD action bu
 - **WHEN** the user prefers reduced motion and hovers a button
 - **THEN** the mask and light change instantly
 
-### Requirement: Wood main buttons
-Main (submit) buttons SHALL look like dark carved wood drawn entirely with CSS (no image files): a walnut base with visible long grain that tiles without seams, a soft top light and bottom shade, a brass rivet at each end, a dark inner bevel with a thin gold inlay, a gold edge and an embossed label. They SHALL have soft 8 px corners, an exception to the square shape of other rectangular buttons. Round HUD icon buttons SHALL use the same wood grain inside their gold ring. Pressing a wood button SHALL sink it by 1 px with an inner shadow.
+### Requirement: Leather main buttons
+Main (submit) buttons SHALL use the same brown leather skin as the home page's Game Mode buttons, drawn entirely with CSS (no image files): a diagonal leather gradient, a gold edge and a thin gold inner line, with a cream label. They SHALL have slightly rounded 4 px corners, an exception to the square shape of other rectangular buttons. Pressing a main button SHALL sink it by 1 px with an inner shadow.
 
 #### Scenario: Submit button look
 - **WHEN** a main button such as Confirm is shown
-- **THEN** it shows wood grain, brass rivets at both ends, a gold edge and 8 px rounded corners
-
-#### Scenario: No seams
-- **WHEN** a main button is wider than the grain tile
-- **THEN** no seam line is visible in the grain
+- **THEN** it shows the Game Mode leather gradient, a gold edge and a gold inner line, with 4 px rounded corners

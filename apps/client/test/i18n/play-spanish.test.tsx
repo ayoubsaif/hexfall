@@ -42,7 +42,7 @@ describe("play controls in Spanish", () => {
     expect(names).toContain("Construir carretera");
     expect(names).toContain("Terminar turno");
     expect(names).toContain("Comerciar con la banca");
-    expect(m.container.textContent).toContain("Cuesta 1 de Ladrillo, 1 de Madera");
+    expect(m.container.textContent).toContain("Cuesta 1 de Madera, 1 de Ladrillo");
     expect(m.container.textContent).not.toMatch(/Costs|Build road|End turn/);
   });
 

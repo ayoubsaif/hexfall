@@ -4,7 +4,7 @@
 // keyboard focus. No panel: one soft radial shadow behind the row. Pieces left are shown on the
 // build buttons (hud/actions/ActionButtons.tsx).
 import type { Resource } from "@hexfall/engine";
-import { RESOURCES } from "@hexfall/engine/geometry";
+import { CARD_ORDER } from "../game/cardOrder.ts";
 import type { CSSProperties, Ref } from "react";
 import { useTranslation } from "react-i18next";
 import {
@@ -58,7 +58,7 @@ export function Hand({ ref }: { ref?: Ref<HTMLDivElement> }) {
   if (!own?.resources) return null;
   const res = own.resources;
   const devGroups = own.devCards ? groupCards(own.devCards, own.boughtThisTurn ?? []).length : 0;
-  const slots = RESOURCES.length + devGroups;
+  const slots = CARD_ORDER.length + devGroups;
   return (
     <TooltipProvider delayDuration={150}>
       <div
@@ -74,7 +74,7 @@ export function Hand({ ref }: { ref?: Ref<HTMLDivElement> }) {
             className="edge-hand m-0 flex list-none items-end p-0"
             style={{ "--n": slots } as CSSProperties}
           >
-            {RESOURCES.map((r) => (
+            {CARD_ORDER.map((r) => (
               <HandSlot key={r} resource={r} count={res[r]} />
             ))}
             <DevCards />
