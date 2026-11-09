@@ -43,7 +43,15 @@ const CODE = /^[A-Z0-9]{1,16}$/;
 
 // Bump to drop every old cache on the next activation.
 const CACHE = "hexfall-v2";
-const SHELL = ["/", "/manifest.webmanifest", ICON, "/icons/icon-512.png", "/favicon.ico"];
+const SHELL = [
+  "/",
+  "/manifest.webmanifest",
+  ICON,
+  "/icons/icon-512.png",
+  "/favicon.ico",
+  // Loading-screen picture (index.html #boot and the React Splash).
+  "/rules/goal.webp",
+];
 // Static files that rarely change but are not content-hashed: serve cached, refresh behind.
 const SWR = /^\/(draco|textures|themes|cards|avatars|ui|icons|fonts|sounds|rules)\//;
 

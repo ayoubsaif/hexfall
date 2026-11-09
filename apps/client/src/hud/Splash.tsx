@@ -8,17 +8,18 @@ import { useReducedMotion } from "../store/motion.ts";
 export const TIP_COUNT = 5;
 export const TIP_INTERVAL_MS = 6000;
 export const GAME_NAME = import.meta.env.VITE_GAME_NAME || "Hexfall";
-/** The favicon as the logotype, gently pulsing unless motion is reduced. */
-function Logo() {
+/** Watercolor island (the rules "goal" picture); edges fade into the parchment. Same picture
+ * as the first-paint #boot screen in index.html, so the hand-off does not jump. */
+function Art() {
   return (
     <img
-      src="/icons/icon-192.png"
+      src="/rules/goal.webp"
       alt=""
       aria-hidden="true"
-      width={96}
-      height={96}
-      data-testid="splash-logo"
-      className="size-24 motion-safe:animate-pulse"
+      width={960}
+      height={540}
+      data-testid="splash-art"
+      className="splash-art h-auto w-[min(30rem,100%)] short:w-[min(18rem,100%)]"
     />
   );
 }
@@ -50,7 +51,7 @@ export function Splash({ progress }: { progress?: number }) {
       </p>
       <h1 className="font-serif text-6xl font-semibold text-forest max-sm:text-5xl">{GAME_NAME}</h1>
       <p className="font-serif text-xl text-ink-muted">{t("session.splash.tagline")}</p>
-      <Logo />
+      <Art />
       <p className="text-sm font-semibold">{t("session.splash.loading")}</p>
       <div
         className="h-1 w-72 max-w-full overflow-hidden rounded-full bg-ink/20"
