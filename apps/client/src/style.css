@@ -1174,3 +1174,8 @@ label:hover > .peer:not(:disabled):not(:checked) + .seal-radio {
     font-size: 11px;
   }
 }
+
+/* Splash island picture: soft oval fade into the parchment (same mask as #boot in index.html). */
+.splash-art {
+  mask-image: radial-gradient(ellipse 50% 50% at center, #000 70%, transparent 100%);
+}
