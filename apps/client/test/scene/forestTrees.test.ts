@@ -113,14 +113,14 @@ describe("forest trees", () => {
       expect([...variants].sort()).toEqual([...FOREST_TREES].sort());
     });
 
-    it("groups the trees of every hex into 3 to 5 separate groves", () => {
+    it("groups the trees of every hex into 3 to 4 large, separate groves", () => {
       for (const hex of forestHexes) {
         const groves = hexGroves(hex);
         expect(groves.length).toBeGreaterThanOrEqual(MIN_GROVES);
         expect(groves.length).toBeLessThanOrEqual(MAX_GROVES);
         const centres = groves.map((g) => {
-          // Never a lone tree: every grove has at least 3, packed round its centre.
-          expect(g.length).toBeGreaterThanOrEqual(3);
+          // Big groves: at least 6 trees each, packed round their centre.
+          expect(g.length).toBeGreaterThanOrEqual(6);
           const x = g.reduce((s, t) => s + t.x, 0) / g.length,
             z = g.reduce((s, t) => s + t.z, 0) / g.length;
           for (const t of g) expect(Math.hypot(t.x - x, t.z - z)).toBeLessThan(GROVE_RADIUS * 2);
