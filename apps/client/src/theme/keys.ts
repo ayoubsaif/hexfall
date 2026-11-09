@@ -32,7 +32,6 @@ export const ASSET_KEYS = [
   "prop.camp",
   "prop.woods",
   "prop.peak",
-  "prop.ore",
   "prop.gull",
 ] as const;
 
@@ -81,7 +80,6 @@ export const ASSET_KIND: Readonly<Record<AssetKey, AssetKind>> = {
   "prop.camp": "model",
   "prop.woods": "model",
   "prop.peak": "model",
-  "prop.ore": "model",
   "prop.gull": "model",
 };
 

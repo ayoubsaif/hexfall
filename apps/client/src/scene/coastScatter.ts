@@ -54,7 +54,6 @@ const BASE_RADIUS: Record<CoastKey, number> = {
   "prop.camp": 0.075,
   "prop.woods": 0.08,
   "prop.peak": 0.2,
-  "prop.ore": 0.07,
 };
 
 /** Integer hash -> [0, 1). */

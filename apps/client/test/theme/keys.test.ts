@@ -24,7 +24,6 @@ describe("asset kinds", () => {
       "prop.cliff",
       "prop.gull",
       "prop.jetty",
-      "prop.ore",
       "prop.peak",
       "prop.sheep",
       "prop.tree",
