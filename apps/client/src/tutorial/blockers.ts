@@ -8,7 +8,8 @@ import type {
   ResourceBundle,
   ResourceCounts,
 } from "@hexfall/engine";
-import { COSTS, RESOURCES } from "@hexfall/engine/geometry";
+import { COSTS } from "@hexfall/engine/geometry";
+import { CARD_ORDER } from "../game/cardOrder.ts";
 import { controlsOf } from "../game/status.ts";
 import type { T } from "../i18n/index.ts";
 import { resourceLabel } from "../i18n/labels.ts";
@@ -23,7 +24,7 @@ export function blockedReason(
 ): "rollFirst" | "pieces" | "cards" | BuildChoice | null {
   if (!opts.rolled) return "rollFirst";
   if (opts.left !== undefined && opts.left <= 0) return "pieces";
-  if (opts.hand && RESOURCES.some((r) => (opts.hand?.[r] ?? 0) < (cost[r] ?? 0))) return "cards";
+  if (opts.hand && CARD_ORDER.some((r) => (opts.hand?.[r] ?? 0) < (cost[r] ?? 0))) return "cards";
   return kind; // cards and pieces are fine, so no legal spot is left
 }
 
@@ -54,7 +55,7 @@ export function missingCards(
   hand: ResourceCounts | undefined,
 ): ResourceBundle {
   const out: ResourceBundle = {};
-  for (const r of RESOURCES) {
+  for (const r of CARD_ORDER) {
     const short = (cost[r] ?? 0) - (hand?.[r] ?? 0);
     if (short > 0) out[r] = short;
   }
@@ -155,7 +156,7 @@ export function blockerFor(
 
 /** "1 brick, 1 lumber" for a bundle. */
 export function bundleText(b: ResourceBundle, t: T): string {
-  return RESOURCES.filter((r) => (b[r] ?? 0) > 0)
+  return CARD_ORDER.filter((r) => (b[r] ?? 0) > 0)
     .map((r) => t("play.actions.costItem", { count: b[r] ?? 0, resource: resourceLabel(t, r) }))
     .join(", ");
 }

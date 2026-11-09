@@ -135,7 +135,7 @@ describe("Turn status and controls (full HUD)", () => {
     const road = fab("Build road")!;
     expect(road.disabled).toBe(false);
     expect(road.className).toContain("hud-leather-round");
-    expect(road.querySelector("img")).not.toBeNull();
+    expect(road.querySelector("[data-icon]")).not.toBeNull();
     expect(road.closest('[data-slot="card"]')).toBeNull();
     expect(road.parentElement?.querySelector("[data-fab-badge]")?.textContent).toBe("13");
     act(() => {
@@ -152,7 +152,7 @@ describe("Turn status and controls (full HUD)", () => {
       [...(tip?.querySelectorAll<HTMLElement>("[data-cost] [data-card]") ?? [])].map(
         (c) => c.dataset.card,
       ),
-    ).toEqual(["brick", "lumber"]);
+    ).toEqual(["lumber", "brick"]);
   });
 
   it("No turn bar or build panel in any phase, and the dice tray is the only roll control", () => {

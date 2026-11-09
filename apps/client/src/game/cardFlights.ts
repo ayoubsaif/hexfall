@@ -1,7 +1,8 @@
 // Card flights (openspec/changes/card-flight-animations): which cards move where for one batch
 // of live game events. Pure, so it is tested without a DOM; hud/CardFlights.tsx draws them.
 import type { DevCard, GameEvent, Resource, ResourceBundle, Seat } from "@hexfall/engine";
-import { COSTS, RESOURCES } from "@hexfall/engine/geometry";
+import { COSTS } from "@hexfall/engine/geometry";
+import { CARD_ORDER } from "./cardOrder.ts";
 
 export type FlightEndpoint = { kind: "bank" } | { kind: "seat"; seat: Seat };
 
@@ -38,7 +39,7 @@ interface Move {
 }
 
 function bundleMoves(from: FlightEndpoint, to: FlightEndpoint, b: ResourceBundle): Move[] {
-  return RESOURCES.filter((r) => (b[r] ?? 0) > 0).map((r) => ({
+  return CARD_ORDER.filter((r) => (b[r] ?? 0) > 0).map((r) => ({
     from,
     to,
     face: res(r),

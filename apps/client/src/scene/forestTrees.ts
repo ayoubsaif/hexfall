@@ -1,5 +1,5 @@
-// 3D forests (specs/forest-trees): every forest hex grows 3 to 5 groves of tall conifers (the
-// faceted tall spruce and the 99.Miles pack pine, the two tallest trees), tightly packed with the
+// 3D forests (specs/forest-trees): every forest hex grows 3 to 4 groves of tall conifers (the
+// faceted tall spruce and the 99.Miles pack pine, the two tallest trees), large and densely packed, with the
 // tallest trees in the middle of each grove, like a real wood. The clearings between the groves
 // hold boulders (the coast kit's), a woodpile, a fallen log, stumps, ferns, mushrooms and grass
 // tufts. Everything stays clear of the number
@@ -23,19 +23,19 @@ export const CHIP_CLEAR = 0.34;
 export const ROBBER_CLEAR = 0.22;
 /** Minimum distance between two trees' centres, as a multiple of their summed radii; under 1
  * so the crowns of a grove overlap and read as one wood. */
-const SPACING = 0.68;
+const SPACING = 0.52;
 export const MIN_TREES = 12;
-export const MAX_TREES = 40;
+export const MAX_TREES = 60;
 /** Groves per forest hex, trees per grove and the grove radius. */
 export const MIN_GROVES = 3;
-export const MAX_GROVES = 5;
-const MIN_GROVE_TREES = 4;
-const MAX_GROVE_TREES = 8;
+export const MAX_GROVES = 4;
+const MIN_GROVE_TREES = 9;
+const MAX_GROVE_TREES = 15;
 /** A grove smaller than this is dropped (its spot was too cramped) and another spot is tried. */
-const MIN_KEPT_GROVE = 3;
-export const GROVE_RADIUS = 0.17;
+const MIN_KEPT_GROVE = 6;
+export const GROVE_RADIUS = 0.22;
 /** Grove centres stay this far apart, so open clearings remain between them. */
-export const GROVE_GAP = 0.36;
+export const GROVE_GAP = 0.46;
 /** Tree scale: tallest in the middle of a grove, smaller at its edge. The tallest tree (0.32 at
  * scale 1) stays under a city (0.368). */
 const TREE_SCALE_EDGE = 0.86;
@@ -140,11 +140,11 @@ export function hexGroves(
   const out: PropInstance[] = [];
   const groveList: PropInstance[][] = [];
   const centres: XZ[] = [];
-  for (let g = 0; g < 60 && centres.length < groves; g++) {
+  for (let g = 0; g < 120 && centres.length < groves; g++) {
     const seed = hex * 9973 + g * 131;
     const a = hash01(seed) * TAU;
     // Trees stay within 0.8 of the centre, so they never reach a neighbouring hex.
-    const d = 0.42 + hash01(seed + 1) * (0.8 - GROVE_RADIUS - 0.42);
+    const d = 0.4 + hash01(seed + 1) * (0.8 - GROVE_RADIUS - 0.4);
     const gx = cx + Math.cos(a) * d,
       gz = cz + Math.sin(a) * d;
     if (centres.some(([x, z]) => Math.hypot(x - gx, z - gz) < GROVE_GAP)) continue;
@@ -153,7 +153,7 @@ export function hexGroves(
     const main = FOREST_TREES[Math.floor(hash01(seed + 3) * FOREST_TREES.length)]!;
     const other = FOREST_TREES.find((v) => v !== main)!;
     const grove: PropInstance[] = [];
-    for (let k = 0; k < 120 && grove.length < want; k++) {
+    for (let k = 0; k < 300 && grove.length < want; k++) {
       const ts = seed * 7 + k * 31 + 11;
       const ta = hash01(ts) * TAU;
       const td = Math.sqrt(hash01(ts + 1)) * GROVE_RADIUS;

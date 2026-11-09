@@ -131,7 +131,7 @@ describe("build buttons", () => {
       </>,
     );
     const roadBtn = fab(m.container, "Build road")!;
-    expect(describedBy(roadBtn)).toContain("1 Brick, 1 Lumber");
+    expect(describedBy(roadBtn)).toContain("1 Lumber, 1 Brick");
     expect(fab(m.container, "Build city")!.disabled).toBe(true);
     click(roadBtn);
     expect(useUiStore.getState().build).toBe("road");
@@ -186,11 +186,11 @@ describe("cards (specs/hud-presentation)", () => {
     showGame(s, 0);
     m = mount(<Hand />);
     expect(slots(m.container)).toEqual([
+      { resource: "lumber", label: "Lumber, 1", dimmed: false, badge: null },
       { resource: "brick", label: "Brick, 3", dimmed: false, badge: "3" },
       { resource: "grain", label: "Grain, 0", dimmed: true, badge: null },
-      { resource: "lumber", label: "Lumber, 1", dimmed: false, badge: null },
-      { resource: "ore", label: "Ore, 2", dimmed: false, badge: "2" },
       { resource: "wool", label: "Wool, 0", dimmed: true, badge: null },
+      { resource: "ore", label: "Ore, 2", dimmed: false, badge: "2" },
     ]);
     // Stacks draw full cards behind the face card (specs/hand-cards "Stack at rest").
     const ghosts = (r: string) => [
@@ -275,12 +275,12 @@ describe("cards (specs/hud-presentation)", () => {
     m = mount(<ActionButtons />);
     const btn = fab(m.container, "Build settlement")!;
     // The cost is text for assistive tech, and cards in the tooltip.
-    expect(describedBy(btn)).toContain("1 Brick, 1 Grain, 1 Lumber, 1 Wool");
+    expect(describedBy(btn)).toContain("1 Lumber, 1 Brick, 1 Grain, 1 Wool");
     const tip = tooltipOf(btn)!;
     const cards = [...tip.querySelectorAll<HTMLElement>("[data-cost] [data-card]")].map(
       (c) => c.dataset.card,
     );
-    expect(cards).toEqual(["brick", "grain", "lumber", "wool"]);
+    expect(cards).toEqual(["lumber", "brick", "grain", "wool"]);
     expect(tip.querySelector("[data-cost]")?.getAttribute("aria-hidden")).toBe("true");
     m.unmount();
     m = mount(<ActionButtons />);
