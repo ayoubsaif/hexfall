@@ -10,14 +10,19 @@ import { describe, expect, it } from "vite-plus/test";
 import { PATH_CLEAR, VERTEX_CLEAR } from "../../src/scene/coastScatter.ts";
 import {
   CHIP_CLEAR,
+  FOREST_TREES,
+  GROVE_GAP,
+  GROVE_RADIUS,
+  MAX_GROVES,
   MAX_TREES,
+  MIN_GROVES,
   MIN_TREES,
   ROBBER_CLEAR,
-  TREE_VARIANTS,
   WOODS_VARIANTS,
   hexWoods,
   forestTrees,
   hexForest,
+  hexGroves,
   hexTufts,
 } from "../../src/scene/forestTrees.ts";
 import { ROBBER_TOKEN_OFFSET } from "../../src/scene/layout.ts";
@@ -103,9 +108,31 @@ describe("forest trees", () => {
   describe("woodland props", () => {
     const forestHexes = STANDARD_TOPOLOGY.hexes.map((h) => h.id);
 
-    it("mixes spruces with birches or broadleaf trees across the board", () => {
+    it("grows only the two tall conifers, both of them across the board", () => {
       const variants = new Set(forestHexes.flatMap((hex) => hexForest(hex).map((t) => t.variant)));
-      for (const v of Object.values(TREE_VARIANTS)) expect(variants).toContain(v);
+      expect([...variants].sort()).toEqual([...FOREST_TREES].sort());
+    });
+
+    it("groups the trees of every hex into 3 to 5 separate groves", () => {
+      for (const hex of forestHexes) {
+        const groves = hexGroves(hex);
+        expect(groves.length).toBeGreaterThanOrEqual(MIN_GROVES);
+        expect(groves.length).toBeLessThanOrEqual(MAX_GROVES);
+        const centres = groves.map((g) => {
+          // Never a lone tree: every grove has at least 3, packed round its centre.
+          expect(g.length).toBeGreaterThanOrEqual(3);
+          const x = g.reduce((s, t) => s + t.x, 0) / g.length,
+            z = g.reduce((s, t) => s + t.z, 0) / g.length;
+          for (const t of g) expect(Math.hypot(t.x - x, t.z - z)).toBeLessThan(GROVE_RADIUS * 2);
+          return [x, z] as const;
+        });
+        // Open ground between the groves.
+        centres.forEach(([ax, az], i) =>
+          centres.forEach(([bx, bz], j) => {
+            if (j > i) expect(Math.hypot(ax - bx, az - bz)).toBeGreaterThan(GROVE_GAP * 0.6);
+          }),
+        );
+      }
     });
 
     it("puts boulders, a woodpile, stumps, ferns and mushrooms on every forest hex", () => {

@@ -1,6 +1,8 @@
-// 3D forests (specs/forest-trees): a dense mixed wood on every forest hex: faceted spruces,
-// birches and broadleaf trees mixed with the textured trees of the 99.Miles pack, with boulders (the coast kit's), a woodpile, a fallen log,
-// stumps, ferns, mushrooms and grass tufts between them. Everything stays clear of the number
+// 3D forests (specs/forest-trees): every forest hex grows 3 to 5 groves of tall conifers (the
+// faceted tall spruce and the 99.Miles pack pine, the two tallest trees), tightly packed with the
+// tallest trees in the middle of each grove, like a real wood. The clearings between the groves
+// hold boulders (the coast kit's), a woodpile, a fallen log, stumps, ferns, mushrooms and grass
+// tufts. Everything stays clear of the number
 // chip, the robber's spot, the hex corners (settlements, cities) and edges (roads). Pure and
 // deterministic: positions depend only on the hex id, so every player sees the same forests.
 import type { Board } from "@hexfall/engine";
@@ -20,13 +22,24 @@ export const CHIP_CLEAR = 0.34;
 /** Keep-out radius around the robber's spot beside the chip. */
 export const ROBBER_CLEAR = 0.22;
 /** Minimum distance between two trees' centres, as a multiple of their summed radii; under 1
- * so the crowns overlap a little and read as one wood. */
-const SPACING = 0.72;
-export const MIN_TREES = 18;
-export const MAX_TREES = 26;
-/** Tree scale range: the tallest tree (0.32 at scale 1) stays under a city (0.368). */
-const TREE_SCALE_MIN = 0.78;
-const TREE_SCALE_MAX = 1.1;
+ * so the crowns of a grove overlap and read as one wood. */
+const SPACING = 0.68;
+export const MIN_TREES = 12;
+export const MAX_TREES = 40;
+/** Groves per forest hex, trees per grove and the grove radius. */
+export const MIN_GROVES = 3;
+export const MAX_GROVES = 5;
+const MIN_GROVE_TREES = 4;
+const MAX_GROVE_TREES = 8;
+/** A grove smaller than this is dropped (its spot was too cramped) and another spot is tried. */
+const MIN_KEPT_GROVE = 3;
+export const GROVE_RADIUS = 0.17;
+/** Grove centres stay this far apart, so open clearings remain between them. */
+export const GROVE_GAP = 0.36;
+/** Tree scale: tallest in the middle of a grove, smaller at its edge. The tallest tree (0.32 at
+ * scale 1) stays under a city (0.368). */
+const TREE_SCALE_EDGE = 0.86;
+const TREE_SCALE_MIDDLE = 1.1;
 /** tree.glb variants (tools/blender/tree-pack.py): 0–4 the faceted trees (tall spruce, spruce,
  * young spruce, birch, broadleaf), 5–12 the textured trees of the 99.Miles pack. */
 export const TREE_VARIANTS = {
@@ -44,24 +57,26 @@ export const TREE_VARIANTS = {
   packFir: 11,
   packPineSlim: 12,
 } as const;
-/** Footprint radius at scale 1 per variant (a bit under half the crown width), and how often
- * each grows: about 40% faceted, 60% textured, autumn trees rare. */
-const TREE_KINDS: readonly { radius: number; weight: number }[] = [
-  { radius: 0.055, weight: 9 },
-  { radius: 0.055, weight: 9 },
-  { radius: 0.038, weight: 7 },
-  { radius: 0.04, weight: 8 },
-  { radius: 0.065, weight: 7 },
-  { radius: 0.036, weight: 10 },
-  { radius: 0.055, weight: 3 },
-  { radius: 0.036, weight: 8 },
-  { radius: 0.035, weight: 10 },
-  { radius: 0.055, weight: 3 },
-  { radius: 0.045, weight: 9 },
-  { radius: 0.032, weight: 9 },
-  { radius: 0.034, weight: 8 },
+/** Footprint radius at scale 1 per variant (a bit under half the crown width). */
+const TREE_KINDS: readonly { radius: number }[] = [
+  { radius: 0.055 },
+  { radius: 0.055 },
+  { radius: 0.038 },
+  { radius: 0.04 },
+  { radius: 0.065 },
+  { radius: 0.036 },
+  { radius: 0.055 },
+  { radius: 0.036 },
+  { radius: 0.035 },
+  { radius: 0.055 },
+  { radius: 0.045 },
+  { radius: 0.032 },
+  { radius: 0.034 },
 ];
-const TREE_WEIGHT = TREE_KINDS.reduce((s, k) => s + k.weight, 0);
+/** The trees that grow in forests: only the two tall conifers. A grove is mostly one kind. */
+export const FOREST_TREES = [TREE_VARIANTS.tallSpruce, TREE_VARIANTS.packPine] as const;
+/** Share of a grove's trees that are its main kind. */
+const GROVE_MAIN_KIND = 0.8;
 /** Footprint radius of a grass tuft at scale 1, and its variant in the bush kit. */
 const TUFT_RADIUS = 0.035;
 const TUFT_VARIANT = 2;
@@ -114,49 +129,74 @@ export function forestSpotClear(
   return true;
 }
 
-/** A tree variant, faceted and textured mixed by their weights. */
-function pickTree(u: number): number {
-  let t = u * TREE_WEIGHT;
-  for (let v = 0; v < TREE_KINDS.length; v++) {
-    t -= TREE_KINDS[v]!.weight;
-    if (t < 0) return v;
+/** The groves of one forest hex (each a list of trees), clear of `blockers` (rocks placed first). */
+export function hexGroves(
+  hex: number,
+  blockers: readonly PropInstance[] = [],
+  topo: Topology = STANDARD_TOPOLOGY,
+): PropInstance[][] {
+  const [cx, cz] = hexCenter(hex, topo);
+  const groves = MIN_GROVES + Math.floor(hash01(hex * 977 + 1) * (MAX_GROVES - MIN_GROVES + 1));
+  const out: PropInstance[] = [];
+  const groveList: PropInstance[][] = [];
+  const centres: XZ[] = [];
+  for (let g = 0; g < 60 && centres.length < groves; g++) {
+    const seed = hex * 9973 + g * 131;
+    const a = hash01(seed) * TAU;
+    // Trees stay within 0.8 of the centre, so they never reach a neighbouring hex.
+    const d = 0.42 + hash01(seed + 1) * (0.8 - GROVE_RADIUS - 0.42);
+    const gx = cx + Math.cos(a) * d,
+      gz = cz + Math.sin(a) * d;
+    if (centres.some(([x, z]) => Math.hypot(x - gx, z - gz) < GROVE_GAP)) continue;
+    const want =
+      MIN_GROVE_TREES + Math.floor(hash01(seed + 2) * (MAX_GROVE_TREES - MIN_GROVE_TREES + 1));
+    const main = FOREST_TREES[Math.floor(hash01(seed + 3) * FOREST_TREES.length)]!;
+    const other = FOREST_TREES.find((v) => v !== main)!;
+    const grove: PropInstance[] = [];
+    for (let k = 0; k < 120 && grove.length < want; k++) {
+      const ts = seed * 7 + k * 31 + 11;
+      const ta = hash01(ts) * TAU;
+      const td = Math.sqrt(hash01(ts + 1)) * GROVE_RADIUS;
+      const middle = 1 - td / GROVE_RADIUS;
+      const scale =
+        TREE_SCALE_EDGE +
+        (TREE_SCALE_MIDDLE - TREE_SCALE_EDGE) * (0.75 * middle + 0.25 * hash01(ts + 2));
+      const variant = hash01(ts + 3) < GROVE_MAIN_KIND ? main : other;
+      const r = TREE_KINDS[variant]!.radius * scale;
+      const x = gx + Math.cos(ta) * td,
+        z = gz + Math.sin(ta) * td;
+      if (!forestSpotClear(hex, x, z, r, undefined, topo)) continue;
+      if (blockers.some((b) => Math.hypot(b.x - x, b.z - z) < b.radius + r)) continue;
+      if (
+        [...out, ...grove].some((t) => Math.hypot(t.x - x, t.z - z) < (t.radius + r) * SPACING)
+      )
+        continue;
+      grove.push({
+        key: "prop.tree",
+        variant,
+        x,
+        z,
+        ground: domeHeight("tile.forest", Math.hypot(x - cx, z - cz)),
+        yaw: hash01(ts + 4) * TAU,
+        scale,
+        radius: r,
+      });
+    }
+    if (grove.length < MIN_KEPT_GROVE) continue;
+    centres.push([gx, gz]);
+    out.push(...grove);
+    groveList.push(grove);
   }
-  return TREE_KINDS.length - 1;
+  return groveList;
 }
 
-/** The trees of one forest hex, clear of `blockers` (rocks placed first). */
+/** The trees of one forest hex (all its groves), clear of `blockers`. */
 export function hexForest(
   hex: number,
   blockers: readonly PropInstance[] = [],
   topo: Topology = STANDARD_TOPOLOGY,
 ): PropInstance[] {
-  const [cx, cz] = hexCenter(hex, topo);
-  const want = MIN_TREES + Math.floor(hash01(hex * 977 + 1) * (MAX_TREES - MIN_TREES + 1));
-  const out: PropInstance[] = [];
-  for (let k = 0; k < 2000 && out.length < want; k++) {
-    const seed = hex * 9973 + k * 31;
-    const a = hash01(seed) * TAU;
-    const d = Math.sqrt(hash01(seed + 1)) * 0.8;
-    const variant = pickTree(hash01(seed + 3));
-    const scale = TREE_SCALE_MIN + hash01(seed + 2) * (TREE_SCALE_MAX - TREE_SCALE_MIN);
-    const r = TREE_KINDS[variant]!.radius * scale;
-    const x = cx + Math.cos(a) * d,
-      z = cz + Math.sin(a) * d;
-    if (!forestSpotClear(hex, x, z, r, undefined, topo)) continue;
-    if (blockers.some((b) => Math.hypot(b.x - x, b.z - z) < b.radius + r)) continue;
-    if (out.some((t) => Math.hypot(t.x - x, t.z - z) < (t.radius + r) * SPACING)) continue;
-    out.push({
-      key: "prop.tree",
-      variant,
-      x,
-      z,
-      ground: domeHeight("tile.forest", d),
-      yaw: hash01(seed + 4) * TAU,
-      scale,
-      radius: r,
-    });
-  }
-  return out;
+  return hexGroves(hex, blockers, topo).flat();
 }
 
 /** Grass tufts (the coast kit's tuft, `prop.bush` variant 2) scattered between the trees (or
