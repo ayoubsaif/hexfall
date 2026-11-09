@@ -33,11 +33,11 @@ Each panel SHALL show victory points, resource cards, development cards and play
 - **THEN** no abbreviated labels such as "PV" or "Cab" are shown
 
 ### Requirement: Illustrated stat icons
-The vp, hand and knight icons SHALL exist as transparent 128 px WebP files in `/ui/icons/` in the embossed-gold painted style with a thick dark outline, and development cards SHALL use the existing `devcard` icon. The hand icon SHALL be visually distinct from the development card icon.
+The vp, hand and knight icons SHALL be cells of the HUD icon sprite sheet (`/ui/icons.webp`, built from transparent 128 px sources) in the embossed-gold painted style with a thick dark outline, and development cards SHALL use the existing `devcard` icon. The hand icon SHALL be visually distinct from the development card icon.
 
 #### Scenario: Icons available
 - **WHEN** `GameIcon` is asked for `vp`, `hand` or `knight`
-- **THEN** it loads `/ui/icons/<name>.webp` with no failed request
+- **THEN** it shows its cell of the `/ui/icons.webp` sprite sheet with no failed request
 
 #### Scenario: Legible at small size
 - **WHEN** an icon is shown at 16 px on paper or on leather

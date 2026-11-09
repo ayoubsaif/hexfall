@@ -116,7 +116,7 @@ describe("PlayerPanels", () => {
       d.getAttribute("data-stat"),
     );
     expect(stats).toEqual(["vp", "cards", "dev", "knights"]);
-    expect(panel.querySelectorAll("dt img")).toHaveLength(4);
+    expect(panel.querySelectorAll("dt [data-icon]")).toHaveLength(4);
     const dts = [...panel.querySelectorAll("dt")].map((d) => d.textContent);
     expect(dts).toEqual([
       "Victory points",
