@@ -1,7 +1,7 @@
 // Bank and harbor trade (specs/game-hud, "Maritime trade"). Never offers player trades.
 // Presentation: specs/hud-presentation "Resource picture cards" (shadcn Dialog + GameCard).
 import type { Resource } from "@hexfall/engine";
-import { RESOURCES } from "@hexfall/engine/geometry";
+import { CARD_ORDER } from "../game/cardOrder.ts";
 import { type ReactNode, useEffect, useState } from "react";
 import { useTranslation } from "react-i18next";
 import { Badge } from "@/components/ui/badge.tsx";
@@ -93,7 +93,7 @@ export function MaritimePanel() {
             aria-label={t("dialogs.maritime.give")}
             className="flex flex-wrap gap-1"
           >
-            {RESOURCES.map((r) => {
+            {CARD_ORDER.map((r) => {
               const able = canGive(hand, rates, r);
               return (
                 <CardChoice
@@ -130,7 +130,7 @@ export function MaritimePanel() {
             aria-label={t("dialogs.maritime.get")}
             className="flex flex-wrap gap-1"
           >
-            {RESOURCES.map((r) => (
+            {CARD_ORDER.map((r) => (
               <CardChoice
                 key={r}
                 resource={r}

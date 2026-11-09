@@ -1,7 +1,7 @@
 // Pure card helpers for the HUD (specs/game-hud). Checks here only gate HUD
 // buttons; the server decides legality and rejects anything else.
 import type { Resource, ResourceBundle, ResourceCounts } from "@hexfall/engine";
-import { RESOURCES } from "@hexfall/engine/geometry";
+import { CARD_ORDER } from "./cardOrder.ts";
 import type { T } from "../i18n/index.ts";
 import { bankPerResource } from "./extension.ts";
 
@@ -12,14 +12,14 @@ export function emptyCounts(): ResourceCounts {
 /** Number of cards in a bundle or hand. */
 export function total(b: ResourceBundle | ResourceCounts): number {
   let n = 0;
-  for (const r of RESOURCES) n += b[r] ?? 0;
+  for (const r of CARD_ORDER) n += b[r] ?? 0;
   return n;
 }
 
 /** The bundle without zero entries, in resource order. */
 export function compact(b: ResourceBundle): ResourceBundle {
   const out: ResourceBundle = {};
-  for (const r of RESOURCES) {
+  for (const r of CARD_ORDER) {
     const n = b[r] ?? 0;
     if (n > 0) out[r] = n;
   }
@@ -28,7 +28,7 @@ export function compact(b: ResourceBundle): ResourceBundle {
 
 /** True when `have` covers every count in `need`. */
 export function covers(have: ResourceBundle | ResourceCounts, need: ResourceBundle): boolean {
-  return RESOURCES.every((r) => (have[r] ?? 0) >= (need[r] ?? 0));
+  return CARD_ORDER.every((r) => (have[r] ?? 0) >= (need[r] ?? 0));
 }
 
 // ---- Discard
@@ -127,7 +127,7 @@ export function isValidOffer(
   get: ResourceBundle,
 ): boolean {
   if (total(give) === 0 || total(get) === 0) return false;
-  if (RESOURCES.some((r) => (give[r] ?? 0) > 0 && (get[r] ?? 0) > 0)) return false;
+  if (CARD_ORDER.some((r) => (give[r] ?? 0) > 0 && (get[r] ?? 0) > 0)) return false;
   return covers(hand, give);
 }
 
@@ -137,7 +137,7 @@ export function isValidOffer(
  */
 export function swapForCounter(offer: TradeSides, hand: ResourceCounts): TradeSides {
   const give: ResourceBundle = {};
-  for (const r of RESOURCES) {
+  for (const r of CARD_ORDER) {
     const n = Math.min(offer.get[r] ?? 0, hand[r]);
     if (n > 0) give[r] = n;
   }
@@ -158,7 +158,7 @@ export function joinList(items: readonly string[], t: T): string {
 
 /** "2 grain and 1 ore"; "nothing" for an empty bundle. */
 export function formatBundle(b: ResourceBundle, t: T): string {
-  const parts = RESOURCES.filter((r) => (b[r] ?? 0) > 0).map((r) =>
+  const parts = CARD_ORDER.filter((r) => (b[r] ?? 0) > 0).map((r) =>
     t("game.bundle.item", { count: b[r] ?? 0, resource: t(`game.res.${r}`) }),
   );
   if (parts.length === 0) return t("game.bundle.nothing");

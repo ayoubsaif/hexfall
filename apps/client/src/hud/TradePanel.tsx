@@ -2,7 +2,7 @@
 // with players button, a Counter in the offers tray, or Make an offer; the prefill comes from
 // the ui store's `tradeDraft`. The server stays the judge: this only gates Send offer.
 import type { ResourceBundle, ResourceCounts, Seat } from "@hexfall/engine";
-import { RESOURCES } from "@hexfall/engine/geometry";
+import { CARD_ORDER } from "../game/cardOrder.ts";
 import { Bot } from "lucide-react";
 import { useState } from "react";
 import { useTranslation } from "react-i18next";
@@ -23,7 +23,7 @@ import { useInFlight, useLegal, useOwn, useView } from "./state.ts";
 function setSide(
   sides: { give: ResourceBundle; get: ResourceBundle },
   side: "give" | "get",
-  r: (typeof RESOURCES)[number],
+  r: (typeof CARD_ORDER)[number],
   n: number,
 ): { give: ResourceBundle; get: ResourceBundle } {
   const other = side === "give" ? "get" : "give";
@@ -88,7 +88,7 @@ function Composer({
         <span />
         <span className="text-center text-xs font-semibold">{t("dialogs.trade.give")}</span>
         <span className="text-center text-xs font-semibold">{t("dialogs.trade.ask")}</span>
-        {RESOURCES.map((r) => {
+        {CARD_ORDER.map((r) => {
           const label = resourceLabel(t, r);
           const g = sides.give[r] ?? 0;
           const a = sides.get[r] ?? 0;

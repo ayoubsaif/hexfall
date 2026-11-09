@@ -46,8 +46,8 @@ describe("flightsForEvents", () => {
       ]),
     ).toEqual([
       { from: seat(1), to: bank, face: res("ore") },
-      { from: seat(0), to: bank, face: res("brick") },
       { from: seat(0), to: bank, face: res("lumber") },
+      { from: seat(0), to: bank, face: res("brick") },
     ]);
   });
 

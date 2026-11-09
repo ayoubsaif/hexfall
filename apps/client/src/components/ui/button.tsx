@@ -10,9 +10,9 @@ export const buttonVariants = cva(
   {
     variants: {
       variant: {
-        menu: "game-mode-button btn-light",
+        menu: "game-mode-button btn-light rounded-[4px]",
         default:
-          "btn-light wood-button rounded-lg font-serif text-[1.05em] tracking-wide text-cream",
+          "btn-light leather-button rounded-[4px] font-serif text-[1.05em] tracking-wide text-cream",
         secondary:
           "frame btn-light [--corner-size:12px] border border-gold/60 bg-cream/60 text-foreground hover:bg-cream/90 aria-pressed:border-gold aria-pressed:bg-linear-to-b aria-pressed:from-[#6b4228] aria-pressed:to-leather aria-pressed:text-cream aria-pressed:shadow-[inset_0_1px_0_rgb(255_235_200/25%)] data-[selected]:border-gold data-[selected]:bg-linear-to-b data-[selected]:from-[#6b4228] data-[selected]:to-leather data-[selected]:text-cream data-[selected]:shadow-[inset_0_1px_0_rgb(255_235_200/25%)]",
         ghost: "bg-transparent text-muted-foreground hover:bg-ink/10 hover:text-foreground",

@@ -4,7 +4,8 @@
 // (specs/player-trade "Trade with players button") and End turn, as round
 // icon buttons with no panel. Shown only to the active player after setup.
 import type { Resource, ResourceBundle } from "@hexfall/engine";
-import { COSTS, RESOURCES } from "@hexfall/engine/geometry";
+import { COSTS } from "@hexfall/engine/geometry";
+import { CARD_ORDER } from "../../game/cardOrder.ts";
 import type { LucideIcon } from "lucide-react";
 import { useEffect } from "react";
 import { useTranslation } from "react-i18next";
@@ -32,14 +33,14 @@ import { Fab, type FabRing } from "./Fab.tsx";
 
 /** "1 Brick, 1 Lumber". */
 export function costText(cost: ResourceBundle, t: T): string {
-  return RESOURCES.filter((r) => (cost[r] ?? 0) > 0)
+  return CARD_ORDER.filter((r) => (cost[r] ?? 0) > 0)
     .map((r) => t("play.actions.costItem", { count: cost[r] ?? 0, resource: resourceLabel(t, r) }))
     .join(", ");
 }
 
 /** One small card per card of the cost, in resource order (city: grain ×2, ore ×3). */
 export function costCards(cost: ResourceBundle): Resource[] {
-  return RESOURCES.flatMap((r) => Array.from({ length: cost[r] ?? 0 }, () => r));
+  return CARD_ORDER.flatMap((r) => Array.from({ length: cost[r] ?? 0 }, () => r));
 }
 
 /** Cost as small picture cards; decorative, the text equivalent is the button's description. */

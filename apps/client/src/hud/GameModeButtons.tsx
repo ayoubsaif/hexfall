@@ -4,7 +4,7 @@ import { gameIcon } from "./GameIcon.tsx";
 
 export type GameMode = "host" | "solo" | "join";
 const MODES = [
-  { mode: "host", Icon: gameIcon("trade") },
+  { mode: "host", Icon: gameIcon("settlement") },
   { mode: "solo", Icon: gameIcon("knight") },
   { mode: "join", Icon: gameIcon("flag") },
 ] as const;

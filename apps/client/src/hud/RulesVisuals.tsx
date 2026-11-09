@@ -3,7 +3,8 @@
 // development cards, piece icons, costs, dice, trade rates and victory points — next to the text.
 // Everything here is decorative support for the text; the section text stays the full rule.
 import type { DevCard, Resource } from "@hexfall/engine";
-import { COSTS, RESOURCES } from "@hexfall/engine/geometry";
+import { COSTS } from "@hexfall/engine/geometry";
+import { CARD_ORDER } from "../game/cardOrder.ts";
 import { ArrowRight } from "lucide-react";
 import type { ReactNode } from "react";
 import { useTranslation } from "react-i18next";
@@ -112,7 +113,7 @@ export function RulesVisual({ section }: { section: RulesSection }) {
       return (
         <div className="flex flex-col gap-2">
           <Strip>
-            {RESOURCES.map((r) => (
+            {CARD_ORDER.map((r) => (
               <GameCard key={r} resource={r} size="md" />
             ))}
           </Strip>

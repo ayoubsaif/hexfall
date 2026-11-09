@@ -2,7 +2,7 @@
 // specs/board-interaction "Robber move and victim choice"). Presentation:
 // specs/hud-presentation "Resource picture cards" (shadcn Dialog + GameCard).
 import type { Resource, ResourceBundle } from "@hexfall/engine";
-import { RESOURCES } from "@hexfall/engine/geometry";
+import { CARD_ORDER } from "../game/cardOrder.ts";
 import { useEffect, useState } from "react";
 import { useTranslation } from "react-i18next";
 import { Button } from "@/components/ui/button.tsx";
@@ -57,7 +57,7 @@ export function DiscardDialog() {
         description={t("dialogs.discard.description", { picked, owed })}
         {...mandatory}
       >
-        {RESOURCES.map((r) => (
+        {CARD_ORDER.map((r) => (
           <Stepper
             key={r}
             resource={r}
@@ -111,7 +111,7 @@ export function YearOfPlentyDialog() {
         title={t("dialogs.yearOfPlenty.title")}
         description={t("dialogs.yearOfPlenty.description", { count: need })}
       >
-        {RESOURCES.map((r) => (
+        {CARD_ORDER.map((r) => (
           <Stepper
             key={r}
             resource={r}
@@ -158,7 +158,7 @@ export function MonopolyDialog() {
           aria-label={t("dialogs.monopoly.group")}
           className="flex flex-wrap gap-2 py-1"
         >
-          {RESOURCES.map((r) => (
+          {CARD_ORDER.map((r) => (
             <GameCard
               key={r}
               resource={r}
