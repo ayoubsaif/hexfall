@@ -1,4 +1,4 @@
-// Procedural coast kit (`prop.boulder|cliff|wall|tree|bush`, plus the pasture `prop.sheep` and `prop.camp` and the forest `prop.woods`, and the mountain `prop.peak` and `prop.ore`), used when the theme has no GLB for
+// Procedural coast kit (`prop.boulder|cliff|wall|tree|bush`, plus the pasture `prop.sheep` and `prop.camp` and the forest `prop.woods`, and the whole-hex mountain `prop.peak`), used when the theme has no GLB for
 // a key. Each key has a few variants; each variant is a list of parts (geometry + material),
 // the same shape the themed GLB variants take, so the coast renders both with one instanced
 // mesh per part. Origin at the base centre, resting on y=0; heights stay below a city.
@@ -25,7 +25,6 @@ export const COAST_KEYS = [
   "prop.camp",
   "prop.woods",
   "prop.peak",
-  "prop.ore",
 ] as const satisfies readonly AssetKey[];
 export type CoastKey = (typeof COAST_KEYS)[number];
 
@@ -178,17 +177,20 @@ function build(): Record<CoastKey, PropVariant[]> {
         { geometry: lifted(new ConeGeometry(0.0065, 0.006, 7), 0.016), material: cap },
       ],
     ],
-    // Mountain peaks (in the order of peak.glb, footprint radius 0.2/0.17/0.19/0.15, then the two big centre mountains) and ore rocks.
-    "prop.peak": [0.2, 0.17, 0.19, 0.15, 0.25, 0.25].map((r, i) => [
-      {
-        geometry: lifted(new ConeGeometry(r, r * 1.45, 7 + i), r * 0.725),
-        material: mat("#8e9093"),
-      },
-    ]),
-    // ore.glb: variants 0-2 ore (grey slate), 3-5 plain grey stone.
-    "prop.ore": ["#6d737c", "#6d737c", "#6d737c", "#8e9196", "#8e9196", "#8e9196"].map((c, i) => [
-      { geometry: rock(0.045, 0.8, 7 + i), material: mat(c) },
-    ]),
+    // The whole-hex mountain (peak.glb: variant 0, variant 1 mirrored). Fallback: a snow-capped
+    // grey peak and a smaller shoulder on the back half of the hex (away from the camera), clear
+    // of the chip, the robber's spot, the corners and the edges.
+    "prop.peak": [1, -1].map((side) => {
+      const rock = mat("#8d9196");
+      const snow = mat("#f1f3f5");
+      const cone = (x: number, z: number, r: number, h: number, segs: number) =>
+        new ConeGeometry(r, h, segs).translate(x * side, h / 2, z);
+      return [
+        { geometry: cone(0.05, -0.58, 0.3, 0.5, 9), material: rock },
+        { geometry: cone(0.05, -0.58, 0.12, 0.2, 9).translate(0, 0.3, 0), material: snow },
+        { geometry: cone(0.45, -0.3, 0.2, 0.3, 8), material: rock },
+      ];
+    }),
   };
 }
 
@@ -220,4 +222,3 @@ export const SheepPiece = () => <Single assetKey="prop.sheep" />;
 export const CampPiece = () => <Single assetKey="prop.camp" />;
 export const WoodsPiece = () => <Single assetKey="prop.woods" />;
 export const PeakPiece = () => <Single assetKey="prop.peak" />;
-export const OrePiece = () => <Single assetKey="prop.ore" />;

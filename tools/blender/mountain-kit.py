@@ -3,7 +3,7 @@
 #  the git-ignored assets/mountain/, never shipped), fitted to one whole hexagon:
 #   - centred, rotated so its highest summit stands on the back half (away from the camera),
 #     scaled over the hex and stretched to `peakHeight`;
-#   - a height mask fades it to the ground along the rim (corners, edges), carves a clearing for
+#   - a height mask fades it to the ground along the rim (corners, edges), carves one clearing for
 #     the number chip and the robber, and caps the camera side so nothing in front of the chip,
 #     the robber or a corner piece rises into the 55-degree line of sight;
 #   - it follows the domed mountain tile (same dome as the client), sinking 5 mm below the ground
@@ -87,14 +87,24 @@ TARGETS = [
 ] + [(x, z, 0.12, M["cityTop"]) for x, z in CORNERS]
 
 
+def clearing(x, z):
+    """Distance from (x, z) to the chip-robber axis, and the clearing radius at that point."""
+    c, b = M["chip"], M["robber"]
+    ax, az = b["x"] - c["x"], b["z"] - c["z"]
+    t = max(0.0, min(1.0, ((x - c["x"]) * ax + (z - c["z"]) * az) / (ax * ax + az * az)))
+    d = math.hypot(x - c["x"] - ax * t, z - c["z"] - az * t)
+    r = (c["radius"] + c["gap"]) * (1 - t) + (b["radius"] + b["gap"]) * t
+    return d, r
+
+
 def mask(x, z):
-    """Mountain height multiplier at game (x, z): rim fade times the two clearings."""
+    """Mountain height multiplier at game (x, z): rim fade, the clearing and the front slope."""
     a, b = M["rimFade"]
     m = 1 - smooth(a, b, math.hypot(x, z))
-    for key in ("chip", "robber"):
-        t = M[key]
-        r = t["radius"] + t["gap"]
-        m *= smooth(r, r + M["clearBlend"], math.hypot(x - t["x"], z - t["z"]))
+    # One clearing for the chip and the robber (owner feedback): a capsule from the chip to the
+    # robber spot, its radius narrowing from the chip's to the robber's.
+    d, r = clearing(x, z)
+    m *= smooth(r, r + M["clearBlend"], d)
     # The camera side becomes foothills, so the summits read as a backdrop behind the chip.
     z0, z1, low = M["frontSlope"]
     return m * (1 - (1 - low) * smooth(z0, z1, z))

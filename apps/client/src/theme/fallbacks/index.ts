@@ -12,7 +12,6 @@ import {
   BushPiece,
   CampPiece,
   CliffPiece,
-  OrePiece,
   PeakPiece,
   SheepPiece,
   TreePiece,
@@ -56,7 +55,6 @@ const PIECES = {
   "prop.camp": CampPiece,
   "prop.woods": WoodsPiece,
   "prop.peak": PeakPiece,
-  "prop.ore": OrePiece,
   "prop.gull": GullPiece,
 } as const;
 

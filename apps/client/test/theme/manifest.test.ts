@@ -5,9 +5,9 @@ import { parseManifest } from "../../src/theme/manifest.ts";
 const base = { id: "diorama", version: 1, license: "CC0-1.0", source: "original" };
 
 describe("asset keys", () => {
-  it("is exactly the 32 supported keys", () => {
-    expect(ASSET_KEYS).toHaveLength(32);
-    expect(new Set(ASSET_KEYS).size).toBe(32);
+  it("is exactly the 31 supported keys", () => {
+    expect(ASSET_KEYS).toHaveLength(31);
+    expect(new Set(ASSET_KEYS).size).toBe(31);
     expect(ASSET_KEYS).toContain("piece.robber");
     expect(ASSET_KEYS).toContain("dice.die");
     expect(ASSET_KEYS).toContain("harbor.generic");
@@ -23,7 +23,6 @@ describe("asset keys", () => {
       "prop.camp",
       "prop.woods",
       "prop.peak",
-      "prop.ore",
       "prop.gull",
     ])
       expect(ASSET_KEYS).toContain(key);

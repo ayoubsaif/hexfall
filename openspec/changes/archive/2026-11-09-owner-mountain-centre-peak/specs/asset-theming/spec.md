@@ -28,7 +28,7 @@ The kind of a key SHALL be fixed and SHALL NOT depend on the theme.
 - **WHEN** the kind of `prop.boulder`, `prop.cliff`, `prop.wall`, `prop.tree` or `prop.bush` is looked up
 - **THEN** it is model
 
-#### Scenario: The mountain is a model
+#### Scenario: The mountain props are models
 - **WHEN** the kind of `prop.peak` is looked up
 - **THEN** it is model
 
