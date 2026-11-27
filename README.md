@@ -79,7 +79,7 @@ Use any Redis 7 instance the server can reach, for example Upstash (use its `red
 
 ### 2. Game server
 
-The server listens on plain HTTP. Put it behind something that terminates TLS (most hosts, including Fly.io, do this), so the client can connect over `wss://`.
+The server listens on plain HTTP. Put it behind something that terminates TLS (most hosts, including Render, do this), so the client can connect over `wss://`.
 
 **Option A: Docker** (any container host). The `Dockerfile` at the repo root builds the server image.
 
@@ -91,14 +91,13 @@ docker run -d --restart unless-stopped -p 8080:8080 \
   hexfall-server
 ```
 
-For example, on Fly.io:
+For example, on Render (free plan), using the `render.yaml` Blueprint at the repo root:
 
-```sh
-fly launch --no-deploy            # detects the Dockerfile; internal port 8080
-fly secrets set REDIS_URL='rediss://…' ALLOWED_ORIGIN='https://hexfall.example.com'
-fly deploy
-fly scale count 1                 # one instance (see the note above)
-```
+1. In the Render dashboard, choose **New > Blueprint** and pick this repository.
+2. Enter `REDIS_URL` and `ALLOWED_ORIGIN` when asked. Add the `VAPID_*` variables under **Environment** if you want turn notifications.
+3. Render builds the `Dockerfile`, runs one instance, and redeploys on every push to `main`. The server is at `wss://<service>.onrender.com`.
+
+Render sets `PORT` itself and the server listens on it. A free instance sleeps after 15 minutes without traffic and takes up to a minute to wake on the next request. Rooms survive this because they live in Redis.
 
 **Option B: Node host without Docker.**
 
@@ -123,7 +122,7 @@ curl https://hexfall-server.example.com/healthz
 
 ```sh
 npx web-push generate-vapid-keys
-fly secrets set VAPID_PUBLIC_KEY=… VAPID_PRIVATE_KEY=… VAPID_SUBJECT=mailto:ops@hexfall.example.com
+# then set VAPID_PUBLIC_KEY, VAPID_PRIVATE_KEY and VAPID_SUBJECT=mailto:ops@hexfall.example.com on the server
 ```
 
 The server then sends a push when the game starts waiting on a player whose tab is hidden or closed. Players turn notifications on with the bell next to the language switch. On iPhone and iPad, push only works after adding the game to the home screen.

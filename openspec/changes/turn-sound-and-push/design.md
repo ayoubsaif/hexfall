@@ -1,6 +1,6 @@
 ## Context
 
-- The client (`apps/client`) is a static React + three.js SPA, hosted separately from the server (any static host). The server (`apps/server`) is a Node WebSocket server on Fly.io with Redis as source of truth.
+- The client (`apps/client`) is a static React + three.js SPA, hosted separately from the server (any static host). The server (`apps/server`) is a Node WebSocket server on Render with Redis as source of truth.
 - Turn awareness today: `useTurnFocus` opens the your-turn overlay when `legal.rollDice || legal.rollForOrder` flips to true; `TurnFocus` prefixes the title with `● ` while hidden. `useDiceThrow` decides when a roll animates (`source === "update"`, new `roll.index`). No sound, no notifications.
 - Server: `RoomService`/`Room` hold one `Conn` per seat (`room.conns[seat]`). `rooms/timer.ts` already has `waitingSeats(state)` (the seats the game waits for) used by the turn timer. Every accepted action and timeout goes through one serialized, persist-then-broadcast path.
 - Protocol: zod-validated envelopes, `PROTOCOL_VERSION = 3`; a mismatch makes the client show a reload banner.
